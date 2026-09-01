@@ -153,3 +153,20 @@ export type SiteSettings = {
 };
 
 export type SiteSettingKey = keyof SiteSettings;
+
+// ============================================================
+// HostSuite Product Foundation
+// ============================================================
+export type {
+  CustomerIntent,
+  HostSuiteServiceDefinition,
+  HostSuiteServiceInstance,
+  HostSuiteServiceKey,
+  HostingProvider,
+  ProviderServiceRef,
+  ServiceAction,
+  ServiceCategory,
+  ServiceDecision,
+  ServiceLifecycle,
+  ServiceMode,
+} from './product';
