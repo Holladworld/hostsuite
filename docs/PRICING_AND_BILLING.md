@@ -200,7 +200,7 @@ Payment verification must happen through signed/verified provider webhooks or se
 
 ## 10. Tax
 
-Tax is configurable and should not be permanently hard-coded into product prices. For Nigeria, the currently documented VAT rate is 7.5%, but the tax engine must allow the applicable rate and taxable status to change by jurisdiction/product. citeturn0search12
+Tax is configurable and should not be permanently hard-coded into product prices. The current Nigerian VAT configuration should be entered by Admin based on the applicable tax rules at launch; the tax engine must allow the rate and taxable status to change by jurisdiction/product.
 
 Store:
 - jurisdiction
