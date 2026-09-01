@@ -39,56 +39,52 @@ export async function POST(request: Request) {
     const items = products.map((product) => {
       const quantity = quantities[product.id] ?? 1;
       const total = Number(product.price) * quantity;
-      return {
-        product_id: product.id,
-        product_name: product.name,
-        quantity,
-        unit_price: Number(product.price),
-        total,
-      };
+      return { product_id: product.id, product_name: product.name, quantity, unit_price: Number(product.price), total };
     });
 
     const total = items.reduce((sum, item) => sum + item.total, 0);
     const idempotencyKey = crypto.randomUUID();
     const reference = `HS-${Date.now()}-${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
+    const invoiceNumber = `HS-${new Date().getUTCFullYear()}-${crypto.randomUUID().replaceAll('-', '').slice(0, 10).toUpperCase()}`;
 
-    const { data: order, error: orderError } = await admin
-      .from('billing_orders')
-      .insert({
-        user_id: user.id,
-        status: 'pending',
-        currency: 'NGN',
-        subtotal: total,
-        total,
-        provider: 'paystack',
-        provider_reference: reference,
-        idempotency_key: idempotencyKey,
-        metadata: { source: 'portal' },
-      })
-      .select('id,total,currency,provider_reference')
-      .single();
+    const { data: order, error: orderError } = await admin.from('billing_orders').insert({
+      user_id: user.id,
+      status: 'pending',
+      currency: 'NGN',
+      subtotal: total,
+      total,
+      provider: 'paystack',
+      provider_reference: reference,
+      idempotency_key: idempotencyKey,
+      metadata: { source: 'portal' },
+    }).select('id,total,currency,provider_reference').single();
 
     if (orderError) throw orderError;
 
-    const { error: itemError } = await admin.from('billing_order_items').insert(
-      items.map((item) => ({ ...item, order_id: order.id }))
-    );
+    const { error: itemError } = await admin.from('billing_order_items').insert(items.map((item) => ({ ...item, order_id: order.id })));
     if (itemError) throw itemError;
 
+    const { error: invoiceError } = await admin.from('billing_invoices').insert({
+      user_id: user.id,
+      order_id: order.id,
+      invoice_number: invoiceNumber,
+      status: 'open',
+      currency: 'NGN',
+      subtotal: total,
+      total,
+    });
+    if (invoiceError) throw invoiceError;
+
     const secret = process.env.PAYSTACK_SECRET_KEY;
-    if (!secret) return NextResponse.json({ error: 'Payment provider is not configured yet.' }, { status: 503 });
+    if (!secret) {
+      await admin.from('billing_orders').update({ status: 'failed' }).eq('id', order.id);
+      return NextResponse.json({ error: 'Payment provider is not configured yet.' }, { status: 503 });
+    }
 
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: user.email,
-        amount: Math.round(total * 100),
-        currency: 'NGN',
-        reference,
-        callback_url: parsed.data.callbackUrl,
-        metadata: { order_id: order.id, user_id: user.id },
-      }),
+      body: JSON.stringify({ email: user.email, amount: Math.round(total * 100), currency: 'NGN', reference, callback_url: parsed.data.callbackUrl, metadata: { order_id: order.id, user_id: user.id } }),
       cache: 'no-store',
     });
 
@@ -98,7 +94,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unable to initialize payment.' }, { status: 502 });
     }
 
-    return NextResponse.json({ authorizationUrl: result.data.authorization_url, reference, orderId: order.id });
+    return NextResponse.json({ authorizationUrl: result.data.authorization_url, reference, orderId: order.id, invoiceNumber });
   } catch (error) {
     console.error('Paystack initialization failed', error);
     return NextResponse.json({ error: 'Unable to start payment.' }, { status: 500 });
