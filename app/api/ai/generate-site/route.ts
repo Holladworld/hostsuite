@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { extractJson, generatedSiteSchema, SITE_GENERATION_INSTRUCTIONS } from '@/lib/ai-site';
 
 const requestSchema = z.object({
@@ -20,6 +21,7 @@ async function requireUser(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   try {
     const user = await requireUser(request);
     if (!user) return NextResponse.json({ error: 'You must be signed in to use the website builder.' }, { status: 401 });
@@ -52,7 +54,20 @@ export async function POST(request: NextRequest) {
     if (typeof content !== 'string') return NextResponse.json({ error: 'The AI provider returned an unexpected response.' }, { status: 502 });
 
     const site = generatedSiteSchema.parse(extractJson(content));
-    return NextResponse.json({ site });
+
+    const admin = createAdminSupabaseClient();
+    const { error: usageError } = await admin.rpc('record_ai_usage', {
+      p_user_id: user.id,
+      p_feature: 'website_builder',
+      p_provider: baseUrl,
+      p_model: model,
+      p_units: 1,
+      p_request_id: requestId,
+      p_metadata: { websiteType: parsed.data.websiteType },
+    });
+    if (usageError) console.error('AI usage ledger write failed:', usageError.message);
+
+    return NextResponse.json({ site, usage: { units: 1, requestId } });
   } catch (error) {
     console.error('Website generation error:', error);
     return NextResponse.json({ error: 'We could not generate the website. Please try again.' }, { status: 500 });
