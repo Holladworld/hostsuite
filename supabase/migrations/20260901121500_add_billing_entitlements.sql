@@ -28,25 +28,33 @@ AS $$
 DECLARE
   item record;
   product record;
+  order_user uuid;
 BEGIN
+  SELECT user_id INTO order_user FROM billing_orders WHERE id = p_order_id AND status = 'paid';
+  IF order_user IS NULL THEN RETURN; END IF;
+
   FOR item IN SELECT * FROM billing_order_items WHERE order_id = p_order_id LOOP
     SELECT * INTO product FROM billing_products WHERE id = item.product_id;
 
     INSERT INTO billing_entitlements(user_id, product_id, order_id, quantity, remaining_quantity, starts_at)
-    SELECT o.user_id, item.product_id, o.id, item.quantity, item.quantity, now()
-    FROM billing_orders o
-    WHERE o.id = p_order_id
-      AND o.status = 'paid'
+    VALUES (order_user, item.product_id, p_order_id, item.quantity, item.quantity, now())
     ON CONFLICT (order_id, product_id) DO NOTHING;
 
-    IF product.billing_mode = 'subscription' THEN
+    IF product.billing_mode = 'subscription' AND NOT EXISTS (
+      SELECT 1 FROM billing_subscriptions WHERE user_id = order_user AND product_id = product.id AND status IN ('active','past_due','paused')
+    ) THEN
       INSERT INTO billing_subscriptions(user_id, product_id, service_name, amount, currency, interval, status, next_billing_at, auto_renew)
-      SELECT o.user_id, product.id, product.name, product.price, product.currency, product.interval, 'active',
-             CASE WHEN product.interval = 'monthly' THEN now() + interval '1 month' ELSE now() + interval '1 year' END,
-             true
-      FROM billing_orders o
-      WHERE o.id = p_order_id AND o.status = 'paid'
-      ON CONFLICT DO NOTHING;
+      VALUES (
+        order_user,
+        product.id,
+        product.name,
+        product.price,
+        product.currency,
+        product.interval,
+        'active',
+        CASE WHEN product.interval = 'monthly' THEN now() + interval '1 month' ELSE now() + interval '1 year' END,
+        true
+      );
     END IF;
   END LOOP;
 END;
