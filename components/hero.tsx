@@ -1,230 +1,160 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-  ArrowRight,
-  MessageCircle,
-  ShieldCheck,
-  Lock,
-  MailCheck,
-  Activity,
-  Server,
-  Zap,
-  CheckCircle2,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { BRAND, waLink, HEALTH_METRICS, TRUST_LOGOS } from '@/lib/constants';
-import { useSiteSettings } from '@/hooks/use-content';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, Globe2, Mail, ShieldCheck, Wrench } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { useSiteSettings } from '@/hooks/use-content';
+import { waLink } from '@/lib/constants';
 
-const HERO_BG = 'https://images.pexels.com/photos/37730212/pexels-photo-37730212.jpeg?auto=compress&cs=tinysrgb&w=1920';
+const slides = [
+  {
+    eyebrow: 'YOUR DIGITAL HOME',
+    title: 'Build it. Launch it. Keep it running.',
+    text: 'Your website, domain, hosting and business email — set up without the technical headache.',
+    image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1920',
+    action: 'Get started',
+  },
+  {
+    eyebrow: 'WHEN THINGS BREAK',
+    title: 'Your developer disappeared? Bring it to us.',
+    text: 'Website errors, broken email, DNS problems or a mysterious outage. Tell us what happened and we will help you find the fix.',
+    image: 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=1920',
+    action: 'Get technical help',
+  },
+  {
+    eyebrow: 'DO IT YOURSELF OR LET US',
+    title: 'Your infrastructure. Your choice.',
+    text: 'Use HostSuite as a simple self-service platform, or let our team handle the technical work while you run your business.',
+    image: 'https://images.pexels.com/photos/3862375/pexels-photo-3862375.jpeg?auto=compress&cs=tinysrgb&w=1920',
+    action: 'Explore services',
+  },
+];
 
-const metricIcon: Record<string, React.ElementType> = {
-  Uptime: Activity,
-  SSL: Lock,
-  'Email Deliverability': MailCheck,
-  'Lagos Ping': Zap,
-};
+const quickNeeds = [
+  { icon: Globe2, label: 'I need a domain' },
+  { icon: Globe2, label: 'I need a website' },
+  { icon: Mail, label: 'I need business email' },
+  { icon: Wrench, label: 'Something is broken' },
+];
 
 export function Hero() {
-  const [ping, setPing] = useState(14);
   const { settings } = useSiteSettings();
+  const [active, setActive] = useState(0);
+  const slide = slides[active];
 
-  const headline = settings.hero?.headline || 'We don\'t just sell hosting. We manage your entire web infrastructure & fix your technical bottlenecks.';
-  const subheadline = settings.hero?.subheadline || 'Ghosted by your developer? Emails landing in spam? Website constantly going down? HostSuite steps in as your fractional CTO and web operations team.';
-
-  // Subtle live ping jitter for realism.
   useEffect(() => {
-    const id = setInterval(() => {
-      setPing((p) => {
-        const next = p + (Math.random() * 4 - 2);
-        return Math.max(9, Math.min(22, Math.round(next)));
-      });
-    }, 2200);
-    return () => clearInterval(id);
+    const id = window.setInterval(() => setActive((current) => (current + 1) % slides.length), 6500);
+    return () => window.clearInterval(id);
   }, []);
 
+  const headline = settings.hero?.headline || slide.title;
+  const subheadline = settings.hero?.subheadline || slide.text;
+
   return (
-    <section className="relative overflow-hidden">
-      {/* Background image with overlay */}
-      <div className="absolute inset-0" aria-hidden>
-        <img
-          src={HERO_BG}
-          alt=""
-          className="h-full w-full object-cover"
-          loading="eager"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/85 to-background/70" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-background/30" />
+    <section className="relative overflow-hidden bg-[#4A1F6B] text-white">
+      <div className="absolute inset-0">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={slide.image}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8 }}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${slide.image})` }}
+            aria-hidden="true"
+          />
+        </AnimatePresence>
+        <div className="absolute inset-0 bg-[#4A1F6B]/80" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#4A1F6B] via-[#4A1F6B]/90 to-[#4A1F6B]/55" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-14 sm:px-6 lg:px-8 lg:pb-28 lg:pt-20">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
-          {/* Left: copy + CTAs */}
-          <div>
+      <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 lg:px-8 lg:pb-20 lg:pt-14">
+        <div className="grid min-h-[560px] items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="max-w-2xl">
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              key={`eyebrow-${active}`}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 rounded-full border border-secondary/30 bg-secondary/10 px-3 py-1.5 text-xs font-semibold text-secondary"
+              className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-2 text-xs font-semibold tracking-[0.16em] text-white/90 backdrop-blur-sm"
             >
               <ShieldCheck className="h-3.5 w-3.5" />
-              Fractional CTO &amp; Web Operations Team
+              {slide.eyebrow}
             </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.05 }}
-              className="mt-5 font-display text-4xl font-bold leading-[1.1] tracking-tight text-foreground text-balance sm:text-5xl lg:text-[3.4rem]"
-            >
-              {headline}
-            </motion.h1>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active}
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.45 }}
+              >
+                <h1 className="max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
+                  {headline}
+                </h1>
+                <p className="mt-6 max-w-xl text-base leading-7 text-white/80 sm:text-lg">
+                  {subheadline}
+                </p>
+              </motion.div>
+            </AnimatePresence>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.12 }}
-              className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg"
-            >
-              {subheadline}
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.18 }}
-              className="mt-7 flex flex-col gap-3 sm:flex-row"
-            >
-              <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg" className="bg-[#5D2A86] text-white shadow-lg shadow-black/15 hover:bg-[#4A1F6B]">
                 <Link href="/#diagnostic" scroll className="gap-2">
-                  Describe Your Issue
+                  {slide.action}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-secondary/40 text-secondary hover:bg-secondary/10 hover:text-secondary"
-              >
-                <a
-                  href={waLink('Hello HostSuite, I need immediate assistance with my business website.')}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="gap-2"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Emergency WhatsApp Desk
+              <Button asChild size="lg" variant="outline" className="border-white/35 bg-white/10 text-white hover:bg-white/15 hover:text-white">
+                <a href={waLink('Hello HostSuite, I need help with my business technology.')} target="_blank" rel="noopener noreferrer">
+                  Talk to a human
                 </a>
               </Button>
-            </motion.div>
+            </div>
 
-            {/* Trust logos */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="mt-10"
-            >
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Trusted by teams across Nigeria &amp; beyond
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-                {TRUST_LOGOS.map((logo) => (
-                  <span
-                    key={logo}
-                    className="font-display text-sm font-semibold text-muted-foreground/70"
-                  >
-                    {logo}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
+            <div className="mt-9 flex items-center gap-2" aria-label="Hero slides">
+              {slides.map((item, index) => (
+                <button
+                  key={item.eyebrow}
+                  type="button"
+                  onClick={() => setActive(index)}
+                  aria-label={`Show slide ${index + 1}`}
+                  aria-current={index === active}
+                  className={`h-1.5 rounded-full transition-all ${index === active ? 'w-9 bg-white' : 'w-4 bg-white/35 hover:bg-white/60'}`}
+                />
+              ))}
+              <span className="ml-2 text-xs text-white/60">Auto-rotating</span>
+            </div>
           </div>
 
-          {/* Right: Live Health Widget */}
           <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative"
+            initial={{ opacity: 0, x: 24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+            className="hidden lg:block"
           >
-            <div className="glass-strong rounded-2xl border border-border p-5 shadow-xl shadow-primary/5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Server className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="font-display text-sm font-semibold text-foreground">
-                      Live Infrastructure Health
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">hostsuite.status · real-time</p>
-                  </div>
-                </div>
-                <span className="flex items-center gap-1.5 rounded-full bg-success/10 px-2 py-1 text-[10px] font-semibold text-success">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
-                  </span>
-                  LIVE
-                </span>
+            <div className="rounded-3xl border border-white/20 bg-white/95 p-5 text-foreground shadow-2xl shadow-black/20 backdrop-blur-xl">
+              <p className="text-sm font-semibold">What do you need today?</p>
+              <p className="mt-1 text-sm text-muted-foreground">Start with one thing. HostSuite can help with the rest.</p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                {quickNeeds.map(({ icon: Icon, label }) => (
+                  <Link
+                    key={label}
+                    href="/#diagnostic"
+                    className="group rounded-2xl border border-border bg-background p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                  >
+                    <Icon className="h-5 w-5 text-[#5D2A86]" />
+                    <span className="mt-8 block text-sm font-semibold">{label}</span>
+                    <span className="mt-1 block text-xs text-muted-foreground group-hover:text-foreground">Tell us what you need →</span>
+                  </Link>
+                ))}
               </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                {HEALTH_METRICS.map((m) => {
-              const Icon = metricIcon[m.label] ?? Activity;
-              const isPing = m.label === 'Lagos Ping';
-              return (
-                <div
-                  key={m.label}
-                  className="rounded-xl border border-border bg-background/80 p-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <Icon className="h-4 w-4 text-secondary" />
-                    <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                  </div>
-                  <p className="mt-2 font-mono-data text-lg font-semibold text-foreground">
-                    {isPing ? `${ping}ms` : m.value}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {m.label} · {m.unit}
-                  </p>
-                </div>
-              );
-            })}
-              </div>
-
-              {/* Mini uptime graph */}
-              <div className="mt-4 rounded-xl border border-border bg-background/80 p-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-medium text-muted-foreground">90-day uptime</p>
-                  <p className="font-mono-data text-xs font-semibold text-success">99.99%</p>
-                </div>
-                <div className="mt-2 flex h-10 items-end gap-[3px]">
-                  {Array.from({ length: 45 }).map((_, i) => {
-                    const h = 60 + Math.sin(i * 0.6) * 18 + Math.random() * 14;
-                    return (
-                      <div
-                        key={i}
-                        className="flex-1 rounded-sm bg-success/70"
-                        style={{ height: `${Math.min(100, h)}%` }}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between rounded-xl bg-primary/5 px-3 py-2.5">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  <p className="text-xs font-medium text-foreground">All systems operational</p>
-                </div>
-                <span className="font-mono-data text-[11px] text-muted-foreground">
-                  {BRAND.parent}
-                </span>
+              <div className="mt-4 rounded-2xl bg-[#4A1F6B] px-4 py-3 text-white">
+                <p className="text-sm font-semibold">Not sure what you need?</p>
+                <p className="mt-1 text-xs text-white/70">That's okay. Describe the problem in plain English.</p>
               </div>
             </div>
           </motion.div>
