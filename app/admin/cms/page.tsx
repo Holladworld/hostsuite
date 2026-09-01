@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, ImagePlus, Save, Settings2, Tag, FileText } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileText, ImagePlus, Pencil, Plus, Save, Settings2, Tag, Trash2, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,86 +11,26 @@ import { Textarea } from '@/components/ui/textarea';
 
 type SiteSettings = Record<string, unknown>;
 type BlogRow = { id: string; title: string; slug: string; excerpt: string | null; content: string | null; cover_image_url: string | null; published: boolean; published_at: string | null };
+type HeroSettings = { headline: string; subheadline: string; primaryCta: string; secondaryCta: string };
+type PricingSettings = { starter_ops_monthly: number; starter_ops_annual: number; managed_growth_monthly: number; managed_growth_annual: number };
+type BlogDraft = Omit<BlogRow, 'id'>;
 
-type HeroSettings = { headline: string; subheadline: string; primaryCta: string; secondaryCta: string; };
-type PricingSettings = { starter_ops_monthly: number; starter_ops_annual: number; managed_growth_monthly: number; managed_growth_annual: number; };
-
-const defaults: HeroSettings = {
-  headline: 'Your business deserves a digital home that is easy to manage.',
-  subheadline: 'Domains, websites, hosting, business email and technical support — with HostSuite handling the complexity behind the scenes.',
-  primaryCta: 'Get started',
-  secondaryCta: 'I need help',
-};
-
+const defaults: HeroSettings = { headline: 'Your business deserves a digital home that is easy to manage.', subheadline: 'Domains, websites, hosting, business email and technical support — with HostSuite handling the complexity behind the scenes.', primaryCta: 'Get started', secondaryCta: 'I need help' };
 const defaultPricing: PricingSettings = { starter_ops_monthly: 5000, starter_ops_annual: 50000, managed_growth_monthly: 12000, managed_growth_annual: 120000 };
+const emptyBlog: BlogDraft = { title: '', slug: '', excerpt: '', content: '', cover_image_url: '', published: false, published_at: null };
+
+function makeSlug(value: string) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
 
 export default function CmsPage() {
-  const [settings, setSettings] = useState<SiteSettings>({});
-  const [hero, setHero] = useState(defaults);
-  const [pricing, setPricing] = useState(defaultPricing);
-  const [siteName, setSiteName] = useState('HostSuite');
-  const [logoUrl, setLogoUrl] = useState('');
-  const [blogs, setBlogs] = useState<BlogRow[]>([]);
-  const [status, setStatus] = useState('');
-
-  useEffect(() => {
-    void load();
-  }, []);
-
-  async function load() {
-    const [{ data: rows }, { data: blogRows }] = await Promise.all([
-      supabase.from('site_settings').select('key,value'),
-      supabase.from('blogs').select('id,title,slug,excerpt,content,cover_image_url,published,published_at').order('created_at', { ascending: false }),
-    ]);
-    const map = Object.fromEntries((rows ?? []).map((row) => [row.key, row.value])) as SiteSettings;
-    setSettings(map);
-    setHero({ ...defaults, ...(map.hero as Partial<HeroSettings> | undefined) });
-    setPricing({ ...defaultPricing, ...(map.pricing as Partial<PricingSettings> | undefined) });
-    const branding = (map.branding ?? {}) as { siteName?: string; logoUrl?: string };
-    setSiteName(branding.siteName ?? 'HostSuite');
-    setLogoUrl(branding.logoUrl ?? '');
-    setBlogs(blogRows ?? []);
-  }
-
-  async function saveSetting(key: string, value: unknown) {
-    setStatus('Saving…');
-    const { error } = await supabase.from('site_settings').upsert({ key, value, updated_at: new Date().toISOString() });
-    setStatus(error ? `Could not save: ${error.message}` : 'Saved.');
-    if (!error) setSettings((current) => ({ ...current, [key]: value }));
-  }
-
-  async function toggleBlog(blog: BlogRow) {
-    const nextPublished = !blog.published;
-    const { error } = await supabase.from('blogs').update({ published: nextPublished, published_at: nextPublished ? new Date().toISOString() : null }).eq('id', blog.id);
-    if (!error) setBlogs((items) => items.map((item) => item.id === blog.id ? { ...item, published: nextPublished } : item));
-    setStatus(error ? `Could not update blog: ${error.message}` : 'Blog status updated.');
-  }
-
-  async function uploadLogo(file: File) {
-    setStatus('Uploading logo…');
-    const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-');
-    const path = `branding/${Date.now()}-${safeName}`;
-    const { error } = await supabase.storage.from('hostsuite-assets').upload(path, file, { upsert: false, contentType: file.type });
-    if (error) { setStatus(`Could not upload: ${error.message}`); return; }
-    const { data } = supabase.storage.from('hostsuite-assets').getPublicUrl(path);
-    setLogoUrl(data.publicUrl);
-    setStatus('Logo uploaded. Save branding to publish it.');
-  }
-
+  const [hero, setHero] = useState(defaults); const [pricing, setPricing] = useState(defaultPricing); const [siteName, setSiteName] = useState('HostSuite'); const [logoUrl, setLogoUrl] = useState(''); const [blogs, setBlogs] = useState<BlogRow[]>([]); const [draft, setDraft] = useState<BlogDraft>(emptyBlog); const [editingId, setEditingId] = useState<string | null>(null); const [status, setStatus] = useState(''); const [busy, setBusy] = useState(false);
+  useEffect(() => { void load(); }, []);
+  async function load() { setBusy(true); const [{ data: rows, error: settingsError }, { data: blogRows, error: blogsError }] = await Promise.all([supabase.from('site_settings').select('key,value'), supabase.from('blogs').select('id,title,slug,excerpt,content,cover_image_url,published,published_at').order('created_at', { ascending: false })]); if (settingsError || blogsError) setStatus(`Could not load CMS: ${settingsError?.message ?? blogsError?.message}`); const map = Object.fromEntries((rows ?? []).map((row) => [row.key, row.value])) as SiteSettings; setHero({ ...defaults, ...(map.hero as Partial<HeroSettings> | undefined) }); setPricing({ ...defaultPricing, ...(map.pricing as Partial<PricingSettings> | undefined) }); const branding = (map.branding ?? {}) as { siteName?: string; logoUrl?: string }; setSiteName(branding.siteName ?? 'HostSuite'); setLogoUrl(branding.logoUrl ?? ''); setBlogs(blogRows ?? []); setBusy(false); }
+  async function saveSetting(key: string, value: unknown) { setStatus('Saving…'); const { error } = await supabase.from('site_settings').upsert({ key, value, updated_at: new Date().toISOString() }); setStatus(error ? `Could not save: ${error.message}` : 'Saved.'); }
+  async function uploadAsset(file: File, folder: 'branding' | 'blog', onDone: (url: string) => void) { setStatus('Uploading…'); const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-'); const path = `${folder}/${Date.now()}-${safeName}`; const { error } = await supabase.storage.from('hostsuite-assets').upload(path, file, { upsert: false, contentType: file.type }); if (error) { setStatus(`Could not upload: ${error.message}`); return; } const { data } = supabase.storage.from('hostsuite-assets').getPublicUrl(path); onDone(data.publicUrl); setStatus('Upload complete. Save your changes.'); }
+  function startNewPost() { setEditingId(null); setDraft(emptyBlog); document.getElementById('blog-editor')?.scrollIntoView({ behavior: 'smooth' }); }
+  function startEdit(post: BlogRow) { setEditingId(post.id); setDraft({ ...post }); document.getElementById('blog-editor')?.scrollIntoView({ behavior: 'smooth' }); }
+  async function savePost() { if (!draft.title.trim() || !draft.content?.trim()) { setStatus('A blog title and content are required.'); return; } setBusy(true); const slug = makeSlug(draft.slug || draft.title); const publishedAt = draft.published ? (draft.published_at ?? new Date().toISOString()) : null; const payload = { title: draft.title.trim(), slug, excerpt: draft.excerpt?.trim() || null, content: draft.content, cover_image_url: draft.cover_image_url?.trim() || null, published: draft.published, published_at: publishedAt }; const result = editingId ? await supabase.from('blogs').update(payload).eq('id', editingId).select('id,title,slug,excerpt,content,cover_image_url,published,published_at').single() : await supabase.from('blogs').insert(payload).select('id,title,slug,excerpt,content,cover_image_url,published,published_at').single(); if (result.error) setStatus(`Could not save post: ${result.error.message}`); else { setStatus(editingId ? 'Post updated.' : 'Post created.'); setDraft(emptyBlog); setEditingId(null); await load(); } setBusy(false); }
+  async function toggleBlog(blog: BlogRow) { setBusy(true); const nextPublished = !blog.published; const { error } = await supabase.from('blogs').update({ published: nextPublished, published_at: nextPublished ? (blog.published_at ?? new Date().toISOString()) : null }).eq('id', blog.id); setStatus(error ? `Could not update blog: ${error.message}` : 'Blog status updated.'); if (!error) setBlogs((items) => items.map((item) => item.id === blog.id ? { ...item, published: nextPublished, published_at: nextPublished ? (item.published_at ?? new Date().toISOString()) : null } : item)); setBusy(false); }
+  async function deleteBlog(blog: BlogRow) { if (!window.confirm(`Delete “${blog.title}”? This cannot be undone.`)) return; setBusy(true); const { error } = await supabase.from('blogs').delete().eq('id', blog.id); setStatus(error ? `Could not delete blog: ${error.message}` : 'Post deleted.'); if (!error) setBlogs((items) => items.filter((item) => item.id !== blog.id)); if (editingId === blog.id) { setEditingId(null); setDraft(emptyBlog); } setBusy(false); }
   const publishedCount = useMemo(() => blogs.filter((blog) => blog.published).length, [blogs]);
-
-  return (
-    <div className="min-h-screen bg-background"><header className="border-b border-border"><div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"><Link href="/admin" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Admin</Link><span className="text-xs text-muted-foreground">{status || 'CMS'}</span></div></header>
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        <div><p className="text-sm font-medium text-primary">Content management</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Manage the HostSuite website</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Change basic public content without touching code: branding, hero copy, pricing and blog publishing.</p></div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card><CardHeader><CardTitle className="flex items-center gap-2"><Settings2 className="h-5 w-5" /> Branding</CardTitle></CardHeader><CardContent className="space-y-4"><label className="space-y-2 block text-sm">Site name<Input value={siteName} onChange={(e) => setSiteName(e.target.value)} /></label><label className="space-y-2 block text-sm">Logo URL<Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://…" /></label><label className="block text-sm">Upload logo<input className="mt-2 block w-full text-sm" type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && void uploadLogo(e.target.files[0])} /></label><Button onClick={() => void saveSetting('branding', { siteName, logoUrl })}><Save className="mr-2 h-4 w-4" />Save branding</Button></CardContent></Card>
-          <Card><CardHeader><CardTitle className="flex items-center gap-2"><ImagePlus className="h-5 w-5" /> Homepage hero</CardTitle></CardHeader><CardContent className="space-y-4"><label className="space-y-2 block text-sm">Headline<Textarea value={hero.headline} onChange={(e) => setHero({ ...hero, headline: e.target.value })} /></label><label className="space-y-2 block text-sm">Subheadline<Textarea value={hero.subheadline} onChange={(e) => setHero({ ...hero, subheadline: e.target.value })} /></label><div className="grid gap-3 sm:grid-cols-2"><label className="space-y-2 block text-sm">Primary CTA<Input value={hero.primaryCta} onChange={(e) => setHero({ ...hero, primaryCta: e.target.value })} /></label><label className="space-y-2 block text-sm">Secondary CTA<Input value={hero.secondaryCta} onChange={(e) => setHero({ ...hero, secondaryCta: e.target.value })} /></label></div><Button onClick={() => void saveSetting('hero', hero)}><Save className="mr-2 h-4 w-4" />Save homepage copy</Button></CardContent></Card>
-          <Card><CardHeader><CardTitle className="flex items-center gap-2"><Tag className="h-5 w-5" /> Pricing</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 sm:grid-cols-2">{(['starter_ops_monthly','starter_ops_annual','managed_growth_monthly','managed_growth_annual'] as const).map((key) => <label key={key} className="space-y-2 block text-sm capitalize">{key.replaceAll('_', ' ')}<Input type="number" value={pricing[key]} onChange={(e) => setPricing({ ...pricing, [key]: Number(e.target.value) })} /></label>)}</div><Button onClick={() => void saveSetting('pricing', pricing)}><Save className="mr-2 h-4 w-4" />Save pricing</Button></CardContent></Card>
-          <Card><CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Blog</CardTitle></CardHeader><CardContent className="space-y-3"><p className="text-sm text-muted-foreground">{publishedCount} published / {blogs.length} total. Create and edit posts in the existing blog workflow; this screen controls their public visibility.</p>{blogs.slice(0, 8).map((blog) => <div key={blog.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{blog.title}</p><p className="text-xs text-muted-foreground">/{blog.slug}</p></div><Button variant="outline" size="sm" onClick={() => void toggleBlog(blog)}>{blog.published ? 'Unpublish' : 'Publish'}</Button></div>)}{blogs.length === 0 && <p className="text-sm text-muted-foreground">No blog posts yet.</p>}</CardContent></Card>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle2 className="h-4 w-4" /> Changes are stored in Supabase site content. Public pages read these values instead of requiring code edits.</div>
-      </main>
-    </div>
-  );
-}
+  return <div className="min-h-screen bg-background"><header className="border-b border-border"><div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"><Link href="/admin" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Admin</Link><span className="text-xs text-muted-foreground">{busy ? 'Working…' : status || 'CMS'}</span></div></header><main className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8"><div><p className="text-sm font-medium text-primary">Content management</p><h1 className="mt-1 text-3xl font-bold tracking-tight">Manage the HostSuite website</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Change public website content without editing application code.</p></div><div className="grid gap-6 lg:grid-cols-2"><Card><CardHeader><CardTitle className="flex items-center gap-2"><Settings2 className="h-5 w-5" /> Branding</CardTitle></CardHeader><CardContent className="space-y-4"><label className="block space-y-2 text-sm">Site name<Input value={siteName} onChange={(e) => setSiteName(e.target.value)} /></label><label className="block space-y-2 text-sm">Logo URL<Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://…" /></label><label className="block text-sm">Upload logo<input className="mt-2 block w-full text-sm" type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && void uploadAsset(e.target.files[0], 'branding', setLogoUrl)} /></label><Button disabled={busy} onClick={() => void saveSetting('branding', { siteName, logoUrl })}><Save className="mr-2 h-4 w-4" />Save branding</Button></CardContent></Card><Card><CardHeader><CardTitle className="flex items-center gap-2"><ImagePlus className="h-5 w-5" /> Homepage hero</CardTitle></CardHeader><CardContent className="space-y-4"><label className="block space-y-2 text-sm">Headline<Textarea value={hero.headline} onChange={(e) => setHero({ ...hero, headline: e.target.value })} /></label><label className="block space-y-2 text-sm">Subheadline<Textarea value={hero.subheadline} onChange={(e) => setHero({ ...hero, subheadline: e.target.value })} /></label><div className="grid gap-3 sm:grid-cols-2"><label className="block space-y-2 text-sm">Primary CTA<Input value={hero.primaryCta} onChange={(e) => setHero({ ...hero, primaryCta: e.target.value })} /></label><label className="block space-y-2 text-sm">Secondary CTA<Input value={hero.secondaryCta} onChange={(e) => setHero({ ...hero, secondaryCta: e.target.value })} /></label></div><Button disabled={busy} onClick={() => void saveSetting('hero', hero)}><Save className="mr-2 h-4 w-4" />Save homepage copy</Button></CardContent></Card><Card><CardHeader><CardTitle className="flex items-center gap-2"><Tag className="h-5 w-5" /> Pricing</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 sm:grid-cols-2">{(Object.keys(defaultPricing) as Array<keyof PricingSettings>).map((key) => <label key={key} className="block space-y-2 text-sm capitalize">{key.replaceAll('_', ' ')}<Input type="number" min="0" value={pricing[key]} onChange={(e) => setPricing({ ...pricing, [key]: Number(e.target.value) })} /></label>)}</div><Button disabled={busy} onClick={() => void saveSetting('pricing', pricing)}><Save className="mr-2 h-4 w-4" />Save pricing</Button></CardContent></Card><Card><CardHeader><CardTitle className="flex items-center justify-between gap-3"><span className="flex items-center gap-2"><FileText className="h-5 w-5" /> Blog library</span><Button size="sm" onClick={startNewPost}><Plus className="mr-2 h-4 w-4" />New post</Button></CardTitle></CardHeader><CardContent className="space-y-3"><p className="text-sm text-muted-foreground">{publishedCount} published / {blogs.length} total</p>{blogs.map((blog) => <div key={blog.id} className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><p className="truncate text-sm font-medium">{blog.title}</p><p className="text-xs text-muted-foreground">/{blog.slug} · {blog.published ? 'Published' : 'Draft'}</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => startEdit(blog)}><Pencil className="mr-1.5 h-3.5 w-3.5" />Edit</Button><Button variant="outline" size="sm" onClick={() => void toggleBlog(blog)}>{blog.published ? 'Unpublish' : 'Publish'}</Button><Button variant="outline" size="sm" onClick={() => void deleteBlog(blog)}><Trash2 className="mr-1.5 h-3.5 w-3.5" />Delete</Button></div></div>)}{blogs.length === 0 && <p className="py-4 text-sm text-muted-foreground">No blog posts yet.</p>}</CardContent></Card></div><Card id="blog-editor"><CardHeader><CardTitle className="flex items-center justify-between gap-3"><span>{editingId ? 'Edit blog post' : 'Create blog post'}</span><Button variant="ghost" size="sm" onClick={() => { setEditingId(null); setDraft(emptyBlog); }}><X className="mr-1.5 h-4 w-4" />Clear</Button></CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid gap-4 md:grid-cols-2"><label className="block space-y-2 text-sm">Title<Input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value, slug: draft.slug || makeSlug(e.target.value) })} /></label><label className="block space-y-2 text-sm">Slug<Input value={draft.slug} onChange={(e) => setDraft({ ...draft, slug: makeSlug(e.target.value) })} /></label></div><label className="block space-y-2 text-sm">Excerpt<Textarea value={draft.excerpt ?? ''} onChange={(e) => setDraft({ ...draft, excerpt: e.target.value })} /></label><label className="block space-y-2 text-sm">Content<Textarea className="min-h-64 font-mono" value={draft.content ?? ''} onChange={(e) => setDraft({ ...draft, content: e.target.value })} placeholder="Write the post content here…" /></label><div className="grid gap-4 md:grid-cols-2"><label className="block space-y-2 text-sm">Cover image URL<Input value={draft.cover_image_url ?? ''} onChange={(e) => setDraft({ ...draft, cover_image_url: e.target.value })} /></label><label className="block text-sm">Upload cover<input className="mt-2 block w-full text-sm" type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && void uploadAsset(e.target.files[0], 'blog', (url) => setDraft((current) => ({ ...current, cover_image_url: url })))} /></label></div><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.published} onChange={(e) => setDraft({ ...draft, published: e.target.checked })} /> Publish immediately</label><Button disabled={busy} onClick={() => void savePost()}><Save className="mr-2 h-4 w-4" />{editingId ? 'Update post' : 'Create post'}</Button></CardContent></Card><div className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle2 className="h-4 w-4" /> Basic website content and blog management are now handled from this CMS instead of source code.</div></main></div>
