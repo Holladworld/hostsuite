@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Server, Menu, X, MessageCircle, CalendarCheck, LogIn } from 'lucide-react';
+import { Server, Menu, X, MessageCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BRAND, NAV_LINKS, waLink } from '@/lib/constants';
-
 
 function NavLink({ href, label, onNavigate }: { href: string; label: string; onNavigate?: () => void }) {
   return (
@@ -28,7 +27,6 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
-
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
     onScroll();
@@ -36,7 +34,6 @@ export function Header() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
@@ -52,58 +49,40 @@ export function Header() {
         }`}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
             <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
               <Server className="h-5 w-5" />
               <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-background" />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="font-display text-lg font-bold tracking-tight text-foreground">
-                Host{''}Suite
-              </span>
+              <span className="font-display text-lg font-bold tracking-tight text-foreground">HostSuite</span>
               <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                 by {BRAND.parent}
               </span>
             </div>
           </Link>
 
-          {/* Desktop nav */}
           <nav className="hidden items-center gap-0.5 lg:flex">
             {NAV_LINKS.map((link) => (
               <NavLink key={link.href} href={link.href} label={link.label} />
             ))}
           </nav>
 
-          {/* Live status pill */}
           <div className="hidden items-center xl:flex">
             <div className="flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-3 py-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
               </span>
-              <span className="text-xs font-medium text-success/90">
-                Lagos &amp; Global Nodes 100% Operational
-              </span>
+              <span className="text-xs font-medium text-success/90">Lagos &amp; Global Nodes Operational</span>
             </div>
           </div>
 
-          {/* CTAs */}
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-              <Link href="/portal" className="gap-1.5">
-                <LogIn className="h-4 w-4" />
-                Login
-              </Link>
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              className="hidden bg-primary text-primary-foreground hover:bg-primary/90 sm:inline-flex"
-            >
-              <Link href="/#diagnostic" scroll className="gap-1.5">
-                <CalendarCheck className="h-4 w-4" />
-                Book Infrastructure Audit
+            <Button asChild size="sm" className="hidden bg-primary text-primary-foreground hover:bg-primary/90 sm:inline-flex">
+              <Link href="/portal?mode=signup" className="gap-1.5">
+                Get started
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <button
@@ -117,7 +96,6 @@ export function Header() {
         </div>
       </motion.header>
 
-      {/* Mobile drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -151,9 +129,7 @@ export function Header() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
                 </span>
-                <span className="text-xs font-medium text-success/90">
-                  Lagos &amp; Global Nodes 100% Operational
-                </span>
+                <span className="text-xs font-medium text-success/90">Lagos &amp; Global Nodes Operational</span>
               </div>
 
               <nav className="mt-6 flex flex-col gap-1">
@@ -171,14 +147,14 @@ export function Header() {
               </nav>
 
               <div className="mt-auto flex flex-col gap-2">
-                <Button asChild variant="outline" className="w-full">
-                  <Link href="/portal" onClick={() => setMobileOpen(false)} className="gap-1.5">
-                    <LogIn className="h-4 w-4" /> Login
+                <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Link href="/portal?mode=signup" onClick={() => setMobileOpen(false)} className="gap-1.5">
+                    Get started <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                  <a href={waLink('Hello HostSuite, I would like to book an infrastructure audit for my business website.')} target="_blank" rel="noopener noreferrer">
-                    <MessageCircle className="h-4 w-4" /> Emergency WhatsApp Desk
+                <Button asChild variant="outline" className="w-full">
+                  <a href={waLink('Hello HostSuite, I need help with my business technology.')} target="_blank" rel="noopener noreferrer">
+                    <MessageCircle className="h-4 w-4" /> Talk to us
                   </a>
                 </Button>
               </div>
