@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { provisionServiceInstance } from '@/lib/services/provisioning';
 
 export const runtime = 'nodejs';
@@ -22,11 +23,17 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const user = await getAuthenticatedUser(request);
   if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
 
-  const result = await provisionServiceInstance(params.id);
-  if (result.code === 'NOT_FOUND') return NextResponse.json({ error: result.message }, { status: 404 });
+  const admin = createAdminSupabaseClient();
+  const { data: instance, error } = await admin
+    .from('service_instances')
+    .select('user_id')
+    .eq('id', params.id)
+    .maybeSingle();
 
-  // Ownership is enforced before retrying so a customer cannot provision another
-  // customer's service instance. The provisioning service itself remains server-only.
-  // The service function intentionally does not accept a caller-supplied user ID.
+  if (error) return NextResponse.json({ error: 'Unable to load service.' }, { status: 500 });
+  if (!instance) return NextResponse.json({ error: 'Service instance not found.' }, { status: 404 });
+  if (instance.user_id !== user.id) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
+
+  const result = await provisionServiceInstance(params.id);
   return NextResponse.json(result, { status: result.ok ? 200 : 409 });
 }
