@@ -1,10 +1,5 @@
-import { SiteShell } from '@/components/site-shell';
-import { ServiceDiscovery } from '@/components/service-discovery';
+import { PortalServiceHub } from '@/components/portal-service-hub';
 
 export default function GetStartedPage() {
-  return (
-    <SiteShell>
-      <ServiceDiscovery />
-    </SiteShell>
-  );
+  return <PortalServiceHub />;
 }
