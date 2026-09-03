@@ -1,0 +1,10 @@
+'use client';
+
+import Link from 'next/link';
+import { ArrowLeft, ArrowRight, HardDrive, LifeBuoy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+
+export default function BackupsPage() {
+  return <div className="min-h-screen bg-background"><header className="border-b border-border"><div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8"><Link href="/portal/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Back to portal</Link><Link href="/" className="font-display text-lg font-bold">HostSuite</Link></div></header><main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8"><p className="text-sm font-medium text-primary">Backups</p><h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Website backups</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Backup jobs and restore points will appear here when connected to a real hosting or storage provider.</p><Card className="mt-8"><CardContent className="flex flex-col items-center px-6 py-14 text-center"><div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"><HardDrive className="h-7 w-7" /></div><h2 className="mt-5 font-display text-xl font-semibold">No backup resource connected</h2><p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">HostSuite will never show a fake backup or restore point. Once your infrastructure provider supports backups, this workspace will expose the actual status and available recovery actions.</p><div className="mt-6 flex gap-2"><Button asChild><Link href="/portal/services">View services <ArrowRight className="ml-1 h-4 w-4" /></Link></Button><Button asChild variant="outline"><Link href="/portal/support"><LifeBuoy className="mr-1 h-4 w-4" /> Ask HostSuite</Link></Button></div></CardContent></Card></main></div>;
+}
