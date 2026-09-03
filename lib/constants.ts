@@ -1,7 +1,7 @@
 export const BRAND = {
   name: 'HostSuite',
   parent: 'Vobels Limited',
-  tagline: 'Managed Web Infrastructure & Developer Operations',
+  tagline: 'Simple technology support for growing businesses',
   whatsappNumber: '2348142243764',
   whatsappDisplay: '+234 814 224 3764',
   supportEmail: 'vobels.co@gmail.com',
@@ -20,7 +20,6 @@ export const NAV_LINKS = [
   { label: 'Knowledge', href: '/knowledge' },
   { label: 'Blog', href: '/blog' },
   { label: 'Pricing', href: '/#pricing' },
-  { label: 'Client Portal', href: '/portal' },
 ] as const;
 
 export const FOOTER_LINKS = {
@@ -174,46 +173,53 @@ export const PRICING = [
 
 export const SERVICES = [
   {
-    icon: 'ServerCog',
-    title: 'Managed Hosting & Infrastructure',
+    icon: 'Globe2',
+    title: 'Get Your Business Online',
     description:
-      'We host, monitor, and maintain your websites on optimized Lagos and global nodes — no cPanel guesswork, no midnight panics.',
-    bullets: ['99.99% Uptime SLA', 'Daily & Weekly Backups', 'SSD + Edge Caching'],
+      'Domain, website, hosting and everything you need to get your business looking professional online — without the technical headache.',
+    bullets: ['Domain setup', 'Website hosting', 'SSL & backups'],
+  },
+  {
+    icon: 'Sparkles',
+    title: 'Build a Website with AI',
+    description:
+      'Tell us about your business and let our AI website builder help turn your idea into a polished website you can actually use.',
+    bullets: ['AI-assisted website creation', 'Live preview', 'Easy next steps'],
   },
   {
     icon: 'MailCheck',
-    title: 'Email Deliverability Engineering',
+    title: 'Business Email That Works',
     description:
-      'Stop landing in spam. We configure SPF, DKIM, DMARC, and warm your domains so your corporate email actually reaches the inbox.',
-    bullets: ['SPF / DKIM / DMARC', 'Inbox Placement Audit', 'Blacklist Removal'],
+      'Professional email for your business, with the setup and troubleshooting help you need when messages stop reaching customers.',
+    bullets: ['Business mailboxes', 'Spam & delivery help', 'DNS setup'],
   },
   {
-    icon: 'KeyRound',
-    title: 'Access Recovery & Migration',
+    icon: 'LifeBuoy',
+    title: 'Fix What Is Not Working',
     description:
-      'Developer ghosted you? We recover lost cPanel, domain, and registrar access — then migrate you to a host you actually control.',
-    bullets: ['cPanel & Domain Recovery', 'Zero-Downtime Migration', 'Credit Offset Program'],
+      'Website down? Lost access? Email acting strange? Bring us the problem in plain English and we will help you work through it.',
+    bullets: ['Website & hosting issues', 'Access recovery', 'Emergency help'],
   },
   {
-    icon: 'Code2',
-    title: 'Custom App & Backend Development',
+    icon: 'ArrowLeftRight',
+    title: 'Move Without the Headache',
     description:
-      'Need a portal, dashboard, API, or internal tool? We design, build, and maintain custom backend systems end to end.',
-    bullets: ['API & Dashboard Builds', 'Database Architecture', 'Ongoing Maintenance'],
+      'Moving from another provider? We handle the technical side of the switch and help keep your website and email running.',
+    bullets: ['Website migration', 'Database moves', 'DNS cutover'],
   },
   {
     icon: 'ShieldCheck',
-    title: 'Security & Compliance Audits',
+    title: 'Keep It Safe & Healthy',
     description:
-      'We harden your servers, patch vulnerabilities, and run monthly security audits so you are never the weak link.',
-    bullets: ['Vulnerability Scanning', 'SSL & Firewall Hardening', 'Compliance Reporting'],
+      'We help protect your website and keep the important pieces — security, updates, backups and performance — in good shape.',
+    bullets: ['Security checks', 'Backups', 'Performance care'],
   },
   {
     icon: 'Headset',
-    title: 'Fractional CTO & DevOps',
+    title: 'A Technical Team When You Need One',
     description:
-      'An experienced engineering leader in your corner — strategy, infrastructure planning, and a team that actually picks up the phone.',
-    bullets: ['Infrastructure Roadmap', 'Vendor & Cost Negotiation', 'Emergency Dispatch'],
+      'No need to hire a full technical team just to keep your online business running. We can be the people you call when something needs attention.',
+    bullets: ['Technical guidance', 'Ongoing support', 'Priority help'],
   },
 ] as const;
 
@@ -222,7 +228,7 @@ export const HEALTH_METRICS = [
   { label: 'SSL', value: 'Active', unit: 'All Nodes', status: 'operational' as const },
   { label: 'Email Deliverability', value: '100%', unit: 'Score', status: 'operational' as const },
   { label: 'Lagos Ping', value: '14ms', unit: 'Avg', status: 'operational' as const },
-];
+] as const;
 
 export const TRUST_LOGOS = [
   'Vobels Limited',
@@ -307,7 +313,7 @@ export const SERVICE_DETAILS = [
       'DNS timing strategy for zero visitor loss',
       'Email mailbox migration with no downtime',
       'Post-migration validation and performance audit',
-      'Credit Offset against your old host\u2019s unused term',
+      'Credit Offset against your old host\'s unused term',
     ],
     tools: ['rsync', 'mysqldump', 'Cloudflare proxy', 'DNS failover'],
   },
