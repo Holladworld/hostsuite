@@ -19,12 +19,7 @@ type ProvisionOutcome =
 
 function failure(result: ProviderResult<unknown>): ProvisionOutcome {
   if (result.ok) throw new Error('Expected provider failure result.');
-  return {
-    ok: false,
-    status: 'provisioning_failed',
-    code: result.code,
-    message: result.message,
-  };
+  return { ok: false, status: 'provisioning_failed', code: result.code, message: result.message };
 }
 
 function stringConfig(config: Record<string, unknown>, key: string): string | null {
@@ -39,9 +34,7 @@ async function provisionOne(instance: ServiceInstance): Promise<ProvisionOutcome
   if (instance.service_type === 'hosting') {
     const domain = stringConfig(config, 'domain');
     const planRef = stringConfig(config, 'planRef') ?? stringConfig(config, 'plan_id');
-    if (!domain || !planRef) {
-      return { ok: false, status: 'provisioning_failed', code: 'INVALID_CONFIGURATION', message: 'Hosting requires a domain and hosting plan.' };
-    }
+    if (!domain || !planRef) return { ok: false, status: 'provisioning_failed', code: 'INVALID_CONFIGURATION', message: 'Hosting requires a domain and hosting plan.' };
 
     const result = await provider.provisionHosting({ customerId: instance.user_id, domain, planRef });
     if (!result.ok) return failure(result);
@@ -60,14 +53,12 @@ async function provisionOne(instance: ServiceInstance): Promise<ProvisionOutcome
     const addresses = Array.isArray(config.emailAddresses)
       ? config.emailAddresses.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
       : [];
-
-    if (!domain || addresses.length === 0) {
-      return { ok: false, status: 'provisioning_failed', code: 'INVALID_CONFIGURATION', message: 'Email requires a domain and at least one email address.' };
-    }
+    if (!domain || addresses.length === 0) return { ok: false, status: 'provisioning_failed', code: 'INVALID_CONFIGURATION', message: 'Email requires a domain and at least one email address.' };
 
     const resources: string[] = [];
     for (const mailbox of addresses) {
-      const result = await provider.createMailbox({ customerId: instance.user_id, domain, mailbox: mailbox.includes('@') ? mailbox.split('@')[0] : mailbox });
+      const localPart = mailbox.includes('@') ? mailbox.slice(0, mailbox.indexOf('@')) : mailbox;
+      const result = await provider.createMailbox({ customerId: instance.user_id, domain, mailbox: localPart });
       if (!result.ok) return failure(result);
       resources.push(result.data.externalId);
     }
@@ -81,12 +72,7 @@ async function provisionOne(instance: ServiceInstance): Promise<ProvisionOutcome
     };
   }
 
-  return {
-    ok: false,
-    status: 'provisioning_failed',
-    code: 'NOT_SUPPORTED',
-    message: `Provisioning for ${instance.service_type} is not implemented by the current provider adapter.`,
-  };
+  return { ok: false, status: 'provisioning_failed', code: 'NOT_SUPPORTED', message: `Provisioning for ${instance.service_type} is not implemented by the current provider adapter.` };
 }
 
 export async function provisionServiceInstance(serviceInstanceId: string): Promise<ProvisionOutcome> {
@@ -100,34 +86,11 @@ export async function provisionServiceInstance(serviceInstanceId: string): Promi
   if (fetchError) throw fetchError;
   if (!instance) return { ok: false, status: 'provisioning_failed', code: 'NOT_FOUND', message: 'Service instance not found.' };
   if (instance.status === 'active') return { ok: true, status: 'active', providerResourceId: instance.provider_resource_id ?? undefined };
-  if (instance.status !== 'paid' && instance.status !== 'provisioning_failed') {
-    return { ok: false, status: 'provisioning_failed', code: 'INVALID_STATE', message: `Service is ${instance.status} and cannot be provisioned.` };
-  }
+  if (instance.status !== 'paid' && instance.status !== 'provisioning_failed') return { ok: false, status: 'provisioning_failed', code: 'INVALID_STATE', message: `Service is ${instance.status} and cannot be provisioned.` };
 
-  const providerName = instance.provider ?? 'unconfigured';
-  const { data: attemptNo, error: attemptNoError } = await admin.rpc('next_provisioning_attempt', { p_service_instance_id: serviceInstanceId });
-  if (attemptNoError) throw attemptNoError;
-
-  const { error: startError } = await admin.from('provisioning_attempts').insert({
-    service_instance_id: serviceInstanceId,
-    attempt_no: attemptNo,
-    provider: providerName,
-    status: 'started',
-  });
-  if (startError) throw startError;
-
-  const { data: transitioned, error: transitionError } = await admin
-    .from('service_instances')
-    .update({ status: 'provisioning', last_error: null })
-    .eq('id', serviceInstanceId)
-    .in('status', ['paid', 'provisioning_failed'])
-    .select('id')
-    .maybeSingle();
-
-  if (transitionError) throw transitionError;
-  if (!transitioned) {
-    return { ok: false, status: 'provisioning_failed', code: 'BUSY', message: 'Provisioning is already in progress.' };
-  }
+  const { data: attemptNo, error: beginError } = await admin.rpc('begin_service_provisioning', { p_service_instance_id: serviceInstanceId });
+  if (beginError) throw beginError;
+  if (attemptNo === null) return { ok: false, status: 'provisioning_failed', code: 'BUSY', message: 'Provisioning is already in progress or the service is not ready.' };
 
   try {
     const outcome = await provisionOne(instance as ServiceInstance);
