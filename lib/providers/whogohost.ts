@@ -5,7 +5,6 @@ import { unsupported } from './types';
 const endpoint = () => process.env.WHOGOHOST_API_BASE_URL || 'https://www.whogohost.com/host/modules/addons/DomainsReseller/api/index.php';
 const username = () => process.env.WHOGOHOST_API_EMAIL?.trim();
 const apiKey = () => process.env.WHOGOHOST_API_KEY?.trim();
-
 function configured(): boolean { return Boolean(username() && apiKey()); }
 
 function token(): string {
@@ -41,18 +40,33 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<Provide
   }
 }
 
+function record(data: unknown): Record<string, unknown> {
+  return data && typeof data === 'object' ? data as Record<string, unknown> : {};
+}
+function nestedData(data: unknown): Record<string, unknown> {
+  const value = record(data);
+  return value.data && typeof value.data === 'object' ? value.data as Record<string, unknown> : value;
+}
 function resultExternalId(data: unknown, fallback: string): string {
-  if (data && typeof data === 'object') {
-    const record = data as Record<string, unknown>;
-    for (const key of ['id', 'domainid', 'domainId', 'orderid', 'orderId', 'domain']) {
-      if (typeof record[key] === 'string' || typeof record[key] === 'number') return String(record[key]);
-    }
-    if (record.data && typeof record.data === 'object') return resultExternalId(record.data, fallback);
+  const value = record(data);
+  for (const key of ['id', 'domainid', 'domainId', 'orderid', 'orderId', 'domain']) {
+    if (typeof value[key] === 'string' || typeof value[key] === 'number') return String(value[key]);
   }
+  if (value.data && typeof value.data === 'object') return resultExternalId(value.data, fallback);
   return fallback;
 }
+function booleanValue(value: unknown): boolean | null {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'locked', 'active', 'enabled'].includes(normalized)) return true;
+    if (['false', '0', 'unlocked', 'inactive', 'disabled'].includes(normalized)) return false;
+  }
+  return null;
+}
 
-const capabilities: ProviderCapability[] = ['domain.search', 'domain.register', 'domain.renew', 'domain.transfer', 'domain.nameservers'];
+const capabilities: ProviderCapability[] = ['domain.search', 'domain.register', 'domain.renew', 'domain.transfer', 'domain.nameservers', 'domain.epp', 'domain.lock'];
 
 export const whogohostProvider: HostingProvider = {
   name: 'whogohost',
@@ -64,8 +78,8 @@ export const whogohostProvider: HostingProvider = {
     const path = template.replace('{domain}', encodeURIComponent(domain));
     const result = await request<unknown>(`${baseUrl()}${path.startsWith('/') ? path : `/${path}`}`);
     if (!result.ok) return result;
-    const value = result.data && typeof result.data === 'object' ? result.data as Record<string, unknown> : {};
-    const candidate = value.available ?? (value.data && typeof value.data === 'object' ? (value.data as Record<string, unknown>).available : undefined);
+    const value = nestedData(result.data);
+    const candidate = value.available;
     if (typeof candidate !== 'boolean') return { ok: false, code: 'PROVIDER_ERROR', message: 'WhoGoHost availability response did not contain a boolean availability result.' };
     return { ok: true, data: { available: candidate } };
   },
@@ -99,10 +113,51 @@ export const whogohostProvider: HostingProvider = {
   async getDomainNameservers(domain) {
     const result = await request<unknown>(domainPath(domain, '/nameservers'));
     if (!result.ok) return result;
-    const value = result.data && typeof result.data === 'object' ? result.data as Record<string, unknown> : {};
-    const raw = value.nameservers ?? (value.data && typeof value.data === 'object' ? (value.data as Record<string, unknown>).nameservers : undefined);
-    const nameservers = Array.isArray(raw) ? raw.filter((item): item is string => typeof item === 'string') : [];
+    const value = nestedData(result.data);
+    const raw = value.nameservers;
+    const nameservers = Array.isArray(raw) ? raw.flatMap((item) => {
+      if (typeof item === 'string') return [item];
+      if (item && typeof item === 'object') {
+        const candidate = (item as Record<string, unknown>).nameserver ?? (item as Record<string, unknown>).value;
+        return typeof candidate === 'string' ? [candidate] : [];
+      }
+      return [];
+    }) : [];
     return { ok: true, data: { nameservers } };
+  },
+
+  async updateDomainNameservers(domain, nameservers) {
+    if (nameservers.length < 2 || nameservers.length > 5) return { ok: false, code: 'PROVIDER_ERROR', message: 'WhoGoHost requires at least two nameservers and supports up to five.' };
+    const params = new URLSearchParams({ domain });
+    nameservers.forEach((ns) => params.append('nameservers[]', ns));
+    const result = await request<unknown>(domainPath(domain, '/nameservers'), { method: 'POST', body: params.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } });
+    if (!result.ok) return result;
+    return { ok: true, data: { nameservers } };
+  },
+
+  async getDomainEppCode(domain) {
+    const result = await request<unknown>(domainPath(domain, '/eppcode'));
+    if (!result.ok) return result;
+    const value = nestedData(result.data);
+    const eppcode = value.eppcode ?? value.eppCode ?? value.code;
+    if (typeof eppcode !== 'string' || !eppcode.trim()) return { ok: false, code: 'PROVIDER_ERROR', message: 'WhoGoHost did not return an EPP code.' };
+    return { ok: true, data: { eppcode } };
+  },
+
+  async getDomainLock(domain) {
+    const result = await request<unknown>(domainPath(domain, '/lock'));
+    if (!result.ok) return result;
+    const value = nestedData(result.data);
+    const candidate = booleanValue(value.locked ?? value.lockstatus ?? value.lockStatus ?? value.status);
+    if (candidate === null) return { ok: false, code: 'PROVIDER_ERROR', message: 'WhoGoHost registrar-lock response could not be interpreted.' };
+    return { ok: true, data: { locked: candidate } };
+  },
+
+  async updateDomainLock(domain, locked) {
+    const params = new URLSearchParams({ domain, lockstatus: String(locked) });
+    const result = await request<unknown>(domainPath(domain, '/lock'), { method: 'POST', body: params.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } });
+    if (!result.ok) return result;
+    return { ok: true, data: { locked } };
   },
 
   async provisionHosting() { return unsupported('WhoGoHost hosting automation is not enabled by this domain reseller adapter.'); },
