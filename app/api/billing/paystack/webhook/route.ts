@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
+import { provisionServiceInstance } from '@/lib/services/provisioning';
 
 export const runtime = 'nodejs';
 
@@ -52,10 +53,22 @@ export async function POST(request: Request) {
     const { error: entitlementError } = await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
     if (entitlementError) throw entitlementError;
 
-    // Idempotently materialize each paid order item as its own customer service.
-    // Provisioning is intentionally a separate step; no provider resource is fabricated here.
     const { error: serviceInstanceError } = await admin.rpc('create_service_instances_for_order', { p_order_id: order.id });
     if (serviceInstanceError) throw serviceInstanceError;
+
+    // Payment is already secured above. A provider outage/configuration problem must
+    // not make Paystack retry the payment event forever; each service records its own
+    // provisioning failure and can be retried by the authenticated customer.
+    const { data: instances, error: instancesError } = await admin
+      .from('service_instances')
+      .select('id')
+      .eq('order_id', order.id)
+      .eq('status', 'paid');
+    if (instancesError) throw instancesError;
+
+    for (const instance of instances ?? []) {
+      await provisionServiceInstance(instance.id);
+    }
 
     await admin.from('billing_webhook_events').update({ processed: true, processed_at: now }).eq('provider', 'paystack').eq('event_id', eventId);
     return NextResponse.json({ received: true });
