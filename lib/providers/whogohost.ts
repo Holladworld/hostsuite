@@ -6,42 +6,36 @@ const endpoint = () => process.env.WHOGOHOST_API_BASE_URL || 'https://www.whogoh
 const username = () => process.env.WHOGOHOST_API_EMAIL?.trim();
 const apiKey = () => process.env.WHOGOHOST_API_KEY?.trim();
 
-function configured(): boolean {
-  return Boolean(username() && apiKey());
-}
+function configured(): boolean { return Boolean(username() && apiKey()); }
 
 function token(): string {
   const email = username();
   const key = apiKey();
   if (!email || !key) throw new Error('WhoGoHost reseller API credentials are missing.');
-  const hour = new Date().toISOString().slice(0, 13).replace('T', ' ');
+  const now = new Date();
+  const yy = String(now.getUTCFullYear()).slice(-2);
+  const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(now.getUTCDate()).padStart(2, '0');
+  const hh = String(now.getUTCHours()).padStart(2, '0');
+  const hour = `${yy}-${mm}-${dd} ${hh}`;
   return Buffer.from(createHmac('sha256', `${email}:${hour}`).update(key).digest('hex')).toString('base64');
 }
 
-function domainPath(domain: string, suffix: string): string {
-  return `${endpoint().replace(/\/$/, '')}/domains/${encodeURIComponent(domain)}${suffix}`;
-}
+function baseUrl(): string { return endpoint().replace(/\/$/, ''); }
+function domainPath(domain: string, suffix: string): string { return `${baseUrl()}/domains/${encodeURIComponent(domain)}${suffix}`; }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<ProviderResult<T>> {
-  if (!configured()) {
-    return { ok: false, code: 'NOT_CONFIGURED', message: 'WhoGoHost Domain Reseller API credentials are not configured.' };
-  }
+  if (!configured()) return { ok: false, code: 'NOT_CONFIGURED', message: 'WhoGoHost Domain Reseller API credentials are not configured.' };
   try {
     const response = await fetch(path, {
       ...init,
-      headers: {
-        username: username()!,
-        token: token(),
-        ...(init.headers || {}),
-      },
+      headers: { username: username()!, token: token(), ...(init.headers || {}) },
       cache: 'no-store',
     });
     const text = await response.text();
     let data: unknown = null;
     try { data = text ? JSON.parse(text) : null; } catch { data = text; }
-    if (!response.ok) {
-      return { ok: false, code: 'PROVIDER_ERROR', message: `WhoGoHost returned HTTP ${response.status}.` };
-    }
+    if (!response.ok) return { ok: false, code: 'PROVIDER_ERROR', message: `WhoGoHost returned HTTP ${response.status}.` };
     return { ok: true, data: data as T };
   } catch (error) {
     return { ok: false, code: 'PROVIDER_ERROR', message: error instanceof Error ? error.message : 'WhoGoHost request failed.' };
@@ -59,30 +53,17 @@ function resultExternalId(data: unknown, fallback: string): string {
   return fallback;
 }
 
-const capabilities: ProviderCapability[] = [
-  'domain.search',
-  'domain.register',
-  'domain.renew',
-  'domain.transfer',
-  'domain.nameservers',
-];
+const capabilities: ProviderCapability[] = ['domain.search', 'domain.register', 'domain.renew', 'domain.transfer', 'domain.nameservers'];
 
 export const whogohostProvider: HostingProvider = {
   name: 'whogohost',
   capabilities,
 
   async searchDomain(domain) {
-    // WhoGoHost documents this as a reseller API action, but the current public
-    // knowledgebase does not expose its exact route/parameters consistently.
-    // Keep the route configurable rather than guessing and silently reporting
-    // availability. Set WHOGOHOST_DOMAIN_AVAILABILITY_PATH after confirming it
-    // in the reseller API documentation/account.
     const template = process.env.WHOGOHOST_DOMAIN_AVAILABILITY_PATH?.trim();
-    if (!template) {
-      return { ok: false, code: 'NOT_CONFIGURED', message: 'WhoGoHost availability route is not configured. Set WHOGOHOST_DOMAIN_AVAILABILITY_PATH from the reseller API documentation.' };
-    }
+    if (!template) return { ok: false, code: 'NOT_CONFIGURED', message: 'WhoGoHost availability route is not configured. Set WHOGOHOST_DOMAIN_AVAILABILITY_PATH from the reseller API documentation.' };
     const path = template.replace('{domain}', encodeURIComponent(domain));
-    const result = await request<unknown>(`${endpoint().replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`);
+    const result = await request<unknown>(`${baseUrl()}${path.startsWith('/') ? path : `/${path}`}`);
     if (!result.ok) return result;
     const value = result.data && typeof result.data === 'object' ? result.data as Record<string, unknown> : {};
     const candidate = value.available ?? (value.data && typeof value.data === 'object' ? (value.data as Record<string, unknown>).available : undefined);
@@ -95,17 +76,15 @@ export const whogohostProvider: HostingProvider = {
     params.set('domain', input.domain);
     params.set('regperiod', String(input.regperiod));
     input.nameservers.forEach((ns, index) => params.set(`nameservers[ns${index + 1}]`, ns));
-    for (const [role, contact] of Object.entries(input.contacts)) {
-      for (const [key, value] of Object.entries(contact)) params.set(`contacts[${role}][${key}]`, value);
-    }
-    const result = await request<unknown>(`${endpoint().replace(/\/$/, '')}/order/domains/register`, { method: 'POST', body: params.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } });
+    for (const [role, contact] of Object.entries(input.contacts)) for (const [key, value] of Object.entries(contact)) params.set(`contacts[${role}][${key}]`, value);
+    const result = await request<unknown>(`${baseUrl()}/order/domains/register`, { method: 'POST', body: params.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } });
     if (!result.ok) return result;
     return { ok: true, data: { externalId: resultExternalId(result.data, input.domain) } };
   },
 
   async renewDomain(domain, regperiod) {
     const params = new URLSearchParams({ domain, regperiod: String(regperiod) });
-    const result = await request<unknown>(`${endpoint().replace(/\/$/, '')}/order/domains/renew`, { method: 'POST', body: params.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } });
+    const result = await request<unknown>(`${baseUrl()}/order/domains/renew`, { method: 'POST', body: params.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } });
     if (!result.ok) return result;
     return { ok: true, data: { externalId: resultExternalId(result.data, domain) } };
   },
@@ -113,7 +92,7 @@ export const whogohostProvider: HostingProvider = {
   async transferDomain(input) {
     const params = new URLSearchParams({ domain: input.domain, eppcode: input.eppcode, regperiod: String(input.regperiod) });
     input.nameservers.forEach((ns) => params.append('nameservers[]', ns));
-    const result = await request<unknown>(`${endpoint().replace(/\/$/, '')}/order/domains/transfer`, { method: 'POST', body: params.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } });
+    const result = await request<unknown>(`${baseUrl()}/order/domains/transfer`, { method: 'POST', body: params.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } });
     if (!result.ok) return result;
     return { ok: true, data: { externalId: resultExternalId(result.data, input.domain) } };
   },
