@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase, useAuth } from '@/lib/supabase-client';
 
 type HostingInstance = { id: string; service_name: string; status: string; provider: string | null; provider_status: string | null; provider_resource_id: string | null; control_panel_url: string | null; last_error: string | null; configuration: Record<string, unknown> | null; created_at: string; provisioned_at: string | null };
-type CapabilityResponse = { capabilities?: string[]; configured?: boolean };
+type CapabilityResponse = { capabilities?: string[] };
 
 function value(input: unknown, fallback = 'Not provided') { return typeof input === 'string' && input.trim() ? input : fallback; }
 function statusLabel(status: string) { return status.replaceAll('_', ' '); }
@@ -43,7 +43,7 @@ export default function HostingPage() {
       if (capabilityResponse?.ok) {
         const result = await capabilityResponse.json() as CapabilityResponse;
         setCapabilities(result.capabilities ?? []);
-        setProviderConfigured(Boolean(result.configured));
+        setProviderConfigured(true);
       } else {
         setCapabilities([]);
         setProviderConfigured(false);
