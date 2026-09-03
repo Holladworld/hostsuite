@@ -5,6 +5,9 @@ export type ProviderCapability =
   | 'domain.transfer'
   | 'domain.dns'
   | 'domain.nameservers'
+  | 'domain.epp'
+  | 'domain.lock'
+  | 'domain.contacts'
   | 'hosting.provision'
   | 'hosting.suspend'
   | 'hosting.unsuspend'
@@ -58,6 +61,10 @@ export interface HostingProvider {
   renewDomain(domain: string, regperiod: number): Promise<ProviderResult<{ externalId: string }>>;
   transferDomain(input: { domain: string; eppcode: string; regperiod: number; nameservers: string[] }): Promise<ProviderResult<{ externalId: string }>>;
   getDomainNameservers(domain: string): Promise<ProviderResult<{ nameservers: string[] }>>;
+  updateDomainNameservers(domain: string, nameservers: string[]): Promise<ProviderResult<{ nameservers: string[] }>>;
+  getDomainEppCode(domain: string): Promise<ProviderResult<{ eppcode: string }>>;
+  getDomainLock(domain: string): Promise<ProviderResult<{ locked: boolean }>>;
+  updateDomainLock(domain: string, locked: boolean): Promise<ProviderResult<{ locked: boolean }>>;
   provisionHosting(input: { customerId: string; domain: string; planRef: string }): Promise<ProviderResult<{ externalId: string }>>;
   getHostingUsage(externalId: string): Promise<ProviderResult<{ storageMb?: number; bandwidthMb?: number }>>;
   getControlPanelUrl(externalId: string): Promise<ProviderResult<{ url: string }>>;
