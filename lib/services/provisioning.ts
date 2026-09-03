@@ -1,6 +1,6 @@
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { getHostingProvider } from '@/lib/providers';
-import type { ProviderResult } from '@/lib/providers/types';
+import type { DomainContact, ProviderResult } from '@/lib/providers/types';
 
 type ServiceInstance = {
   id: string;
@@ -32,6 +32,27 @@ function productPlanRef(metadata: unknown): string | null {
   const value = (metadata as Record<string, unknown>).providerPlanRef ?? (metadata as Record<string, unknown>).planRef ?? (metadata as Record<string, unknown>).plan_id;
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
+function contactConfig(config: Record<string, unknown>): DomainContact | null {
+  const raw = config.domainContact;
+  if (!raw || typeof raw !== 'object') return null;
+  const value = raw as Record<string, unknown>;
+  const required = ['firstname', 'lastname', 'email', 'address1', 'city', 'state', 'zipcode', 'country', 'phonenumber'];
+  if (!required.every((key) => typeof value[key] === 'string' && (value[key] as string).trim())) return null;
+  return {
+    firstname: value.firstname as string,
+    lastname: value.lastname as string,
+    fullname: `${value.firstname} ${value.lastname}`,
+    companyname: typeof value.companyname === 'string' ? value.companyname : undefined,
+    email: value.email as string,
+    address1: value.address1 as string,
+    address2: typeof value.address2 === 'string' ? value.address2 : undefined,
+    city: value.city as string,
+    state: value.state as string,
+    zipcode: value.zipcode as string,
+    country: value.country as string,
+    phonenumber: value.phonenumber as string,
+  };
+}
 
 async function provisionOne(instance: ServiceInstance): Promise<ProvisionOutcome> {
   const provider = getHostingProvider();
@@ -42,9 +63,21 @@ async function provisionOne(instance: ServiceInstance): Promise<ProvisionOutcome
     : { data: null, error: null };
   if (productError) throw productError;
 
+  if (instance.service_type === 'domain') {
+    const domain = stringConfig(config, 'domain') || stringConfig(config, 'requestedDomain');
+    const contact = contactConfig(config);
+    const ns1 = process.env.WHOGOHOST_DEFAULT_NS1?.trim();
+    const ns2 = process.env.WHOGOHOST_DEFAULT_NS2?.trim();
+    if (!domain || !contact || !ns1 || !ns2) {
+      return { ok: false, status: 'provisioning_failed', code: 'INVALID_CONFIGURATION', message: 'Domain registration requires the requested domain, complete registrant details, and two configured provider nameservers.' };
+    }
+    const result = await provider.registerDomain({ domain, regperiod: 1, nameservers: [ns1, ns2], contacts: { registrant: contact, admin: contact, tech: contact, billing: contact } });
+    if (!result.ok) return failure(result);
+    return { ok: true, status: 'active', providerResourceId: result.data.externalId };
+  }
+
   if (instance.service_type === 'hosting') {
     const domain = stringConfig(config, 'domain');
-    // Provider plan identifiers are catalog-owned, never customer-supplied.
     const planRef = productPlanRef(product?.metadata);
     if (!domain || !planRef) return { ok: false, status: 'provisioning_failed', code: 'INVALID_CONFIGURATION', message: 'Hosting requires a domain and a provider plan configured in the HostSuite product catalog.' };
 
