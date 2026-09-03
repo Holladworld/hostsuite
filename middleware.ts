@@ -2,14 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Admin route protection is handled client-side via the useAdmin hook.
-// The @supabase/supabase-js client stores sessions in localStorage, not cookies,
-// so Edge middleware cannot read the session. This file is kept to avoid
-// a Next.js build error from the matcher config.
-
-export function middleware(_req: NextRequest) {
+// The payment rewrite below keeps the existing customer checkout URL stable
+// while the server selects Paystack or Flutterwave from PAYMENT_PROVIDER.
+export function middleware(req: NextRequest) {
+  if (req.nextUrl.pathname === '/api/billing/paystack/initialize') {
+    const url = req.nextUrl.clone();
+    url.pathname = '/api/billing/initialize';
+    return NextResponse.rewrite(url);
+  }
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/billing/paystack/initialize'],
 };
