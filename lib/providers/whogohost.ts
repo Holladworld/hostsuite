@@ -27,11 +27,10 @@ function domainPath(domain: string, suffix: string): string { return `${baseUrl(
 async function request<T>(path: string, init: RequestInit = {}): Promise<ProviderResult<T>> {
   if (!configured()) return { ok: false, code: 'NOT_CONFIGURED', message: 'WhoGoHost Domain Reseller API credentials are not configured.' };
   try {
-    const response = await fetch(path, {
-      ...init,
-      headers: { username: username()!, token: token(), ...(init.headers || {}) },
-      cache: 'no-store',
-    });
+    const headers = new Headers(init.headers);
+    headers.set('username', username()!);
+    headers.set('token', token());
+    const response = await fetch(path, { ...init, headers, cache: 'no-store' });
     const text = await response.text();
     let data: unknown = null;
     try { data = text ? JSON.parse(text) : null; } catch { data = text; }
