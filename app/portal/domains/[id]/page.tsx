@@ -12,13 +12,9 @@ import { supabase, useAuth } from '@/lib/supabase-client';
 import { toast } from 'sonner';
 
 type Instance = { id: string; service_name: string; status: string; provider: string | null; provider_status: string | null; configuration: Record<string, unknown> | null; last_error: string | null; created_at: string; };
-
 type DomainData = { nameservers: string[]; eppcode?: string; locked?: boolean; };
 
-function domainFrom(instance: Instance) {
-  const value = instance.configuration?.domain;
-  return typeof value === 'string' && value.trim() ? value.trim().toLowerCase() : instance.service_name;
-}
+function domainFrom(instance: Instance) { const value = instance.configuration?.domain; return typeof value === 'string' && value.trim() ? value.trim().toLowerCase() : instance.service_name; }
 
 export default function DomainManagementPage() {
   const { id } = useParams<{ id: string }>();
@@ -42,11 +38,9 @@ export default function DomainManagementPage() {
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
     if (!token) throw new Error('Your session has expired. Please sign in again.');
-    const response = await fetch('/api/domains/manage', {
-      method,
-      headers: { Authorization: `Bearer ${token}`, ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}) },
-      ...(method === 'GET' ? { next: undefined } : { body: JSON.stringify({ serviceId: id, action, ...payload }) }),
-    });
+    const headers = { Authorization: `Bearer ${token}`, ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {}) };
+    const url = method === 'GET' ? `/api/domains/manage?serviceId=${encodeURIComponent(id)}&action=${action}` : '/api/domains/manage';
+    const response = await fetch(url, { method, headers, ...(method === 'POST' ? { body: JSON.stringify({ serviceId: id, action, ...payload }) } : {}) });
     const result = await response.json() as DomainData & { error?: string };
     if (!response.ok) throw new Error(result.error ?? 'Provider request failed.');
     return result;
