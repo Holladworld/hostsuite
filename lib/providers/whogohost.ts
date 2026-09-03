@@ -17,7 +17,7 @@ function token(): string {
   const dd = String(now.getUTCDate()).padStart(2, '0');
   const hh = String(now.getUTCHours()).padStart(2, '0');
   const hour = `${yy}-${mm}-${dd} ${hh}`;
-  return Buffer.from(createHmac('sha256', `${email}:${hour}`).update(key).digest('hex')).toString('base64');
+  return Buffer.from(createHmac('sha256', key).update(`${email}:${hour}`).digest('hex')).toString('base64');
 }
 
 function baseUrl(): string { return endpoint().replace(/\/$/, ''); }
@@ -104,7 +104,7 @@ export const whogohostProvider: HostingProvider = {
 
   async transferDomain(input) {
     const params = new URLSearchParams({ domain: input.domain, eppcode: input.eppcode, regperiod: String(input.regperiod) });
-    input.nameservers.forEach((ns) => params.append('nameservers[]', ns));
+    input.nameservers.forEach((ns, index) => params.set(`nameservers[${index}]`, ns));
     const result = await request<unknown>(`${baseUrl()}/order/domains/transfer`, { method: 'POST', body: params.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } });
     if (!result.ok) return result;
     return { ok: true, data: { externalId: resultExternalId(result.data, input.domain) } };
@@ -129,7 +129,7 @@ export const whogohostProvider: HostingProvider = {
   async updateDomainNameservers(domain, nameservers) {
     if (nameservers.length < 2 || nameservers.length > 5) return { ok: false, code: 'PROVIDER_ERROR', message: 'WhoGoHost requires at least two nameservers and supports up to five.' };
     const params = new URLSearchParams({ domain });
-    nameservers.forEach((ns) => params.append('nameservers[]', ns));
+    nameservers.forEach((ns, index) => params.set(`nameservers[${index}]`, ns));
     const result = await request<unknown>(domainPath(domain, '/nameservers'), { method: 'POST', body: params.toString(), headers: { 'content-type': 'application/x-www-form-urlencoded' } });
     if (!result.ok) return result;
     return { ok: true, data: { nameservers } };
