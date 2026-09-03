@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Server, Lock, Mail, Loader2, UserPlus, ArrowRight, ShieldCheck, MessageCircle, ArrowLeft } from 'lucide-react';
+import { Server, Lock, Mail, Loader2, UserPlus, ArrowRight, ShieldCheck, MessageCircle, ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,7 @@ function PortalLoginInner() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
   const { user, loading } = useAuth();
@@ -150,34 +151,40 @@ function PortalLoginInner() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="portal-password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="portal-password">Password</Label>
+                  {mode === 'signin' && (
+                    <Link href="/portal/forgot-password" className="text-xs font-semibold text-primary underline-offset-4 hover:underline">
+                      Forgot password?
+                    </Link>
+                  )}
+                </div>
                 <div className="relative">
                   <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="portal-password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
-                    className="pl-9"
+                    className="pl-9 pr-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                     required
                   />
+                  <button
+                    type="button"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                  </button>
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                disabled={busy}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                {busy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : mode === 'signin' ? (
-                  <span className="flex items-center gap-2">Sign In <ArrowRight className="h-4 w-4" /></span>
-                ) : (
-                  <span className="flex items-center gap-2"><UserPlus className="h-4 w-4" /> Create Account</span>
-                )}
+              <Button type="submit" disabled={busy} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === 'signin' ? <span className="flex items-center gap-2">Sign In <ArrowRight className="h-4 w-4" /></span> : <span className="flex items-center gap-2"><UserPlus className="h-4 w-4" /> Create Account</span>}
               </Button>
             </form>
 
@@ -188,11 +195,7 @@ function PortalLoginInner() {
 
             <p className="mt-5 text-center text-sm text-muted-foreground">
               {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-              <button
-                type="button"
-                className="font-semibold text-primary underline-offset-4 hover:underline"
-                onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-              >
+              <button type="button" className="font-semibold text-primary underline-offset-4 hover:underline" onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
                 {mode === 'signin' ? 'Create one' : 'Sign in'}
               </button>
             </p>
@@ -206,9 +209,7 @@ function PortalLoginInner() {
             </Button>
           </div>
 
-          <p className="mt-3 text-center text-xs text-muted-foreground">
-            A {BRAND.parent} product
-          </p>
+          <p className="mt-3 text-center text-xs text-muted-foreground">A {BRAND.parent} product</p>
         </motion.div>
       </main>
     </div>
