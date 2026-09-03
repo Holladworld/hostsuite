@@ -43,9 +43,20 @@ export async function POST(request: Request) {
     if (Number(transaction.amount) !== Math.round(Number(order.total) * 100) || transaction.currency !== order.currency) return NextResponse.json({ error: 'Payment amount or currency mismatch.' }, { status: 400 });
 
     const now = new Date().toISOString();
-    await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
-    await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
-    await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
+    const { error: orderUpdateError } = await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
+    if (orderUpdateError) throw orderUpdateError;
+
+    const { error: invoiceUpdateError } = await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
+    if (invoiceUpdateError) throw invoiceUpdateError;
+
+    const { error: entitlementError } = await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
+    if (entitlementError) throw entitlementError;
+
+    // Idempotently materialize each paid order item as its own customer service.
+    // Provisioning is intentionally a separate step; no provider resource is fabricated here.
+    const { error: serviceInstanceError } = await admin.rpc('create_service_instances_for_order', { p_order_id: order.id });
+    if (serviceInstanceError) throw serviceInstanceError;
+
     await admin.from('billing_webhook_events').update({ processed: true, processed_at: now }).eq('provider', 'paystack').eq('event_id', eventId);
     return NextResponse.json({ received: true });
   } catch (error) {
