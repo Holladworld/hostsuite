@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 import { z } from 'zod';
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
@@ -6,6 +7,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 const bodySchema = z.object({
   productIds: z.array(z.string().uuid()).min(1).max(20),
   quantities: z.record(z.string(), z.number().positive()).optional(),
+  itemMetadata: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
   callbackUrl: z.string().url().optional(),
 });
 
@@ -36,10 +38,18 @@ export async function POST(request: Request) {
     }
 
     const quantities = parsed.data.quantities ?? {};
+    const itemMetadata = parsed.data.itemMetadata ?? {};
     const items = products.map((product) => {
       const quantity = quantities[product.id] ?? 1;
       const total = Number(product.price) * quantity;
-      return { product_id: product.id, product_name: product.name, quantity, unit_price: Number(product.price), total };
+      return {
+        product_id: product.id,
+        product_name: product.name,
+        quantity,
+        unit_price: Number(product.price),
+        total,
+        metadata: itemMetadata[product.id] ?? {},
+      };
     });
 
     const total = items.reduce((sum, item) => sum + item.total, 0);
