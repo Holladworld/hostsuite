@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Globe, Mail, Server, WandSparkles, Loader2, Plus, ExternalLink, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Globe, Mail, Server, WandSparkles, Loader2, ExternalLink, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase, useAuth } from '@/lib/supabase-client';
-import { toast } from 'sonner';
 
 type Instance = { id: string; service_type: string; service_name: string; status: string; provider: string | null; provider_status: string | null; configuration: Record<string, unknown> | null };
 type ManagedAsset = { id: string; service_type: string; name: string; identifier: string; provider_name: string | null; management_mode: string; status: string };
@@ -21,13 +20,6 @@ const services = [
 ];
 
 function statusLabel(status: string) { return status.replaceAll('_', ' '); }
-
-function statusTone(status: string) {
-  if (status === 'active') return 'border-emerald-500/20 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400';
-  if (['provisioning', 'paid', 'pending_setup'].includes(status)) return 'border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-400';
-  if (['provisioning_failed', 'attention_needed', 'disconnected'].includes(status)) return 'border-destructive/20 bg-destructive/5 text-destructive';
-  return '';
-}
 
 export function PortalServiceHub() {
   const { user, loading } = useAuth();
