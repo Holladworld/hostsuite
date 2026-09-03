@@ -48,9 +48,15 @@ export async function POST(request: Request) {
     if (!domain) return NextResponse.json({ error: 'This email service has no configured domain.' }, { status: 422 });
 
     const provider = getHostingProvider();
-    const result = body.action === 'webmail'
-      ? await provider.getWebmailUrl(instance.provider_resource_id ?? instance.id)
-      : await provider.createMailbox({ customerId: user.id, domain, mailbox: typeof body.mailbox === 'string' ? body.mailbox.trim().toLowerCase() : '' });
+    if (body.action === 'webmail') {
+      if (!instance.provider_resource_id) return NextResponse.json({ error: 'This email service has not received a provider resource yet.' }, { status: 409 });
+      const result = await provider.getWebmailUrl(instance.provider_resource_id);
+      return NextResponse.json({ serviceId: instance.id, action: body.action, provider: provider.name, ...(result.ok ? result.data : { error: result.message, code: result.code }) }, { status: resultStatus(result) });
+    }
+
+    const mailbox = typeof body.mailbox === 'string' ? body.mailbox.trim().toLowerCase() : '';
+    if (!/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]{1,64}$/.test(mailbox)) return NextResponse.json({ error: 'Enter a valid mailbox name, for example hello.' }, { status: 422 });
+    const result = await provider.createMailbox({ customerId: user.id, domain, mailbox });
     return NextResponse.json({ serviceId: instance.id, action: body.action, provider: provider.name, ...(result.ok ? result.data : { error: result.message, code: result.code }) }, { status: resultStatus(result) });
   } catch (error) {
     console.error('Email management POST failed:', error);
