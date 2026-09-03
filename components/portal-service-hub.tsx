@@ -2,35 +2,59 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Globe, Mail, Server, WandSparkles, Loader2, Plus } from 'lucide-react';
+import { ArrowRight, Globe, Mail, Server, WandSparkles, Loader2, Plus, ExternalLink, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { supabase, useAuth } from '@/lib/supabase-client';
 import { toast } from 'sonner';
 
-type Instance = { id: string; service_type: string; service_name: string; status: string; provider: string | null; provider_status: string | null; provider_resource_id: string | null; control_panel_url: string | null; configuration: Record<string, unknown> | null };
+type Instance = { id: string; service_type: string; service_name: string; status: string; provider: string | null; provider_status: string | null; configuration: Record<string, unknown> | null };
+type ManagedAsset = { id: string; service_type: string; name: string; identifier: string; provider_name: string | null; management_mode: string; status: string };
 
 const services = [
-  { type: 'hosting', label: 'Hosting', description: 'Buy a hosting plan or manage the hosting you already have.', icon: Server, buy: '/portal/hosting' },
-  { type: 'domain', label: 'Domains', description: 'Register a new domain or manage domains on your account.', icon: Globe, buy: '/portal/domains' },
-  { type: 'email', label: 'Business Email', description: 'Buy mailbox capacity or manage your business email service.', icon: Mail, buy: '/portal/email' },
-  { type: 'website', label: 'Website', description: 'Start a website or manage a website service you purchased.', icon: WandSparkles, buy: '/portal/websites' },
+  { type: 'hosting', label: 'Hosting', description: 'Get hosting or manage the hosting you already have.', icon: Server, href: '/portal/hosting' },
+  { type: 'domain', label: 'Domain', description: 'Get a domain or manage one you already own.', icon: Globe, href: '/portal/domains' },
+  { type: 'email', label: 'Business email', description: 'Set up professional email or manage your existing email.', icon: Mail, href: '/portal/email' },
+  { type: 'website', label: 'Website', description: 'Build, fix, update or manage your website.', icon: WandSparkles, href: '/portal/websites' },
 ];
+
+function statusLabel(status: string) { return status.replaceAll('_', ' '); }
+
+function statusTone(status: string) {
+  if (status === 'active') return 'border-emerald-500/20 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400';
+  if (['provisioning', 'paid', 'pending_setup'].includes(status)) return 'border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-400';
+  if (['provisioning_failed', 'attention_needed', 'disconnected'].includes(status)) return 'border-destructive/20 bg-destructive/5 text-destructive';
+  return '';
+}
 
 export function PortalServiceHub() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [instances, setInstances] = useState<Instance[]>([]);
+  const [assets, setAssets] = useState<ManagedAsset[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [dataError, setDataError] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     void (async () => {
-      const { data, error } = await supabase.from('service_instances').select('id,service_type,service_name,status,provider,provider_status,provider_resource_id,control_panel_url,configuration').eq('user_id', user.id).order('created_at', { ascending: false });
-      if (error) toast.error('We could not load your services.');
-      setInstances((data as Instance[]) ?? []);
+      const [{ data, error }, assetResponse] = await Promise.all([
+        supabase.from('service_instances').select('id,service_type,service_name,status,provider,provider_status,configuration').eq('user_id', user.id).order('created_at', { ascending: false }),
+        fetch('/api/managed-assets').catch(() => null),
+      ]);
+      if (error) {
+        setDataError(true);
+        setInstances([]);
+      } else {
+        setDataError(false);
+        setInstances((data as Instance[]) ?? []);
+      }
+      if (assetResponse?.ok) {
+        const result = await assetResponse.json() as { assets?: ManagedAsset[] };
+        setAssets(result.assets ?? []);
+      } else setAssets([]);
       setLoadingData(false);
     })();
   }, [user]);
@@ -38,12 +62,14 @@ export function PortalServiceHub() {
   if (loading || loadingData) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!user) { router.replace('/portal'); return null; }
 
-  return <main className="min-h-screen bg-background px-4 py-10 sm:px-6 lg:px-8"><div className="mx-auto max-w-6xl">
-    <Link href="/portal/dashboard" className="text-sm text-muted-foreground hover:text-foreground">← Back to dashboard</Link>
-    <div className="mt-8"><p className="text-sm font-medium text-primary">Service centre</p><h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">Buy or manage your services</h1><p className="mt-2 max-w-2xl text-muted-foreground">You do not have to start from the landing page again. Pick a service to manage an existing purchase or start a new one.</p></div>
+  return <main className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8"><div className="mx-auto max-w-6xl">
+    <Link href="/portal/dashboard" className="text-sm text-muted-foreground transition hover:text-foreground">← Back to dashboard</Link>
+    <div className="mt-8 max-w-2xl"><p className="text-sm font-medium text-primary">My services</p><h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">What would you like to manage?</h1><p className="mt-2 text-muted-foreground">Choose a service you already have, or start something new. Your service can stay with HostSuite or another provider.</p></div>
 
-    <section className="mt-8 grid gap-4 md:grid-cols-2">{services.map(({ type, label, description, icon: Icon, buy }) => { const mine = instances.filter((item) => item.service_type === type); return <Card key={type}><CardHeader><div className="flex items-start justify-between gap-4"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></div><Badge variant="outline">{mine.length ? `${mine.length} active/purchased` : 'Not purchased'}</Badge></div><CardTitle className="mt-3">{label}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardContent><div className="space-y-2">{mine.slice(0, 3).map((instance) => <div key={instance.id} className="flex items-center justify-between gap-3 rounded-xl border p-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{instance.service_name}</p><p className="mt-0.5 text-xs text-muted-foreground">{instance.status.replaceAll('_', ' ')}</p></div><Button asChild size="sm"><Link href={`/portal/services/${instance.id}`}>Manage <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></Button></div>)}</div><Button asChild variant={mine.length ? 'outline' : 'default'} className="mt-4 w-full gap-2"><Link href={buy}><Plus className="h-4 w-4" />{mine.length ? `Buy another ${label.toLowerCase()}` : `Get ${label.toLowerCase()}`}</Link></Button></CardContent></Card>; })}</section>
+    {dataError && <div className="mt-6 flex gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600"/><div><p className="font-semibold">We can't load your HostSuite services right now.</p><p className="mt-1 text-muted-foreground">The service database is not available in this environment yet. We won't guess or show fake services.</p></div></div>}
 
-    <Card className="mt-6 border-primary/20 bg-primary/5"><CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">Need us to do it for you?</p><p className="mt-1 text-sm text-muted-foreground">Ask HostSuite for managed setup instead of using self-service.</p></div><Button asChild variant="outline"><Link href="/portal/support">Ask HostSuite</Link></Button></CardContent></Card>
+    <section className="mt-8 grid gap-4 md:grid-cols-2">{services.map(({ type, label, description, icon: Icon, href }) => { const mine = instances.filter((item) => item.service_type === type); const external = assets.filter((item) => item.service_type === type); const count = mine.length + external.length; return <Card key={type} className="overflow-hidden"><CardContent className="p-0"><div className="p-5 sm:p-6"><div className="flex items-start justify-between gap-4"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5"/></div>{!dataError && <Badge variant="outline">{count ? `${count} ${count === 1 ? 'service' : 'services'}` : 'Not added yet'}</Badge>}</div><h2 className="mt-5 text-xl font-semibold">{label}</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p></div>{!dataError && count > 0 && <div className="border-t bg-muted/20 px-5 py-4 sm:px-6">{mine.slice(0, 2).map((item) => <Link key={item.id} href={`/portal/services/${item.id}`} className="flex items-center justify-between gap-4 rounded-xl border bg-background p-3 transition hover:border-primary/40"><div className="min-w-0"><p className="truncate text-sm font-medium">{item.service_name}</p><p className="mt-1 text-xs capitalize text-muted-foreground">HostSuite · {statusLabel(item.status)}</p></div><ArrowRight className="h-4 w-4 shrink-0"/></Link>)}{external.slice(0, 2).map((item) => <Link key={item.id} href={`/portal/managed-assets/${item.id}`} className="mt-2 flex items-center justify-between gap-4 rounded-xl border bg-background p-3 transition hover:border-primary/40"><div className="min-w-0"><p className="truncate text-sm font-medium">{item.name}</p><p className="mt-1 text-xs text-muted-foreground">{item.provider_name || 'Existing service'} · {item.management_mode === 'hostsuite' ? 'HostSuite managed' : item.management_mode === 'self' ? 'You manage it' : 'Guided setup'}</p></div><ExternalLink className="h-4 w-4 shrink-0"/></Link>)}</div>}<div className="border-t p-4 sm:p-5"><Button asChild variant={count ? 'outline' : 'default'} className="w-full justify-between"><Link href={href}>{count ? `Open ${label.toLowerCase()}` : `Get or add ${label.toLowerCase()}`}<ArrowRight className="h-4 w-4"/></Link></Button></div></CardContent></Card>; })}</section>
+
+    <section className="mt-8 rounded-2xl border bg-card p-5 sm:p-6"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">Already have something somewhere else?</p><p className="mt-1 max-w-2xl text-sm text-muted-foreground">You don't have to move it first. Open the service above and tell HostSuite what you already have.</p></div><Button asChild variant="outline"><Link href="/portal/hosting">Tell us what you have <ArrowRight className="ml-2 h-4 w-4"/></Link></Button></div></section>
   </div></main>;
 }
