@@ -13,8 +13,9 @@ import { toast } from 'sonner';
 
 type Product = { id: string; name: string; description: string | null; product_type: string; billing_mode: string; currency: string; price: number; interval?: string | null; metadata?: Record<string, unknown> };
 type ServiceType = 'hosting' | 'domain' | 'email' | 'website';
+type ManagementMode = 'self' | 'hostsuite' | 'help';
 
-type Props = { service: ServiceType };
+type Props = { service: ServiceType; managementMode?: ManagementMode };
 
 const copy: Record<ServiceType, { title: string; subtitle: string; icon: typeof Server; needsDomain?: boolean }> = {
   hosting: { title: 'Get your hosting', subtitle: 'Choose a hosting plan, then tell us which domain it should use.', icon: Server, needsDomain: true },
@@ -23,7 +24,7 @@ const copy: Record<ServiceType, { title: string; subtitle: string; icon: typeof 
   website: { title: 'Start your website', subtitle: 'Choose how you want to build it, then connect a domain when you are ready.', icon: WandSparkles },
 };
 
-export function ServicePurchaseFlow({ service }: Props) {
+export function ServicePurchaseFlow({ service, managementMode = 'self' }: Props) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -63,6 +64,7 @@ export function ServicePurchaseFlow({ service }: Props) {
     const addresses = emailAddresses.map((v) => v.trim()).filter(Boolean);
     const metadata: Record<string, unknown> = {
       serviceType: service,
+      managementMode,
       mode: domainMode,
       domain: cleanDomain || undefined,
       domainSource: domainMode,
@@ -92,11 +94,13 @@ export function ServicePurchaseFlow({ service }: Props) {
     setStep((value) => Math.min(value + 1, 3));
   }
 
+  const managementLabel = managementMode === 'hostsuite' ? 'HostSuite will manage this for you' : managementMode === 'help' ? 'HostSuite will guide you through the setup' : 'You will manage this yourself';
+
   return (
     <main className="min-h-screen bg-background px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
-        <Link href="/portal/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Back to portal</Link>
-        <div className="mt-8 flex items-start gap-4"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Icon className="h-6 w-6" /></div><div><p className="text-sm font-medium text-primary">HostSuite {info.title.toLowerCase()}</p><h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{info.title}</h1><p className="mt-2 max-w-2xl text-muted-foreground">{info.subtitle}</p></div></div>
+        <Link href="/portal/services" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Back to service centre</Link>
+        <div className="mt-8 flex items-start gap-4"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Icon className="h-6 w-6" /></div><div><p className="text-sm font-medium text-primary">HostSuite {info.title.toLowerCase()}</p><h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{info.title}</h1><p className="mt-2 max-w-2xl text-muted-foreground">{info.subtitle}</p><Badge variant="outline" className="mt-3">{managementLabel}</Badge></div></div>
 
         <div className="mt-8 flex items-center gap-2 text-xs font-medium text-muted-foreground"><Badge variant={step >= 1 ? 'default' : 'outline'}>1 Plan</Badge><span>→</span><Badge variant={step >= 2 ? 'default' : 'outline'}>2 Configure</Badge><span>→</span><Badge variant={step >= 3 ? 'default' : 'outline'}>3 Review & pay</Badge></div>
 
@@ -106,7 +110,7 @@ export function ServicePurchaseFlow({ service }: Props) {
           {service === 'email' && <Card><CardHeader><CardTitle>Which email addresses do you need?</CardTitle><CardDescription>For example, hello@yourbusiness.com or sales@yourbusiness.com.</CardDescription></CardHeader><CardContent><div className="space-y-2">{emailAddresses.map((address, index) => <div key={index} className="flex gap-2"><Input value={address} onChange={(e) => setEmailAddresses((current) => current.map((item, i) => i === index ? e.target.value : item))} placeholder="hello@yourbusiness.com" /></div>)}</div><Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => setEmailAddresses((current) => [...current, ''])}>Add another address</Button></CardContent></Card>}
           <div className="flex gap-3"><Button variant="outline" onClick={() => setStep(1)}>Back</Button><Button onClick={next} className="gap-2">Review <ArrowRight className="h-4 w-4" /></Button></div></section>}
 
-        {step === 3 && selected && <section className="mt-6"><Card><CardHeader><CardTitle>Review your order</CardTitle><CardDescription>Everything below will be stored on the order item so provisioning knows what you purchased.</CardDescription></CardHeader><CardContent><div className="space-y-3 rounded-xl border p-4"><div className="flex justify-between gap-4"><span className="text-muted-foreground">Service</span><strong>{selected.name}</strong></div><div className="flex justify-between gap-4"><span className="text-muted-foreground">Domain</span><strong>{domain || 'Not specified'}</strong></div>{service === 'email' && <div><span className="text-muted-foreground">Email addresses</span><div className="mt-2 flex flex-wrap gap-2">{emailAddresses.filter(Boolean).map((address) => <Badge key={address} variant="outline">{address}</Badge>)}</div></div>}<div className="flex justify-between gap-4 border-t pt-3"><span className="text-muted-foreground">Total</span><strong>{selected.currency} {Number(selected.price).toLocaleString()}{selected.billing_mode === 'subscription' ? ` / ${selected.interval}` : ''}</strong></div></div><div className="mt-4 rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">Payment is handled by Paystack. HostSuite only treats the verified payment webhook as successful; after payment, your service instance is created and the provider provisioning worker can activate it.</div><div className="mt-6 flex gap-3"><Button variant="outline" onClick={() => setStep(2)} disabled={busy}>Back</Button><Button onClick={() => void checkout()} disabled={busy} className="gap-2">{busy && <Loader2 className="h-4 w-4 animate-spin" />} Pay with Paystack</Button></div></CardContent></Card></section>}
+        {step === 3 && selected && <section className="mt-6"><Card><CardHeader><CardTitle>Review your order</CardTitle><CardDescription>We'll keep your setup choice with the order so the service can be handled correctly after payment.</CardDescription></CardHeader><CardContent><div className="space-y-3 rounded-xl border p-4"><div className="flex justify-between gap-4"><span className="text-muted-foreground">Service</span><strong>{selected.name}</strong></div><div className="flex justify-between gap-4"><span className="text-muted-foreground">Management</span><strong>{managementLabel}</strong></div><div className="flex justify-between gap-4"><span className="text-muted-foreground">Domain</span><strong>{domain || 'Not specified'}</strong></div>{service === 'email' && <div><span className="text-muted-foreground">Email addresses</span><div className="mt-2 flex flex-wrap gap-2">{emailAddresses.filter(Boolean).map((address) => <Badge key={address} variant="outline">{address}</Badge>)}</div></div>}<div className="flex justify-between gap-4 border-t pt-3"><span className="text-muted-foreground">Total</span><strong>{selected.currency} {Number(selected.price).toLocaleString()}{selected.billing_mode === 'subscription' ? ` / ${selected.interval}` : ''}</strong></div></div><div className="mt-4 rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">Payment is handled by Paystack. HostSuite only treats the verified payment webhook as successful; after payment, your service instance is created and the provider provisioning worker can activate it.</div><div className="mt-6 flex gap-3"><Button variant="outline" onClick={() => setStep(2)} disabled={busy}>Back</Button><Button onClick={() => void checkout()} disabled={busy} className="gap-2">{busy && <Loader2 className="h-4 w-4 animate-spin" />} Pay with Paystack</Button></div></CardContent></Card></section>}
       </div>
     </main>
   );
