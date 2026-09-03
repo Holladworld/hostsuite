@@ -31,17 +31,21 @@ export function ManagedAssetWorkspace() {
 
   useEffect(() => {
     if (!user || !id) return;
-    void fetch('/api/managed-assets', { headers: getHeaders() }).then(async (response) => {
-      if (!response.ok) throw new Error('Unable to load service.');
-      const result = await response.json() as { assets?: ManagedAsset[] };
-      setAsset(result.assets?.find((item) => item.id === id) ?? null);
-    }).catch(() => setAsset(null)).finally(() => setLoadingAsset(false));
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      const headers = data.session?.access_token ? { Authorization: `Bearer ${data.session.access_token}` } : {};
+      try {
+        const response = await fetch('/api/managed-assets', { headers });
+        if (!response.ok) throw new Error('Unable to load service.');
+        const result = await response.json() as { assets?: ManagedAsset[] };
+        setAsset(result.assets?.find((item) => item.id === id) ?? null);
+      } catch {
+        setAsset(null);
+      } finally {
+        setLoadingAsset(false);
+      }
+    })();
   }, [user, id]);
-
-  async function getHeaders() {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token ? { Authorization: `Bearer ${data.session.access_token}` } : {};
-  }
 
   if (loading || loadingAsset) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
   if (!user) { router.replace('/portal'); return null; }
@@ -56,7 +60,7 @@ export function ManagedAssetWorkspace() {
 
     <div className="mt-8 grid gap-4 md:grid-cols-3"><Card><CardContent className="p-5"><p className="text-xs text-muted-foreground">Status</p><Badge variant="outline" className="mt-2 capitalize">{statusLabel(asset.status)}</Badge></CardContent></Card><Card><CardContent className="p-5"><p className="text-xs text-muted-foreground">Provider</p><p className="mt-2 font-medium">{asset.provider_name || 'Not specified'}</p></CardContent></Card><Card><CardContent className="p-5"><p className="text-xs text-muted-foreground">Management</p><p className="mt-2 font-medium">{managementLabel(asset.management_mode)}</p></CardContent></Card></div>
 
-    <Card className="mt-6"><CardHeader><CardTitle>{isPending ? 'Let's get it connected' : 'Your service'}</CardTitle></CardHeader><CardContent><p className="text-sm leading-6 text-muted-foreground">{asset.management_mode === 'hostsuite' ? 'This service is marked for HostSuite management. We have recorded what you already have, but we have not invented a provider connection or access credentials. The next management step will connect the real service.' : asset.management_mode === 'self' ? 'This service is recorded in your HostSuite workspace. HostSuite will only show self-management controls when a real provider connection or supported tool is available.' : 'This service is recorded in your HostSuite workspace so we can help you work out the right next step.'}</p><div className="mt-5 rounded-xl border bg-muted/20 p-4"><p className="text-sm font-medium">Service identifier</p><p className="mt-1 break-all text-sm text-muted-foreground">{asset.identifier}</p></div></CardContent></Card>
+    <Card className="mt-6"><CardHeader><CardTitle>{isPending ? "Let's get it connected" : 'Your service'}</CardTitle></CardHeader><CardContent><p className="text-sm leading-6 text-muted-foreground">{asset.management_mode === 'hostsuite' ? 'This service is marked for HostSuite management. We have recorded what you already have, but we have not invented a provider connection or access credentials. The next management step will connect the real service.' : asset.management_mode === 'self' ? 'This service is recorded in your HostSuite workspace. HostSuite will only show self-management controls when a real provider connection or supported tool is available.' : 'This service is recorded in your HostSuite workspace so we can help you work out the right next step.'}</p><div className="mt-5 rounded-xl border bg-muted/20 p-4"><p className="text-sm font-medium">Service identifier</p><p className="mt-1 break-all text-sm text-muted-foreground">{asset.identifier}</p></div></CardContent></Card>
 
     <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground"><ExternalLink className="h-3.5 w-3.5"/> Existing services remain with their current provider unless you choose otherwise.</p>
   </div></main>;
