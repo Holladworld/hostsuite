@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
+import { provisionServiceInstance } from '@/lib/services/provisioning';
 
 export const runtime = 'nodejs';
 
@@ -43,9 +44,32 @@ export async function POST(request: Request) {
     if (Number(transaction.amount) !== Math.round(Number(order.total) * 100) || transaction.currency !== order.currency) return NextResponse.json({ error: 'Payment amount or currency mismatch.' }, { status: 400 });
 
     const now = new Date().toISOString();
-    await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
-    await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
-    await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
+    const { error: orderUpdateError } = await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
+    if (orderUpdateError) throw orderUpdateError;
+
+    const { error: invoiceUpdateError } = await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
+    if (invoiceUpdateError) throw invoiceUpdateError;
+
+    const { error: entitlementError } = await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
+    if (entitlementError) throw entitlementError;
+
+    const { error: serviceInstanceError } = await admin.rpc('create_service_instances_for_order', { p_order_id: order.id });
+    if (serviceInstanceError) throw serviceInstanceError;
+
+    // Payment is already secured above. A provider outage/configuration problem must
+    // not make Paystack retry the payment event forever; each service records its own
+    // provisioning failure and can be retried by the authenticated customer.
+    const { data: instances, error: instancesError } = await admin
+      .from('service_instances')
+      .select('id')
+      .eq('order_id', order.id)
+      .eq('status', 'paid');
+    if (instancesError) throw instancesError;
+
+    for (const instance of instances ?? []) {
+      await provisionServiceInstance(instance.id);
+    }
+
     await admin.from('billing_webhook_events').update({ processed: true, processed_at: now }).eq('provider', 'paystack').eq('event_id', eventId);
     return NextResponse.json({ received: true });
   } catch (error) {

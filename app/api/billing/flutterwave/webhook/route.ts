@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
+import { provisionServiceInstance } from '@/lib/services/provisioning';
 
 export const runtime = 'nodejs';
 
@@ -32,9 +34,19 @@ export async function POST(request: Request) {
     if (!valid) return NextResponse.json({ error: 'Payment verification failed.' }, { status: 400 });
 
     const now = new Date().toISOString();
-    await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
-    await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
-    await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
+    const { error: orderError } = await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
+    if (orderError) throw orderError;
+    const { error: invoiceError } = await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
+    if (invoiceError) throw invoiceError;
+    const { error: entitlementError } = await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
+    if (entitlementError) throw entitlementError;
+    const { error: serviceInstanceError } = await admin.rpc('create_service_instances_for_order', { p_order_id: order.id });
+    if (serviceInstanceError) throw serviceInstanceError;
+
+    const { data: instances, error: instancesError } = await admin.from('service_instances').select('id').eq('order_id', order.id).eq('status', 'paid');
+    if (instancesError) throw instancesError;
+    for (const instance of instances ?? []) await provisionServiceInstance(instance.id);
+
     await admin.from('billing_webhook_events').update({ processed: true, processed_at: now }).eq('provider', 'flutterwave').eq('event_id', eventId);
     return NextResponse.json({ received: true });
   } catch (error) {
