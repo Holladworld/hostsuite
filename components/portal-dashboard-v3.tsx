@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, AlertTriangle, Globe, Mail, Server, WandSparkles, Loader2, LogOut, LifeBuoy, Plus, Settings2 } from 'lucide-react';
+import { ArrowRight, AlertTriangle, Loader2, LogOut, LifeBuoy, Plus, Settings2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,6 @@ import { supabase, useAuth } from '@/lib/supabase-client';
 
 type Instance = { id: string; service_type: string; service_name: string; status: string; configuration: Record<string, unknown> | null; provider_status: string | null };
 type ManagedAsset = { id: string; service_type: string; name: string; identifier: string; provider_name: string | null; management_mode: string; status: string };
-
-const cards = [
-  { type: 'hosting', label: 'Hosting', description: 'Buy hosting or manage the hosting you already have.', href: '/portal/hosting', icon: Server },
-  { type: 'domain', label: 'Domain', description: 'Register a domain or manage one you already own.', href: '/portal/domains', icon: Globe },
-  { type: 'email', label: 'Business email', description: 'Create mailboxes or manage your existing email.', href: '/portal/email', icon: Mail },
-  { type: 'website', label: 'Website', description: 'Build, connect, publish or manage your website.', href: '/portal/websites', icon: WandSparkles },
-];
 
 function statusLabel(status: string) { return status.replaceAll('_', ' '); }
 function statusTone(status: string) {
@@ -75,7 +68,7 @@ export function PortalDashboardV3() {
         <p className="mt-2 max-w-2xl text-muted-foreground">Manage services you already own, start something new, or get help when something needs attention.</p>
       </section>
 
-      {dataError && <div className="mt-6 flex gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" /><div><p className="font-semibold">We can't load your purchased services right now.</p><p className="mt-1 text-muted-foreground">Your account has not been changed. HostSuite will not invent service records when the service database is unavailable.</p></div></div>}
+      {dataError && <div className="mt-6 flex gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" /><div><p className="font-semibold">We’re having trouble loading your services right now.</p><p className="mt-1 text-muted-foreground">This is a temporary problem on our side. Your account and services have not been changed, and we won’t show made-up service information. Please wait a little while and try again, or ask HostSuite to check it for you.</p></div></div>}
 
       <section className="mt-7 grid gap-4 md:grid-cols-3">
         <Link href="/portal/services" className="group rounded-2xl border bg-card p-5 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><Settings2 className="h-5 w-5" /></div><h2 className="mt-4 font-semibold">Manage what I have</h2><p className="mt-1 text-sm text-muted-foreground">Open hosting, domains, email and websites already connected to your workspace.</p><span className="mt-4 inline-flex items-center text-sm font-medium text-primary">Manage services <ArrowRight className="ml-1 h-4 w-4" /></span></Link>
@@ -86,7 +79,7 @@ export function PortalDashboardV3() {
       {!dataError && <section className="mt-8 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl border bg-card p-4"><p className="text-xs text-muted-foreground">Services</p><p className="mt-1 text-2xl font-bold">{allServices.length}</p></div><div className="rounded-2xl border bg-card p-4"><p className="text-xs text-muted-foreground">Active</p><p className="mt-1 text-2xl font-bold">{activeCount}</p></div><div className="rounded-2xl border bg-card p-4"><p className="text-xs text-muted-foreground">Needs attention</p><p className="mt-1 text-2xl font-bold">{attentionCount}</p></div></section>}
 
       <section className="mt-10"><div className="flex items-end justify-between gap-4"><div><h2 className="font-display text-xl font-semibold">Your services</h2><p className="mt-1 text-sm text-muted-foreground">Purchased HostSuite services and external services you asked us to manage.</p></div><Button asChild variant="ghost" size="sm"><Link href="/portal/services">View all <ArrowRight className="ml-1 h-4 w-4" /></Link></Button></div>
-        {dataError ? <div className="mt-4 rounded-2xl border border-dashed p-8 text-center"><p className="font-medium">Your services will appear here when the connection is restored.</p></div> : allServices.length === 0 ? <div className="mt-4 rounded-2xl border border-dashed p-8"><p className="font-medium">Nothing is connected yet.</p><p className="mt-1 max-w-xl text-sm text-muted-foreground">Start with hosting, or add a domain, website, email or hosting account you already have.</p><div className="mt-4"><Button asChild><Link href="/portal/hosting">Get started <ArrowRight className="ml-2 h-4 w-4" /></Link></Button></div></div> : <div className="mt-4 space-y-2">{allServices.slice(0, 6).map((item) => <Link key={`${item.origin}-${item.id}`} href={item.href} className="flex items-center justify-between gap-4 rounded-2xl border bg-card p-4 transition hover:border-primary/40"><div className="flex min-w-0 items-center gap-3"><div className="h-2 w-2 shrink-0 rounded-full bg-primary"/><div className="min-w-0"><p className="truncate font-medium">{item.name}</p><p className="mt-1 text-xs text-muted-foreground">{item.origin} · {item.type.replaceAll('_', ' ')}</p></div></div><Badge variant="outline" className={statusTone(item.status)}>{statusLabel(item.status)}</Badge></Link>)}</div>}
+        {dataError ? <div className="mt-4 rounded-2xl border border-dashed p-8 text-center"><p className="font-medium">Your services will appear here when we reconnect.</p><p className="mt-1 text-sm text-muted-foreground">Nothing has been deleted or changed.</p></div> : allServices.length === 0 ? <div className="mt-4 rounded-2xl border border-dashed p-8"><p className="font-medium">Nothing is connected yet.</p><p className="mt-1 max-w-xl text-sm text-muted-foreground">Start with hosting, or add a domain, website, email or hosting account you already have.</p><div className="mt-4"><Button asChild><Link href="/portal/hosting">Get started <ArrowRight className="ml-2 h-4 w-4" /></Link></Button></div></div> : <div className="mt-4 space-y-2">{allServices.slice(0, 6).map((item) => <Link key={`${item.origin}-${item.id}`} href={item.href} className="flex items-center justify-between gap-4 rounded-2xl border bg-card p-4 transition hover:border-primary/40"><div className="flex min-w-0 items-center gap-3"><div className="h-2 w-2 shrink-0 rounded-full bg-primary"/><div className="min-w-0"><p className="truncate font-medium">{item.name}</p><p className="mt-1 text-xs text-muted-foreground">{item.origin} · {item.type.replaceAll('_', ' ')}</p></div></div><Badge variant="outline" className={statusTone(item.status)}>{statusLabel(item.status)}</Badge></Link>)}</div>}
       </section>
     </main>
   </div>;
