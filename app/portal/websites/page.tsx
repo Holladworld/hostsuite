@@ -1,5 +1,5 @@
-import { ServicePurchaseFlow } from '@/components/service-purchase-flow';
+import { ServiceEntryGate } from '@/components/service-entry-gate';
 
 export default function WebsitesPage() {
-  return <ServicePurchaseFlow service="website" />;
+  return <ServiceEntryGate service="website" />;
 }
