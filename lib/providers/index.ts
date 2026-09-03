@@ -1,19 +1,17 @@
 import { mockProvider } from './mock';
+import { whogohostProvider } from './whogohost';
 import type { HostingProvider } from './types';
 
 /**
  * Selects the provider without exposing provider credentials to the browser.
- * Live WhoGoHost/Go54 provisioning is deliberately disabled until its reseller
- * API and account capabilities are verified.
+ * The WhoGoHost adapter is safe to load before credentials are configured;
+ * unsupported/unconfigured operations return explicit provider errors.
  */
 export function getHostingProvider(): HostingProvider {
-  const provider = (process.env.HOSTING_PROVIDER || 'mock').toLowerCase();
+  const provider = (process.env.HOSTING_PROVIDER || 'whogohost').toLowerCase();
 
   if (provider === 'mock') return mockProvider;
-
-  if (provider === 'whogohost' || provider === 'go54') {
-    throw new Error('WhoGoHost/Go54 provider is not enabled until its reseller API capabilities are verified.');
-  }
+  if (provider === 'whogohost' || provider === 'go54') return whogohostProvider;
 
   throw new Error(`Unknown hosting provider: ${provider}`);
 }
