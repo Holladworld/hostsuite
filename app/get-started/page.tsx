@@ -1,5 +1,5 @@
-import { PortalServiceHub } from '@/components/portal-service-hub';
+import { redirect } from 'next/navigation';
 
 export default function GetStartedPage() {
-  return <PortalServiceHub />;
+  redirect('/portal/hosting');
 }
