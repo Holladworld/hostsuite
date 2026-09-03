@@ -46,7 +46,7 @@ export function PromoBanner() {
   }, []);
 
   return (
-    <section className="px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+    <section className="px-4 py-7 sm:px-6 lg:px-8 lg:py-8">
       <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-[#241132] text-white shadow-2xl shadow-primary/10">
         <AnimatePresence mode="wait">
           <motion.div
@@ -63,7 +63,7 @@ export function PromoBanner() {
         <div className="absolute inset-0 bg-[#241132]/80" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#241132] via-[#241132]/85 to-[#241132]/35" />
 
-        <div className="relative grid min-h-[300px] items-center gap-8 px-7 py-10 sm:px-10 lg:grid-cols-[1fr_auto] lg:px-14 lg:py-12">
+        <div className="relative grid min-h-[250px] items-center gap-6 px-7 py-8 sm:px-10 lg:grid-cols-[1fr_auto] lg:px-14 lg:py-9">
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
@@ -85,7 +85,7 @@ export function PromoBanner() {
               </p>
               <Link
                 href={slide.href}
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#241132] transition hover:-translate-y-0.5 hover:shadow-lg"
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#241132] transition hover:-translate-y-0.5 hover:shadow-lg"
               >
                 {slide.action}
                 <ArrowRight className="h-4 w-4" />
