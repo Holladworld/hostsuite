@@ -71,17 +71,17 @@ export function Hero() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#4A1F6B] via-[#4A1F6B]/90 to-[#4A1F6B]/55" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 lg:px-8 lg:pb-20 lg:pt-14">
-        <div className="grid min-h-[560px] items-center gap-12 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-10 lg:px-8 lg:pb-20 lg:pt-14">
+        <div className="grid min-h-[440px] items-center gap-10 sm:min-h-[500px] lg:min-h-[560px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
           <div className="max-w-2xl">
             <motion.div
               key={`eyebrow-${active}`}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-2 text-xs font-semibold tracking-[0.16em] text-white/90 backdrop-blur-sm"
+              className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[11px] font-semibold tracking-[0.12em] text-white/90 backdrop-blur-sm sm:mb-5 sm:px-3.5 sm:py-2 sm:text-xs sm:tracking-[0.16em]"
             >
-              <ShieldCheck className="h-3.5 w-3.5" />
-              {slide.eyebrow}
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{slide.eyebrow}</span>
             </motion.div>
 
             <AnimatePresence mode="wait">
@@ -95,27 +95,27 @@ export function Hero() {
                 <h1 className="max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
                   {headline}
                 </h1>
-                <p className="mt-6 max-w-xl text-base leading-7 text-white/80 sm:text-lg">
+                <p className="mt-5 max-w-xl text-base leading-7 text-white/80 sm:mt-6 sm:text-lg">
                   {subheadline}
                 </p>
               </motion.div>
             </AnimatePresence>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="bg-[#5D2A86] text-white shadow-lg shadow-black/15 hover:bg-[#4A1F6B]">
+            <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row">
+              <Button asChild size="lg" className="w-full bg-[#5D2A86] text-white shadow-lg shadow-black/15 hover:bg-[#4A1F6B] sm:w-auto">
                 <Link href="/#diagnostic" scroll className="gap-2">
                   {slide.action}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-white/35 bg-white/10 text-white hover:bg-white/15 hover:text-white">
+              <Button asChild size="lg" variant="outline" className="w-full border-white/35 bg-white/10 text-white hover:bg-white/15 hover:text-white sm:w-auto">
                 <a href={waLink('Hello HostSuite, I need help with my business technology.')} target="_blank" rel="noopener noreferrer">
                   Talk to a human
                 </a>
               </Button>
             </div>
 
-            <div className="mt-9 flex items-center gap-2" aria-label="Hero slides">
+            <div className="mt-8 flex items-center gap-2" aria-label="Hero slides">
               {slides.map((item, index) => (
                 <button
                   key={item.eyebrow}
