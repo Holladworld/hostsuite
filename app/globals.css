@@ -38,11 +38,21 @@
 
 @layer base {
   * { @apply border-border; }
+  html,
+  body {
+    width: 100%;
+    min-width: 0;
+  }
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   html { scroll-behavior: smooth; }
+  img,
+  video,
+  canvas {
+    max-width: 100%;
+  }
 }
 
 @layer utilities {
@@ -95,6 +105,14 @@
   .animate-shimmer { animation: shimmer 2s infinite; }
   @keyframes float-up { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
   .animate-float-up { animation: float-up 0.5s ease-out both; }
+}
+
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
