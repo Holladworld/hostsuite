@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
+import { provisionServiceInstance } from '@/lib/service-lifecycle';
 
 export const runtime = 'nodejs';
 
@@ -45,9 +46,25 @@ export async function POST(request: Request) {
     const now = new Date().toISOString();
     await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
     await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
-    await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
+    const { error: grantError } = await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
+    if (grantError) throw grantError;
+
+    const { data: services, error: serviceError } = await admin
+      .from('service_instances')
+      .select('id')
+      .eq('order_id', order.id);
+    if (serviceError) throw serviceError;
+
+    const provisioning = [];
+    for (const service of services ?? []) {
+      provisioning.push(await provisionServiceInstance(admin, service.id));
+    }
+
     await admin.from('billing_webhook_events').update({ processed: true, processed_at: now }).eq('provider', 'paystack').eq('event_id', eventId);
-    return NextResponse.json({ received: true });
+    return NextResponse.json({
+      received: true,
+      services: provisioning.map((result) => ({ status: result.status, provider: 'provider' in result ? result.provider : undefined })),
+    });
   } catch (error) {
     console.error('Paystack webhook processing failed', error);
     return NextResponse.json({ error: 'Webhook processing failed.' }, { status: 500 });
