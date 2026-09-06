@@ -3,6 +3,8 @@ import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { getPaymentProviderStatus } from '@/lib/payments/providers';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const supabase = await createServerSupabaseClient();
