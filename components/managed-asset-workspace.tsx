@@ -33,7 +33,10 @@ export function ManagedAssetWorkspace() {
     if (!user || !id) return;
     void (async () => {
       const { data } = await supabase.auth.getSession();
-      const headers = data.session?.access_token ? { Authorization: `Bearer ${data.session.access_token}` } : {};
+      const headers: HeadersInit = {};
+      if (data.session?.access_token) {
+        headers.Authorization = `Bearer ${data.session.access_token}`;
+      }
       try {
         const response = await fetch('/api/managed-assets', { headers });
         if (!response.ok) throw new Error('Unable to load service.');
