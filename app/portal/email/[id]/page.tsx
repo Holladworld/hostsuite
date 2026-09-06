@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 type Service = { id: string; service_name: string; status: string; provider: string | null; provider_status: string | null; provider_resource_id: string | null; last_error: string | null; configuration: Record<string, unknown> | null; created_at: string; };
 
 function text(value: unknown, fallback: string) { return typeof value === 'string' && value.trim() ? value.trim() : fallback; }
-function getMailboxes(configuration: Record<string, unknown> | null) { const value = configuration?.emailAddresses; return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim()).map((item) => item.trim()) : []; }
+function getMailboxes(configuration: Record<string, unknown> | null) { const value = configuration?.emailAddresses; return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim()) : []; }
 
 export default function EmailManagementPage() {
   const { id } = useParams<{ id: string }>();
