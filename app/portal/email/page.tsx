@@ -14,7 +14,7 @@ type EmailService = { id: string; service_name: string; status: string; provider
 type ProviderState = { configured: boolean; capabilities: string[] };
 
 function value(input: unknown, fallback: string) { return typeof input === 'string' && input.trim() ? input.trim() : fallback; }
-function mailboxes(configuration: Record<string, unknown> | null) { const addresses = configuration?.emailAddresses; return Array.isArray(addresses) ? addresses.filter((item): item is string => typeof item === 'string' && item.trim()).map((item) => item.trim()) : []; }
+function mailboxes(configuration: Record<string, unknown> | null) { const addresses = configuration?.emailAddresses; return Array.isArray(addresses) ? addresses.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim()) : []; }
 
 export default function BusinessEmailPage() {
   const { user, loading } = useAuth();
