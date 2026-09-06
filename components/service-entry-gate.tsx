@@ -36,9 +36,13 @@ export function ServiceEntryGate({ service }: { service: ServiceType }) {
   const meta = labels[service];
   const Icon = meta.icon;
 
-  async function getAuthHeaders() {
+  async function getAuthHeaders(): Promise<HeadersInit> {
     const { data } = await supabase.auth.getSession();
-    return data.session?.access_token ? { Authorization: `Bearer ${data.session.access_token}` } : {};
+    const headers: Record<string, string> = {};
+    if (data.session?.access_token) {
+      headers.Authorization = `Bearer ${data.session.access_token}`;
+    }
+    return headers;
   }
 
   async function saveExisting() {
