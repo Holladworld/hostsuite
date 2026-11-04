@@ -94,14 +94,23 @@ export async function POST(request: NextRequest) {
         ? project.metadata as Record<string, unknown>
         : {};
 
-      const { error: statusError } = await admin
+      const { data: claimedProject, error: statusError } = await admin
         .from('ai_projects')
         .update({ status: 'generating' })
         .eq('id', projectId)
         .eq('user_id', userId)
-        .eq('kind', 'website');
+        .eq('kind', 'website')
+        .in('status', ['draft', 'ready', 'failed'])
+        .select('id')
+        .maybeSingle();
 
       if (statusError) throw statusError;
+      if (!claimedProject) {
+        return NextResponse.json(
+          { error: 'This website project changed state. Refresh it before trying again.' },
+          { status: 409 }
+        );
+      }
     }
 
     const provider = getAIProvider();
