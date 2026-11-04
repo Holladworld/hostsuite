@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mergeGeneratedSiteIntoProjectMetadata } from '../../lib/ai-projects';
 import type { GeneratedSite } from '../../lib/ai-site';
+import { AI_PROJECT_GENERATION_CLAIMABLE_STATUSES, canFinalizeAiProjectGeneration } from '../../lib/ai-project-state';
 
 const generatedSite: GeneratedSite = {
   siteName: 'Northstar Foods',
@@ -44,5 +45,24 @@ describe('AI project persistence', () => {
       schemaVersion: 1,
       generatedAt: '2026-11-04T00:00:00.000Z',
     });
+  });
+});
+
+
+describe('AI project generation state rules', () => {
+  it('allows generation claims only from draft, ready and failed projects', () => {
+    expect(AI_PROJECT_GENERATION_CLAIMABLE_STATUSES).toEqual(['draft', 'ready', 'failed']);
+    expect(AI_PROJECT_GENERATION_CLAIMABLE_STATUSES).not.toContain('generating');
+    expect(AI_PROJECT_GENERATION_CLAIMABLE_STATUSES).not.toContain('deployed');
+    expect(AI_PROJECT_GENERATION_CLAIMABLE_STATUSES).not.toContain('archived');
+  });
+
+  it('allows completion or failure only while the project is generating', () => {
+    expect(canFinalizeAiProjectGeneration('generating')).toBe(true);
+    expect(canFinalizeAiProjectGeneration('draft')).toBe(false);
+    expect(canFinalizeAiProjectGeneration('ready')).toBe(false);
+    expect(canFinalizeAiProjectGeneration('deployed')).toBe(false);
+    expect(canFinalizeAiProjectGeneration('archived')).toBe(false);
+    expect(canFinalizeAiProjectGeneration('failed')).toBe(false);
   });
 });
