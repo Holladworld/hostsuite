@@ -5,6 +5,7 @@ import { extractJson, generatedSiteSchema, SITE_GENERATION_INSTRUCTIONS } from '
 import { getAIProvider } from '@/lib/ai/provider';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { mergeGeneratedSiteIntoProjectMetadata } from '@/lib/ai-projects';
+import { AI_PROJECT_GENERATION_CLAIMABLE_STATUSES, AI_PROJECT_GENERATION_IN_PROGRESS } from '@/lib/ai-project-state';
 
 const requestSchema = z.object({
   businessName: z.string().min(2).max(120),
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
         .eq('id', projectId)
         .eq('user_id', userId)
         .eq('kind', 'website')
-        .in('status', ['draft', 'ready', 'failed'])
+        .in('status', [...AI_PROJECT_GENERATION_CLAIMABLE_STATUSES])
         .select('id')
         .maybeSingle();
 
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
         .eq('id', projectId)
         .eq('user_id', userId)
         .eq('kind', 'website')
-        .eq('status', 'generating')
+        .eq('status', AI_PROJECT_GENERATION_IN_PROGRESS)
         .select('id')
         .maybeSingle();
 
