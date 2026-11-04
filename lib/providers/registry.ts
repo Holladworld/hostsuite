@@ -55,7 +55,7 @@ export function getHostingProviderStatus(): HostingProviderStatus {
   return {
     provider: provider.name,
     mode: 'live',
-    configured: credentialsPresent && availabilityRoutePresent,
+    configured: credentialsPresent,
     supportedCapabilities: provider.capabilities,
     readyCapabilities,
   };
