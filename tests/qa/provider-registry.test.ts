@@ -16,6 +16,16 @@ describe('hosting provider registry', () => {
     expect(status.configurationSatisfiedCapabilities).toEqual([]);
   });
 
+  it('treats an empty provider setting as unconfigured', () => {
+    vi.stubEnv('HOSTING_PROVIDER', '');
+
+    const status = getHostingProviderStatus();
+
+    expect(status.mode).toBe('unconfigured');
+    expect(status.configured).toBe(false);
+    expect(status.configurationSatisfiedCapabilities).toEqual([]);
+  });
+
   it('identifies mock mode explicitly rather than presenting it as a live provider', () => {
     vi.stubEnv('HOSTING_PROVIDER', 'mock');
 
