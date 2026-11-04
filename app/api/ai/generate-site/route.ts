@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { extractJson, generatedSiteSchema, SITE_GENERATION_INSTRUCTIONS } from '@/lib/ai-site';
 import { getAIProvider } from '@/lib/ai/provider';
+import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 
 const requestSchema = z.object({
   businessName: z.string().min(2).max(120),
@@ -64,6 +65,35 @@ export async function POST(request: NextRequest) {
     }
     projectId = parsed.data.projectId;
 
+    let projectMetadata: Record<string, unknown> | null = null;
+    if (projectId) {
+      const admin = createAdminSupabaseClient();
+      const { data: project, error: projectError } = await admin
+        .from('ai_projects')
+        .select('id,metadata')
+        .eq('id', projectId)
+        .eq('user_id', userId)
+        .eq('kind', 'website')
+        .single();
+
+      if (projectError || !project) {
+        return NextResponse.json({ error: 'Website project not found.' }, { status: 404 });
+      }
+
+      projectMetadata = project.metadata && typeof project.metadata === 'object' && !Array.isArray(project.metadata)
+        ? project.metadata as Record<string, unknown>
+        : {};
+
+      const { error: statusError } = await admin
+        .from('ai_projects')
+        .update({ status: 'generating' })
+        .eq('id', projectId)
+        .eq('user_id', userId)
+        .eq('kind', 'website');
+
+      if (statusError) throw statusError;
+    }
+
     const provider = getAIProvider();
     const prompt = `${SITE_GENERATION_INSTRUCTIONS}\n\nBusiness name: ${parsed.data.businessName}\nWebsite type: ${parsed.data.websiteType}\nBusiness description: ${parsed.data.description}`;
 
@@ -74,6 +104,32 @@ export async function POST(request: NextRequest) {
     });
 
     const site = generatedSiteSchema.parse(extractJson(result.content));
+
+    if (projectId) {
+      const admin = createAdminSupabaseClient();
+      const { error: saveError } = await admin
+        .from('ai_projects')
+        .update({
+          status: 'ready',
+          provider: provider.name,
+          model: provider.model,
+          metadata: {
+            ...(projectMetadata ?? {}),
+            generatedSite: site,
+            generation: {
+              status: 'ready',
+              schemaVersion: 1,
+              generatedAt: new Date().toISOString(),
+            },
+          },
+        })
+        .eq('id', projectId)
+        .eq('user_id', userId)
+        .eq('kind', 'website');
+
+      if (saveError) throw saveError;
+    }
+
     await recordUsage({
       userId,
       projectId,
@@ -93,6 +149,20 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Website generation error:', error);
+    if (userId && projectId) {
+      try {
+        const admin = createAdminSupabaseClient();
+        await admin
+          .from('ai_projects')
+          .update({ status: 'failed' })
+          .eq('id', projectId)
+          .eq('user_id', userId)
+          .eq('kind', 'website');
+      } catch (persistenceError) {
+        console.error('Could not update failed AI project status:', persistenceError);
+      }
+    }
+
     if (userId) {
       const providerName = process.env.AI_PROVIDER || 'openai-compatible';
       const model = process.env.AI_MODEL || 'unknown';
