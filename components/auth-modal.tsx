@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   Dialog,
   DialogContent,
@@ -63,7 +64,6 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     }
   }
 
-  // Already signed in — offer to go to portal.
   if (!loading && user) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -75,23 +75,10 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Button
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-              onClick={() => {
-                onOpenChange(false);
-                router.push('/portal');
-              }}
-            >
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { onOpenChange(false); router.push('/portal'); }}>
               Go to Client Portal
             </Button>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                toast('Signed out.');
-                onOpenChange(false);
-              }}
-            >
+            <Button variant="outline" onClick={async () => { await supabase.auth.signOut(); toast('Signed out.'); onOpenChange(false); }}>
               Sign out
             </Button>
           </div>
@@ -104,16 +91,10 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Lock className="h-6 w-6" />
-          </div>
-          <DialogTitle className="text-center font-display">
-            {mode === 'signin' ? 'Client Sign In' : 'Create Your Portal Account'}
-          </DialogTitle>
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary"><Lock className="h-6 w-6" /></div>
+          <DialogTitle className="text-center font-display">{mode === 'signin' ? 'Client Sign In' : 'Create Your Portal Account'}</DialogTitle>
           <DialogDescription className="text-center">
-            {mode === 'signin'
-              ? 'Access your hosted domains, SLA tier, and support tickets.'
-              : 'Create an account to open your HostSuite client portal.'}
+            {mode === 'signin' ? 'Access your hosted domains, SLA tier, and support tickets.' : 'Create an account to open your HostSuite client portal.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -122,79 +103,32 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
             <Label htmlFor="auth-email">Corporate Email</Label>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="auth-email"
-                type="email"
-                placeholder="you@company.com.ng"
-                className="pl-9"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                required
-              />
+              <Input id="auth-email" type="email" placeholder="you@company.com.ng" className="pl-9" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="auth-password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="auth-password">Password</Label>
+              {mode === 'signin' && <Link href="/portal/forgot-password" onClick={() => onOpenChange(false)} className="text-xs font-semibold text-primary underline-offset-4 hover:underline">Forgot password?</Link>}
+            </div>
             <div className="relative">
               <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="auth-password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                className="pl-9 pr-10"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                required
-              />
-              <button
-                type="button"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                title={showPassword ? 'Hide password' : 'Show password'}
-                onClick={() => setShowPassword((visible) => !visible)}
-                className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <Eye className="h-4 w-4" aria-hidden="true" />
-                )}
+              <Input id="auth-password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" className="pl-9 pr-10" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} required />
+              <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} title={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword((visible) => !visible)} className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
               </button>
             </div>
           </div>
 
-          <Button
-            type="submit"
-            disabled={busy}
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : mode === 'signin' ? (
-              'Sign In to Portal'
-            ) : (
-              <>
-                <UserPlus className="h-4 w-4" /> Create Account
-              </>
-            )}
+          <Button type="submit" disabled={busy} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === 'signin' ? 'Sign In to Portal' : <><UserPlus className="h-4 w-4" /> Create Account</>}
           </Button>
         </form>
 
-        <div className="flex items-center justify-center gap-4 rounded-lg bg-muted/60 px-3 py-2 text-center text-xs text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5 text-secondary" />
-          Secured by Supabase · Email & password only
-        </div>
-
+        <div className="flex items-center justify-center gap-4 rounded-lg bg-muted/60 px-3 py-2 text-center text-xs text-muted-foreground"><ShieldCheck className="h-3.5 w-3.5 text-secondary" /> Secured by Supabase · Email &amp; password only</div>
         <p className="text-center text-sm text-muted-foreground">
           {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-          <button
-            type="button"
-            className="font-semibold text-primary underline-offset-4 hover:underline"
-            onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-          >
-            {mode === 'signin' ? 'Create one' : 'Sign in'}
-          </button>
+          <button type="button" className="font-semibold text-primary underline-offset-4 hover:underline" onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>{mode === 'signin' ? 'Create one' : 'Sign in'}</button>
         </p>
       </DialogContent>
     </Dialog>
