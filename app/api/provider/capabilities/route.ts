@@ -12,7 +12,7 @@ export async function GET() {
       configuration: {
         mode: status.mode,
         configured: status.configured,
-        readyCapabilities: status.readyCapabilities,
+        configurationSatisfiedCapabilities: status.configurationSatisfiedCapabilities,
       },
     });
   } catch (error) {
