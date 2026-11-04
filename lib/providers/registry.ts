@@ -18,7 +18,7 @@ export type HostingProviderStatus = {
  */
 export function getHostingProviderStatus(): HostingProviderStatus {
   const provider = getHostingProvider();
-  const selected = (process.env.HOSTING_PROVIDER || 'unconfigured').trim().toLowerCase();
+  const selected = (process.env.HOSTING_PROVIDER?.trim() || 'unconfigured').toLowerCase();
 
   if (selected === 'unconfigured') {
     return {
