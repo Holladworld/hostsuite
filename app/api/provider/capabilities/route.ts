@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getHostingProvider } from '@/lib/providers';
+import { getProviderHealth } from '@/lib/providers/health';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const provider = getHostingProvider();
+    const health = getProviderHealth();
     return NextResponse.json({
-      provider: provider.name,
-      capabilities: provider.capabilities,
+      provider: health.provider,
+      configured: health.configured,
+      capabilities: health.capabilities,
     });
   } catch (error) {
     console.error('Provider capability check failed:', error);
