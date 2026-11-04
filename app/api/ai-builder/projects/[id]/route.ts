@@ -65,7 +65,7 @@ export async function PATCH(
     const admin = createAdminSupabaseClient();
     const { data: current, error: lookupError } = await admin
       .from('ai_projects')
-.select('id,metadata,status')
+      .select('id,metadata,status')
       .eq('id', params.id)
       .eq('user_id', user.id)
       .eq('kind', 'website')
