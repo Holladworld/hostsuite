@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getHostingProvider } from '@/lib/providers';
+import { getHostingProviderStatus } from '@/lib/providers/registry';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const provider = getHostingProvider();
+    const status = getHostingProviderStatus();
     return NextResponse.json({
-      provider: provider.name,
-      capabilities: provider.capabilities,
+      provider: status.provider,
+      capabilities: status.supportedCapabilities,
+      configuration: {
+        mode: status.mode,
+        configured: status.configured,
+        readyCapabilities: status.readyCapabilities,
+      },
     });
   } catch (error) {
     console.error('Provider capability check failed:', error);
