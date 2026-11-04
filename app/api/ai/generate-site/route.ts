@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       const admin = createAdminSupabaseClient();
       const { data: project, error: projectError } = await admin
         .from('ai_projects')
-        .select('id,metadata')
+        .select('id,metadata,status')
         .eq('id', projectId)
         .eq('user_id', userId)
         .eq('kind', 'website')
@@ -79,6 +79,15 @@ export async function POST(request: NextRequest) {
 
       if (projectError || !project) {
         return NextResponse.json({ error: 'Website project not found.' }, { status: 404 });
+      }
+      if (project.status === 'deployed') {
+        return NextResponse.json(
+          { error: 'This website is already deployed. Create a separate draft to make changes without affecting the live website.' },
+          { status: 409 }
+        );
+      }
+      if (project.status === 'archived' || project.status === 'generating') {
+        return NextResponse.json({ error: 'This website project cannot be generated in its current state.' }, { status: 409 });
       }
 
       projectMetadata = project.metadata && typeof project.metadata === 'object' && !Array.isArray(project.metadata)
