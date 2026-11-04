@@ -65,7 +65,7 @@ export async function PATCH(
     const admin = createAdminSupabaseClient();
     const { data: current, error: lookupError } = await admin
       .from('ai_projects')
-      .select('id,metadata')
+.select('id,metadata,status')
       .eq('id', params.id)
       .eq('user_id', user.id)
       .eq('kind', 'website')
@@ -73,6 +73,15 @@ export async function PATCH(
 
     if (lookupError || !current) {
       return NextResponse.json({ error: 'Website project not found.' }, { status: 404 });
+    }
+    if (current.status === 'deployed') {
+      return NextResponse.json(
+        { error: 'This website is already deployed. Create a separate draft to make changes without affecting the live website.' },
+        { status: 409 }
+      );
+    }
+    if (current.status === 'archived' || current.status === 'generating') {
+      return NextResponse.json({ error: 'This website project cannot be edited in its current state.' }, { status: 409 });
     }
 
     const metadata = current.metadata && typeof current.metadata === 'object' && !Array.isArray(current.metadata)
