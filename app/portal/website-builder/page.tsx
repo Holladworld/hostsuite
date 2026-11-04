@@ -66,8 +66,9 @@ export default function WebsiteBuilderPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Please sign in again before using the website builder.');
-      let savedProjectId = projectId;
-      if (savedProjectId) {
+      let savedProjectId: string;
+      if (projectId) savedProjectId = projectId;
+      if (projectId) {
         const projectResponse = await fetch(`/api/ai-builder/projects/${savedProjectId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -83,9 +84,10 @@ export default function WebsiteBuilderPage() {
         });
         const projectResult = await projectResponse.json();
         if (!projectResponse.ok) throw new Error(projectResult.error || 'We could not save your website project.');
-        savedProjectId = projectResult.project?.id as string | undefined;
-        if (!savedProjectId) throw new Error('Your project was created, but we could not confirm its reference.');
-        setProjectId(savedProjectId);
+        const createdProjectId = projectResult.project?.id as string | undefined;
+        if (!createdProjectId) throw new Error('Your project was created, but we could not confirm its reference.');
+        savedProjectId = createdProjectId;
+        setProjectId(createdProjectId);
       }
 
       const response = await fetch('/api/ai/generate-site', {
