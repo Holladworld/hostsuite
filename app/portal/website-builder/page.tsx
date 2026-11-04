@@ -20,6 +20,7 @@ export default function WebsiteBuilderPage() {
   const [site, setSite] = useState<GeneratedSite | null>(null);
   const [error, setError] = useState('');
   const [deploymentTarget, setDeploymentTarget] = useState<DeploymentTargetType | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,10 +31,21 @@ export default function WebsiteBuilderPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error('Please sign in again before using the website builder.');
+      const projectResponse = await fetch('/api/ai-builder/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ businessName, businessType: websiteType, description }),
+      });
+      const projectResult = await projectResponse.json();
+      if (!projectResponse.ok) throw new Error(projectResult.error || 'We could not save your website project.');
+      const savedProjectId = projectResult.project?.id as string | undefined;
+      if (!savedProjectId) throw new Error('Your project was created, but we could not confirm its reference.');
+      setProjectId(savedProjectId);
+
       const response = await fetch('/api/ai/generate-site', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ businessName, websiteType, description }),
+        body: JSON.stringify({ businessName, websiteType, description, projectId: savedProjectId }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'We could not generate your website.');
@@ -53,7 +65,7 @@ export default function WebsiteBuilderPage() {
 
           <Card><CardHeader><CardTitle>Where should your website live?</CardTitle><CardDescription>HostSuite does not put customer websites on the HostSuite application server.</CardDescription></CardHeader><CardContent className="space-y-3">{DEPLOYMENT_TARGETS.map((target) => <button key={target.type} type="button" onClick={() => setDeploymentTarget(target.type)} className={`w-full rounded-xl border p-4 text-left transition-colors ${deploymentTarget === target.type ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}><div className="flex items-start justify-between gap-4"><div><p className="font-medium">{target.label}</p><p className="mt-1 text-sm leading-5 text-muted-foreground">{target.description}</p></div>{deploymentTarget === target.type && <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />}</div></button>)}{deploymentTarget && <div className="rounded-xl border border-border bg-muted/30 p-4 text-sm leading-6"><strong>Deployment selected.</strong> The actual provider connection and publishing workflow belongs to the website-management/hosting milestones. No deployment has happened yet.</div>}</CardContent></Card>
 
-          <Card><CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">Draft generated successfully</p><p className="mt-1 text-sm text-muted-foreground">Editing, project storage, domain connection and publishing are separate capabilities. This draft is not live.</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => { setSite(null); setDeploymentTarget(null); }}>Start over</Button><Button asChild variant="ghost" className="gap-2"><Link href="/portal/dashboard">Back to portal <ArrowRight className="h-4 w-4" /></Link></Button></div></CardContent></Card>
+          <Card><CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold">Draft generated and saved</p><p className="mt-1 text-sm text-muted-foreground">Your draft is saved in your HostSuite website project{projectId ? ` (${projectId.slice(0, 8)})` : ''} . Editing, domain connection and publishing are separate capabilities. This draft is not live.</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => { setSite(null); setDeploymentTarget(null); }}>Start over</Button><Button asChild variant="ghost" className="gap-2"><Link href="/portal/dashboard">Back to portal <ArrowRight className="h-4 w-4" /></Link></Button></div></CardContent></Card>
         </div>}
         <div className="mt-8 grid gap-3 sm:grid-cols-3"><div className="rounded-xl border border-border p-4"><Sparkles className="h-4 w-4 text-primary" /><p className="mt-3 text-sm font-medium">Describe</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Tell HostSuite what your business needs.</p></div><div className="rounded-xl border border-border p-4"><Globe2 className="h-4 w-4 text-primary" /><p className="mt-3 text-sm font-medium">Choose infrastructure</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Use HostSuite-managed, existing, or your own infrastructure.</p></div><div className="rounded-xl border border-border p-4"><CheckCircle2 className="h-4 w-4 text-primary" /><p className="mt-3 text-sm font-medium">Publish later</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Publishing comes after the deployment integrations are ready.</p></div></div>
       </main>
