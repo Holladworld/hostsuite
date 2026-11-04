@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { mergeGeneratedSiteIntoProjectMetadata } from '@/lib/ai-projects';
-import type { GeneratedSite } from '@/lib/ai-site';
+import { mergeGeneratedSiteIntoProjectMetadata } from '../../lib/ai-projects';
+import type { GeneratedSite } from '../../lib/ai-site';
 
 const generatedSite: GeneratedSite = {
   siteName: 'Northstar Foods',
