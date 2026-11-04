@@ -123,16 +123,20 @@ export async function POST(request: NextRequest) {
       if (saveError) throw saveError;
     }
 
-    await recordUsage({
-      userId,
-      projectId,
-      provider: provider.name,
-      model: provider.model,
-      inputTokens: result.usage?.inputTokens,
-      outputTokens: result.usage?.outputTokens,
-      totalTokens: result.usage?.totalTokens,
-      status: 'completed',
-    });
+    try {
+      await recordUsage({
+        userId,
+        projectId,
+        provider: provider.name,
+        model: provider.model,
+        inputTokens: result.usage?.inputTokens,
+        outputTokens: result.usage?.outputTokens,
+        totalTokens: result.usage?.totalTokens,
+        status: 'completed',
+      });
+    } catch (usageError) {
+      console.error('Could not record completed AI usage:', usageError);
+    }
 
     return NextResponse.json({
       site,
@@ -159,7 +163,11 @@ export async function POST(request: NextRequest) {
     if (userId) {
       const providerName = process.env.AI_PROVIDER || 'openai-compatible';
       const model = process.env.AI_MODEL || 'unknown';
-      await recordUsage({ userId, projectId, provider: providerName, model, status: 'failed' });
+      try {
+        await recordUsage({ userId, projectId, provider: providerName, model, status: 'failed' });
+      } catch (usageError) {
+        console.error('Could not record failed AI usage:', usageError);
+      }
     }
 
     const message = error instanceof Error ? error.message : 'We could not generate the website. Please try again.';
