@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { extractJson, generatedSiteSchema, SITE_GENERATION_INSTRUCTIONS } from '@/lib/ai-site';
 import { getAIProvider } from '@/lib/ai/provider';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
+import { mergeGeneratedSiteIntoProjectMetadata } from '@/lib/ai-projects';
 
 const requestSchema = z.object({
   businessName: z.string().min(2).max(120),
@@ -113,15 +114,7 @@ export async function POST(request: NextRequest) {
           status: 'ready',
           provider: provider.name,
           model: provider.model,
-          metadata: {
-            ...(projectMetadata ?? {}),
-            generatedSite: site,
-            generation: {
-              status: 'ready',
-              schemaVersion: 1,
-              generatedAt: new Date().toISOString(),
-            },
-          },
+          metadata: mergeGeneratedSiteIntoProjectMetadata(projectMetadata, site),
         })
         .eq('id', projectId)
         .eq('user_id', userId)
