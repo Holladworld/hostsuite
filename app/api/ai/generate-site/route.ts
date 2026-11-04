@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     if (projectId) {
       const admin = createAdminSupabaseClient();
-      const { error: saveError } = await admin
+      const { data: savedProject, error: saveError } = await admin
         .from('ai_projects')
         .update({
           status: 'ready',
@@ -136,9 +136,18 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', projectId)
         .eq('user_id', userId)
-        .eq('kind', 'website');
+        .eq('kind', 'website')
+        .eq('status', 'generating')
+        .select('id')
+        .maybeSingle();
 
       if (saveError) throw saveError;
+      if (!savedProject) {
+        return NextResponse.json(
+          { error: 'This website project changed state while it was generating. Refresh it before continuing.' },
+          { status: 409 }
+        );
+      }
     }
 
     try {
@@ -172,7 +181,8 @@ export async function POST(request: NextRequest) {
           .update({ status: 'failed' })
           .eq('id', projectId)
           .eq('user_id', userId)
-          .eq('kind', 'website');
+          .eq('kind', 'website')
+          .eq('status', 'generating');
       } catch (persistenceError) {
         console.error('Could not update failed AI project status:', persistenceError);
       }
