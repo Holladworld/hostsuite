@@ -26,7 +26,7 @@ export default function WebsiteBuilderPage() {
     const requestedProjectId = new URLSearchParams(window.location.search).get('projectId');
     if (!requestedProjectId) {
       let cancelled = false;
-      async function loadProjects() {
+      const loadProjects = async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session?.access_token) return;
@@ -39,7 +39,7 @@ export default function WebsiteBuilderPage() {
         } catch (loadError) {
           console.error('Could not load saved website projects:', loadError);
         }
-      }
+      };
       void loadProjects();
       return () => { cancelled = true; };
     }
