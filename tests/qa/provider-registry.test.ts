@@ -13,7 +13,7 @@ describe('hosting provider registry', () => {
 
     expect(status.mode).toBe('unconfigured');
     expect(status.configured).toBe(false);
-    expect(status.readyCapabilities).toEqual([]);
+    expect(status.configurationSatisfiedCapabilities).toEqual([]);
   });
 
   it('identifies mock mode explicitly rather than presenting it as a live provider', () => {
@@ -23,7 +23,7 @@ describe('hosting provider registry', () => {
 
     expect(status.mode).toBe('mock');
     expect(status.configured).toBe(true);
-    expect(status.readyCapabilities).toEqual(status.supportedCapabilities);
+    expect(status.configurationSatisfiedCapabilities).toEqual(status.supportedCapabilities);
   });
 
   it('keeps domain search unavailable until its documented route is configured', () => {
@@ -36,7 +36,7 @@ describe('hosting provider registry', () => {
 
     expect(status.mode).toBe('live');
     expect(status.configured).toBe(true);
-    expect(status.readyCapabilities).not.toContain('domain.search');
+    expect(status.configurationSatisfiedCapabilities).not.toContain('domain.search');
     expect(status.supportedCapabilities).toContain('domain.search');
   });
 
@@ -50,7 +50,7 @@ describe('hosting provider registry', () => {
 
     expect(status.mode).toBe('live');
     expect(status.configured).toBe(true);
-    expect(status.readyCapabilities).toEqual(status.supportedCapabilities);
+    expect(status.configurationSatisfiedCapabilities).toEqual(status.supportedCapabilities);
   });
 
   it('does not report a live provider configured when credentials are missing', () => {
@@ -62,7 +62,7 @@ describe('hosting provider registry', () => {
     const status = getHostingProviderStatus();
 
     expect(status.configured).toBe(false);
-    expect(status.readyCapabilities).toEqual([]);
+    expect(status.configurationSatisfiedCapabilities).toEqual([]);
   });
 
   it('rejects unknown provider names instead of silently treating them as unconfigured', () => {
