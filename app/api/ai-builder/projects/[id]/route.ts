@@ -105,10 +105,17 @@ export async function PATCH(
       .eq('id', params.id)
       .eq('user_id', user.id)
       .eq('kind', 'website')
+      .in('status', ['draft', 'ready', 'failed'])
       .select('id,name,kind,status,provider,model,metadata,created_at,updated_at')
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) {
+      return NextResponse.json(
+        { error: 'This website project changed state. Refresh it before trying again.' },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ project: data });
   } catch (error) {
     console.error('AI website project update failed:', error);
