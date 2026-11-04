@@ -8,7 +8,7 @@ export type HostingProviderStatus = {
   mode: ProviderMode;
   configured: boolean;
   supportedCapabilities: readonly ProviderCapability[];
-  readyCapabilities: readonly ProviderCapability[];
+  configurationSatisfiedCapabilities: readonly ProviderCapability[];
 };
 
 /**
@@ -26,7 +26,7 @@ export function getHostingProviderStatus(): HostingProviderStatus {
       mode: 'unconfigured',
       configured: false,
       supportedCapabilities: provider.capabilities,
-      readyCapabilities: [],
+      configurationSatisfiedCapabilities: [],
     };
   }
 
@@ -36,7 +36,7 @@ export function getHostingProviderStatus(): HostingProviderStatus {
       mode: 'mock',
       configured: true,
       supportedCapabilities: provider.capabilities,
-      readyCapabilities: provider.capabilities,
+      configurationSatisfiedCapabilities: provider.capabilities,
     };
   }
 
@@ -46,7 +46,7 @@ export function getHostingProviderStatus(): HostingProviderStatus {
   );
   const availabilityRoutePresent = Boolean(process.env.WHOGOHOST_DOMAIN_AVAILABILITY_PATH?.trim());
 
-  const readyCapabilities = credentialsPresent
+  const configurationSatisfiedCapabilities = credentialsPresent
     ? provider.capabilities.filter((capability) =>
         capability !== 'domain.search' || availabilityRoutePresent
       )
@@ -57,7 +57,7 @@ export function getHostingProviderStatus(): HostingProviderStatus {
     mode: 'live',
     configured: credentialsPresent,
     supportedCapabilities: provider.capabilities,
-    readyCapabilities,
+    configurationSatisfiedCapabilities,
   };
 }
 
