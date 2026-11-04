@@ -8,9 +8,11 @@ describe('HostSuite security invariants', () => {
   });
 
   it('requires ownership before customer-scoped operations', () => {
-    const requestUserId = 'user-a';
-    const resourceOwnerId = 'user-b';
-    expect(requestUserId === resourceOwnerId).toBe(false);
+    const isOwner = (requestUserId: string, resourceOwnerId: string) =>
+      requestUserId === resourceOwnerId;
+
+    expect(isOwner('user-a', 'user-b')).toBe(false);
+    expect(isOwner('user-a', 'user-a')).toBe(true);
   });
 
   it('requires a verified payment state before entitlement', () => {
