@@ -4,7 +4,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { z } from 'zod';
 
 async function getAuthenticatedUser(request: NextRequest) {
-  const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+  const token = request.headers.get('authorization')?.replace(/^Bearer\\s+/i, '');
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!token || !url || !anonKey) return null;
@@ -14,11 +14,11 @@ async function getAuthenticatedUser(request: NextRequest) {
   return error ? null : user;
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
+    const { id } = await params;
     const user = await getAuthenticatedUser(request);
     if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
 
@@ -26,7 +26,7 @@ export async function GET(
     const { data, error } = await admin
       .from('ai_projects')
       .select('id,name,kind,status,provider,model,metadata,created_at,updated_at')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .eq('kind', 'website')
       .single();
@@ -42,18 +42,15 @@ export async function GET(
   }
 }
 
-
 const projectBriefSchema = z.object({
   businessName: z.string().trim().min(2).max(160),
   businessType: z.string().trim().min(2).max(120),
   description: z.string().trim().min(20).max(2000),
 });
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, { params }: RouteContext) {
   try {
+    const { id } = await params;
     const user = await getAuthenticatedUser(request);
     if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
 
@@ -66,7 +63,7 @@ export async function PATCH(
     const { data: current, error: lookupError } = await admin
       .from('ai_projects')
       .select('id,metadata,status')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .eq('kind', 'website')
       .single();
@@ -102,7 +99,7 @@ export async function PATCH(
           schemaVersion: 1,
         },
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('user_id', user.id)
       .eq('kind', 'website')
       .in('status', ['draft', 'ready', 'failed'])
