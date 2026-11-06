@@ -19,7 +19,8 @@ async function getAuthenticatedUser(request: Request) {
   return data.user ?? null;
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const user = await getAuthenticatedUser(request);
   if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
 
@@ -27,13 +28,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const { data: instance, error } = await admin
     .from('service_instances')
     .select('user_id')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: 'Unable to load service.' }, { status: 500 });
   if (!instance) return NextResponse.json({ error: 'Service instance not found.' }, { status: 404 });
   if (instance.user_id !== user.id) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
 
-  const result = await provisionServiceInstance(params.id);
+  const result = await provisionServiceInstance(id);
   return NextResponse.json(result, { status: result.ok ? 200 : 409 });
 }
