@@ -9,9 +9,9 @@ const technicalText = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500',
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://hostsuite.app'),
-  title: 'HostSuite — Digital infrastructure, without the headache.',
+  title: 'HostSuite — Your website, looked after.',
   description:
-    'Domains, websites, hosting, business email, monitoring and technical help — managed simply for growing businesses.',
+    'Website management, practical technical support and ongoing care for businesses that already have a website.',
   keywords: [
     'managed hosting Nigeria',
     'business email',
@@ -21,9 +21,9 @@ export const metadata: Metadata = {
     'HostSuite',
   ],
   openGraph: {
-    title: 'HostSuite — Digital infrastructure, without the headache.',
+    title: 'HostSuite — Your website, looked after.',
     description:
-      'Build it. Launch it. Keep it running. Get help when something goes wrong.',
+      'Already have a website? HostSuite helps you manage it, make changes and handle the technical work without the jargon.',
     type: 'website',
   },
 };
