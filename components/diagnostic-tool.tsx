@@ -72,7 +72,7 @@ export function DiagnosticTool() {
   const estimate = useMemo(() => {
     if (selectedPoints.length === 0) return null;
     const maxTurnaround = Math.max(...selectedPoints.map((p) => p.turnaroundHours));
-    const requiresAssessment = selectedPoints.some((p) => p.requiresAssessment);
+    const requiresAssessment = selectedPoints.some((p) => 'requiresAssessment' in p && p.requiresAssessment);
     const totalMin = selectedPoints.reduce((s, p) => s + p.costMin, 0);
     const totalMax = selectedPoints.reduce((s, p) => s + p.costMax, 0);
     let tier = 'Starter Ops';
@@ -203,7 +203,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
             </h2>
           </div>
           <p className="max-w-[520px] text-sm leading-7 text-[#71657B] lg:justify-self-end">
-            Choose the issue, share a little context and see an initial estimate. We will review the details with you before any work begins.
+            Choose what you need help with, share a little context and see an initial estimate where available. Renewal requests are reviewed before we confirm pricing.
           </p>
         </div>
 
