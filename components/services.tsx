@@ -30,7 +30,7 @@ export function Services() {
             {situations.map((item, index) => (
               <motion.article
                 key={item.n}
-                initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+                initial={false}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.18 }}
                 transition={{ duration: 0.45, delay: reduceMotion ? 0 : index * 0.05 }}
@@ -72,7 +72,7 @@ export function Services() {
               { n: '02', title: 'Get a clear plan', copy: 'We review the situation, explain your options and agree the scope.' },
               { n: '03', title: 'Get back to business', copy: 'We do the agreed work and keep you informed along the way.' },
             ].map((step) => (
-              <motion.article key={step.n} initial={reduceMotion ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.25 }} transition={{ duration: 0.45 }} className="rounded-2xl border border-white/15 bg-white/[0.06] p-6 sm:p-7">
+              <motion.article key={step.n} initial={false} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.25 }} transition={{ duration: 0.45 }} className="rounded-2xl border border-white/15 bg-white/[0.06] p-6 sm:p-7">
                 <span className="font-display text-4xl font-semibold text-[#D9B8F0]">{step.n}</span>
                 <h3 className="mt-5 font-display text-2xl font-semibold tracking-[-0.035em]">{step.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-white/65">{step.copy}</p>
