@@ -116,7 +116,7 @@ export function ServiceImageCarousel() {
     >
       <div className="mx-auto max-w-[1440px]">
         <div
-          className="relative isolate flex min-h-[360px] overflow-hidden rounded-[24px] bg-[#321747] text-white shadow-[0_22px_60px_rgba(49,23,71,0.16)] sm:min-h-[390px] lg:min-h-[430px]"
+          className="relative isolate flex min-h-[250px] overflow-hidden rounded-[20px] sm:min-h-[390px] bg-[#321747] text-white shadow-[0_22px_60px_rgba(49,23,71,0.16)] sm:min-h-[390px] lg:min-h-[430px]"
           role="group"
           aria-roledescription="slide"
           aria-label={`${active + 1} of ${slides.length}: ${slide.eyebrow}`}
@@ -130,20 +130,20 @@ export function ServiceImageCarousel() {
             }}
             aria-hidden="true"
           />
-          <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(35,17,51,0.94)_0%,rgba(49,23,71,0.82)_42%,rgba(49,23,71,0.22)_100%)] sm:bg-[linear-gradient(90deg,rgba(35,17,51,0.94)_0%,rgba(49,23,71,0.76)_48%,rgba(49,23,71,0.12)_100%)]" aria-hidden="true" />
+          <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(35,17,51,0.94)_0%,rgba(49,23,71,0.82)_42%,rgba(35,17,51,0.48)_100%)] sm:bg-[linear-gradient(90deg,rgba(35,17,51,0.96)_0%,rgba(49,23,71,0.86)_48%,rgba(35,17,51,0.32)_100%)]" aria-hidden="true" />
 
-          <div className="flex w-full flex-col justify-between gap-10 p-6 sm:p-9 lg:p-12">
+          <div className="flex w-full flex-col justify-between gap-4 p-5 sm:gap-10 sm:p-9 lg:p-12">
             <div className="max-w-[680px]">
               <p className="text-[10px] font-extrabold tracking-[0.2em] text-[#E6C9F7] sm:text-xs">{slide.eyebrow}</p>
-              <h2 className="mt-5 max-w-[650px] font-display text-[clamp(2.2rem,5vw,4.5rem)] font-semibold leading-[0.98] tracking-[-0.055em] text-white [text-wrap:balance]">
+              <h2 className="mt-3 max-w-[650px] font-display text-[clamp(1.8rem,5vw,4.5rem)] sm:mt-5 sm:text-[clamp(2.2rem,5vw,4.5rem)] font-semibold leading-[0.98] tracking-[-0.055em] text-white [text-wrap:balance]">
                 {slide.title}
               </h2>
-              <p className="mt-5 max-w-[520px] text-sm leading-7 text-white/85 sm:text-base sm:leading-8">
+              <p className="mt-3 max-w-[520px] text-xs leading-5 text-white/90 sm:mt-5 sm:text-base sm:leading-8">
                 {slide.description}
               </p>
               <Link
                 href={slide.href}
-                className="mt-7 inline-flex min-h-12 items-center gap-3 rounded-xl bg-white px-5 py-3.5 text-sm font-extrabold text-[#4A1F6B] shadow-lg transition hover:-translate-y-0.5 hover:bg-[#F5EAFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B]"
+                className="mt-4 inline-flex min-h-10 items-center gap-3 rounded-xl bg-white px-4 py-2.5 text-xs sm:mt-7 sm:min-h-12 sm:px-5 sm:py-3.5 sm:text-sm text-sm font-extrabold text-[#4A1F6B] shadow-lg transition hover:-translate-y-0.5 hover:bg-[#F5EAFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B]"
               >
                 {slide.action}<ArrowUpRight className="h-4 w-4" />
               </Link>
