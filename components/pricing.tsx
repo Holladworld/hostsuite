@@ -43,7 +43,7 @@ export function Pricing() {
             const isCustom = price === null;
             const annualSaving = plan.monthly !== null && plan.annual !== null && plan.monthly > 0 ? Math.round((1 - plan.annual / (plan.monthly * 12)) * 100) : 0;
             return (
-              <motion.article key={plan.id} initial={reduceMotion ? false : { opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, delay: reduceMotion ? 0 : index * 0.05 }} className="grid gap-6 border-b border-[#E5DCEC] py-8 lg:grid-cols-[0.85fr_0.7fr_1.5fr_auto] lg:items-start lg:gap-8">
+              <motion.article key={plan.id} initial={false} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, delay: reduceMotion ? 0 : index * 0.05 }} className="grid gap-6 border-b border-[#E5DCEC] py-8 lg:grid-cols-[0.85fr_0.7fr_1.5fr_auto] lg:items-start lg:gap-8">
                 <div>
                   {plan.popular && <p className="mb-2 font-mono-data text-[9px] font-semibold uppercase tracking-[0.16em] text-[#6D3AA0]">Recommended</p>}
                   <h3 className="font-display text-2xl leading-tight tracking-[-0.04em] text-[#281936]">{plan.name}</h3>
