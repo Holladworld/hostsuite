@@ -270,7 +270,7 @@ export function AdminTicketsPanel() {
       {/* Add Client Domain Modal */}
       {domainModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-5 shadow-2xl sm:p-6">
             <div className="flex items-center justify-between">
               <h3 className="flex items-center gap-2 font-display text-lg font-bold">
                 <Server className="h-5 w-5 text-primary" /> Assign Hosted Domain
@@ -370,7 +370,7 @@ export function AdminTicketsPanel() {
       {/* Manual Ticket Modal */}
       {ticketModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
+          <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-card p-5 shadow-2xl sm:p-6">
             <div className="flex items-center justify-between">
               <h3 className="flex items-center gap-2 font-display text-lg font-bold">
                 <Plus className="h-5 w-5 text-primary" /> Log Support Ticket
