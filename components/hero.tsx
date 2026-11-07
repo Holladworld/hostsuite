@@ -19,7 +19,7 @@ export function Hero() {
 
   return (
     <section className="relative overflow-hidden bg-white text-[#261C30]">
-      <div className="pointer-events-none absolute -right-24 -top-28 h-[420px] w-[420px] rounded-full bg-[#F1E8F8] opacity-75 blur-2xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute -right-24 -top-28 h-[420px] w-[420px] rounded-full bg-[#F1E8F8] opacity-80" aria-hidden="true" />
       <div className="relative mx-auto grid max-w-[1440px] items-center gap-12 px-5 pb-14 pt-14 sm:px-8 sm:pb-20 sm:pt-16 lg:min-h-[590px] lg:grid-cols-[1.02fr_0.98fr] lg:gap-8 lg:px-12 lg:py-16">
         <div className="relative z-10">
           <motion.p initial={false} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 rounded-full border border-[#E2D5ED] bg-white px-3.5 py-2 text-[11px] font-bold tracking-[0.02em] text-[#5B3477] shadow-sm">
