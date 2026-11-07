@@ -2,15 +2,16 @@ export const BRAND = {
   name: 'HostSuite',
   parent: 'Vobels Limited',
   tagline: 'Simple technology support for growing businesses',
-  whatsappNumber: '2348142243764',
-  whatsappDisplay: '+234 814 224 3764',
   supportEmail: 'vobels.co@gmail.com',
 };
 
-export const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || BRAND.whatsappNumber;
+// Keep the public support contact in the deployment environment, never in source.
+export const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '').replace(/\D/g, '');
+export const WHATSAPP_DISPLAY = WHATSAPP_NUMBER ? `+${WHATSAPP_NUMBER}` : 'WhatsApp support';
 
 export function waLink(message: string) {
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  const baseUrl = WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : 'https://wa.me/';
+  return `${baseUrl}?text=${encodeURIComponent(message)}`;
 }
 
 export const NAV_LINKS = [
