@@ -25,12 +25,12 @@ export function Pricing() {
           <div>
             <p className="font-mono-data text-[11px] uppercase tracking-[0.18em] text-[#80688B]">Website care & support</p>
             <h2 className="mt-5 max-w-[10ch] font-display text-4xl font-normal leading-[1.02] tracking-[-0.025em] text-[#24132F] sm:text-5xl">
-              A little help or someone to handle it all.
+              The right level of care. Nothing you do not need.
             </h2>
           </div>
           <div className="flex flex-col items-start gap-4 lg:items-end">
             <p className="max-w-lg text-sm leading-7 text-[#6C6470] lg:text-right">
-              Explore the available management plans. Not sure what your website needs? Tell us about it first and we will help you work out the right level of support.
+              Choose the level of support that suits your business today. Need a one-off fix, a steady pair of hands or full website care? Start with what you need—not a bigger package.
             </p>
             <div className="inline-flex border-b border-[#D9D0DD]">
               <button type="button" onClick={() => setAnnual(false)} aria-pressed={!annual} className={`border-b-2 px-4 py-3 text-sm font-semibold transition ${!annual ? 'border-[#4A1F6B] text-[#4A1F6B]' : 'border-transparent text-[#756C79] hover:text-[#24132F]'}`}>Monthly</button>
