@@ -1,139 +1,171 @@
-import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+'use client';
 
-const help = [
+import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowUpRight, ArrowRight } from 'lucide-react';
+
+const situations = [
   {
     number: '01',
-    title: 'The website is there. The person who built it is not.',
-    description: 'Regain access, understand what you own and get a dependable team to take it forward.',
-    detail: 'ACCESS & HANDOVER',
+    category: 'ACCESS & RECOVERY',
+    title: 'The person who built it has gone quiet.',
+    copy: 'We help you regain access, understand what you own and get your website back into capable hands.',
+    action: 'Recover my access',
     href: '/?issue=developer-ghosted#diagnostic',
+    image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=88',
+    alt: 'Quiet, light-filled professional workspace',
   },
   {
     number: '02',
-    title: 'Your business email is letting you down.',
-    description: 'Find out why messages bounce, disappear or land in spam—and put business communication back on track.',
-    detail: 'EMAIL & DELIVERABILITY',
+    category: 'BUSINESS EMAIL',
+    title: 'Important messages are not getting through.',
+    copy: 'Bounced emails, spam folders and mailbox problems deserve a proper fix—not guesswork.',
+    action: 'Fix my business email',
     href: '/services#email-deliverability',
+    image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1200&q=88',
+    alt: 'Modern workspace with a focus on communication',
   },
   {
     number: '03',
-    title: 'Small website jobs keep becoming big distractions.',
-    description: 'Content changes, updates, backups, security and the practical work that keeps a site dependable.',
-    detail: 'ONGOING WEBSITE CARE',
+    category: 'ONGOING WEBSITE CARE',
+    title: 'The little jobs never seem to end.',
+    copy: 'Updates, backups, security, content changes and maintenance—handled with care and explained in plain language.',
+    action: 'Explore website care',
     href: '/services#managed-servers',
+    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=88',
+    alt: 'Calm, carefully designed contemporary interior',
   },
   {
     number: '04',
-    title: 'You built it with AI. Now you need someone to look after it.',
-    description: 'Keep the site you created. Get help with maintenance, improvements and the technical details behind it.',
-    detail: 'AI-BUILT WEBSITE SUPPORT',
+    category: 'AI-BUILT WEBSITES',
+    title: 'You made the website. Now make it dependable.',
+    copy: 'Keep the freedom of building with AI. Bring in a real team for upkeep, improvements and the technical details.',
+    action: 'Support my AI-built site',
     href: '/#ai-websites',
-  },
-  {
-    number: '05',
-    title: 'It may be time for a better setup.',
-    description: 'When your hosting expires or a move genuinely makes sense, we can plan it without disrupting your business.',
-    detail: 'HOSTING, MIGRATION & NEW BUILDS',
-    href: '/services#zero-downtime-migration',
+    image: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1200&q=88',
+    alt: 'Creative team collaborating in a bright studio',
   },
 ];
 
 export function Services() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <>
-      <section id="services" className="scroll-mt-20 bg-[#F5F1EA] py-20 sm:py-24 lg:py-28">
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[0.76fr_1.24fr] lg:gap-20 lg:px-12">
-          <div className="lg:sticky lg:top-28 lg:self-start">
-            <p className="font-mono-data text-[10px] uppercase tracking-[0.2em] text-[#80688B]">The things that get in the way</p>
-            <h2 className="mt-5 max-w-[10ch] font-display text-5xl font-normal leading-[0.98] tracking-[-0.03em] text-[#24132F] sm:text-6xl">
-              You built the business. We will mind the website.
-            </h2>
-            <p className="mt-6 max-w-md text-base leading-7 text-[#665D69]">
-              A website should support the work you do—not become another job on your list. Tell us what is happening. We will help you decide what needs attention and what can wait.
-            </p>
-            <Link href="/#diagnostic" className="mt-8 inline-flex items-center gap-2 border-b border-[#A996B0] pb-2 text-sm font-semibold text-[#4A1F6B] hover:border-[#4A1F6B]">
-              Find the right kind of help <ArrowUpRight className="h-4 w-4" />
-            </Link>
-            <div className="mt-10 hidden overflow-hidden lg:block">
-              <img
-                src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=85"
-                alt="Quiet, refined architectural workspace"
-                className="h-[260px] w-full object-cover"
-                loading="lazy"
-              />
-              <p className="mt-2 font-mono-data text-[9px] uppercase tracking-[0.15em] text-[#8B7793]">Less time managing. More time moving forward.</p>
-            </div>
+      <section id="services" className="scroll-mt-20 bg-[#F4F0E9] py-24 sm:py-28 lg:py-36">
+        <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-16 xl:px-24">
+          <div className="grid gap-8 lg:grid-cols-[1fr_0.7fr] lg:items-end">
+            <motion.div
+              initial={reduceMotion ? false : { opacity: 0, y: 36 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.35 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <p className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.22em] text-[#956D58]"><span className="h-px w-8 bg-[#956D58]" /> A more considered kind of website support</p>
+              <h2 className="mt-7 max-w-[850px] font-display text-[clamp(2.8rem,5.5vw,5.7rem)] font-semibold leading-[0.97] tracking-[-0.07em] text-[#211B1D]">
+                You have a business to run. <span className="text-[#98735D]">We’ll mind the website.</span>
+              </h2>
+            </motion.div>
+            <motion.p
+              initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.35 }}
+              transition={{ duration: 0.7, delay: 0.12 }}
+              className="max-w-md pb-2 text-base leading-8 text-[#69615C] lg:justify-self-end"
+            >
+              A website should support your work—not become another job on your list. Whatever has gone wrong, we help you understand it, put it right and keep things moving.
+            </motion.p>
           </div>
 
-          <div className="border-t border-[#D9D0DD]">
-            {help.map((item) => (
-              <Link key={item.number} href={item.href} className="group grid gap-3 border-b border-[#D9D0DD] py-7 transition-colors hover:bg-white/55 sm:grid-cols-[3rem_1fr_auto] sm:gap-5 sm:px-3">
-                <span className="pt-1 font-mono-data text-xs text-[#8B7793]">{item.number}</span>
-                <span>
-                  <span className="block max-w-2xl font-display text-[1.7rem] font-normal leading-[1.08] text-[#24132F] sm:text-[2rem]">{item.title}</span>
-                  <span className="mt-3 block max-w-2xl text-sm leading-6 text-[#6C6470]">{item.description}</span>
-                  <span className="mt-3 block font-mono-data text-[9px] uppercase tracking-[0.14em] text-[#8B7793]">{item.detail}</span>
-                </span>
-                <ArrowUpRight className="mt-1 h-4 w-4 text-[#8B7793] transition-transform group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-[#4A1F6B]" />
-              </Link>
+          <div className="mt-16 border-t border-[#D8CFC4]">
+            {situations.map((item, index) => (
+              <motion.article
+                key={item.number}
+                initial={reduceMotion ? false : { opacity: 0, y: 42 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.18 }}
+                transition={{ duration: 0.72, delay: reduceMotion ? 0 : (index % 2) * 0.08, ease: [0.22, 1, 0.36, 1] }}
+                className="group grid gap-6 border-b border-[#D8CFC4] py-8 sm:py-10 lg:grid-cols-[100px_0.9fr_1.1fr_180px] lg:items-center lg:gap-8"
+              >
+                <span className="font-display text-4xl font-semibold tracking-[-0.06em] text-[#B5A89B]">{item.number}</span>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#956D58]">{item.category}</p>
+                  <h3 className="mt-3 max-w-[440px] font-display text-[clamp(1.65rem,2.8vw,2.65rem)] font-semibold leading-[1.05] tracking-[-0.055em] text-[#211B1D]">{item.title}</h3>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-[150px_1fr] sm:items-center lg:contents">
+                  <div className="relative h-[130px] overflow-hidden sm:h-[116px] lg:col-start-3 lg:row-start-1">
+                    <img src={item.image} alt={item.alt} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06]" />
+                  </div>
+                  <div className="lg:col-start-4 lg:row-start-1">
+                    <p className="max-w-sm text-sm leading-7 text-[#69615C]">{item.copy}</p>
+                    <Link href={item.href} className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-[#6D4438] transition-colors hover:text-[#211B1D]">
+                      {item.action} <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
+                    </Link>
+                  </div>
+                </div>
+              </motion.article>
+            ))}
+          </div>
+
+          <motion.div
+            initial={reduceMotion ? false : { opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.7 }}
+            className="mt-10 flex flex-col gap-4 border-l-2 border-[#B48A68] bg-[#EAE3D9] px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-8"
+          >
+            <div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#956D58]">A move is optional</p>
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-[#554D48]">You do not have to change hosting to get better support. If a migration or a new website makes sense later, we can plan that too.</p>
+            </div>
+            <Link href="/services#zero-downtime-migration" className="inline-flex shrink-0 items-center gap-2 text-xs font-bold text-[#6D4438]">Explore your options <ArrowUpRight className="h-4 w-4" /></Link>
+          </motion.div>
+        </div>
+      </section>
+
+      <section id="how-it-works" className="scroll-mt-20 bg-[#20191D] py-24 text-[#F5F0E9] sm:py-28 lg:py-32">
+        <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-16 xl:px-24">
+          <div className="grid gap-8 lg:grid-cols-[1fr_0.7fr] lg:items-end">
+            <div>
+              <p className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.22em] text-[#D6B08B]"><span className="h-px w-8 bg-[#D6B08B]" /> Straightforward from the first conversation</p>
+              <h2 className="mt-7 max-w-[760px] font-display text-[clamp(2.8rem,5vw,5.2rem)] font-semibold leading-[0.97] tracking-[-0.07em]">No technical maze. Just a clear way forward.</h2>
+            </div>
+            <p className="max-w-md text-sm leading-7 text-white/60 lg:justify-self-end">You stay in control. We explain what needs doing, agree the work and take responsibility for the parts you want us to handle.</p>
+          </div>
+          <div className="mt-16 grid border-y border-white/20 md:grid-cols-3">
+            {[
+              { n: '01', title: 'Tell us what’s wrong', copy: 'Choose the issue and share what you know. You do not need to speak developer.' },
+              { n: '02', title: 'Get a clear plan', copy: 'We review the situation, explain the options and agree the scope before work begins.' },
+              { n: '03', title: 'Get back to business', copy: 'We fix the issue or take on the agreed ongoing care, and keep you informed.' },
+            ].map((step, index) => (
+              <motion.article
+                key={step.n}
+                initial={reduceMotion ? false : { opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.65, delay: reduceMotion ? 0 : index * 0.1 }}
+                className="border-b border-white/20 py-8 md:border-b-0 md:py-9 md:pr-8 md:[&:not(:first-child)]:border-l md:[&:not(:first-child)]:pl-8"
+              >
+                <span className="font-display text-5xl font-semibold tracking-[-0.07em] text-[#D6B08B]">{step.n}</span>
+                <h3 className="mt-7 font-display text-2xl font-semibold tracking-[-0.04em]">{step.title}</h3>
+                <p className="mt-3 max-w-sm text-sm leading-7 text-white/60">{step.copy}</p>
+              </motion.article>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="how-it-works" className="bg-[#EAE3E9] py-20 sm:py-24 lg:py-28">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-          <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
-            <div>
-              <p className="font-mono-data text-[10px] uppercase tracking-[0.2em] text-[#80688B]">Support, on your terms</p>
-              <h2 className="mt-5 max-w-[11ch] font-display text-5xl font-normal leading-[0.98] tracking-[-0.03em] text-[#24132F] sm:text-6xl">You choose how much we take off your hands.</h2>
-            </div>
-            <p className="max-w-xl text-base leading-7 text-[#665D69] lg:justify-self-end">
-              Some people want the tools and guidance to do it themselves. Others want a team to take responsibility. Start where you are; change the arrangement as your needs change.
-            </p>
+      <section id="ai-websites" className="scroll-mt-20 overflow-hidden bg-[#EAE3D9]">
+        <div className="grid min-h-[540px] lg:grid-cols-2">
+          <div className="flex flex-col justify-center px-5 py-20 sm:px-8 lg:px-16 xl:pl-[max(4rem,calc((100vw-1200px)/2))] xl:pr-16">
+            <p className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.22em] text-[#956D58]"><span className="h-px w-8 bg-[#956D58]" /> For the AI-built generation</p>
+            <h2 className="mt-7 max-w-[620px] font-display text-[clamp(2.8rem,5vw,5.1rem)] font-semibold leading-[0.96] tracking-[-0.07em] text-[#211B1D]">You built it with AI. We’ll help it go the distance.</h2>
+            <p className="mt-6 max-w-lg text-sm leading-7 text-[#69615C]">Keep the website you created. Bring in HostSuite when you need maintenance, improvements or a steady hand with the technical side. A rebuild is an option—not a condition of getting support.</p>
+            <Link href="/portal/ai-builder" className="mt-8 inline-flex w-fit items-center gap-3 border-b border-[#9C7A62] pb-2 text-xs font-bold text-[#6D4438]">Explore AI website creation <ArrowRight className="h-4 w-4" /></Link>
           </div>
-          <div className="mt-12 grid border-y border-[#CFC3D2] md:grid-cols-3">
-            <article className="py-7 md:pr-8">
-              <p className="font-mono-data text-[10px] text-[#8B7793]">01 / GUIDED</p>
-              <h3 className="mt-4 font-display text-3xl text-[#24132F]">Show me how.</h3>
-              <p className="mt-3 text-sm leading-6 text-[#6C6470]">Use clear guidance and the customer portal to handle the jobs you are comfortable owning.</p>
-            </article>
-            <article className="border-t border-[#CFC3D2] py-7 md:border-l md:border-t-0 md:px-8">
-              <p className="font-mono-data text-[10px] text-[#8B7793]">02 / MANAGED</p>
-              <h3 className="mt-4 font-display text-3xl text-[#24132F]">Please handle it.</h3>
-              <p className="mt-3 text-sm leading-6 text-[#6C6470]">Let HostSuite look after the agreed website and technical responsibilities while you focus on the business.</p>
-            </article>
-            <article className="border-t border-[#CFC3D2] py-7 md:border-l md:border-t-0 md:pl-8">
-              <p className="font-mono-data text-[10px] text-[#8B7793]">03 / ON DEMAND</p>
-              <h3 className="mt-4 font-display text-3xl text-[#24132F]">Just fix this.</h3>
-              <p className="mt-3 text-sm leading-6 text-[#6C6470]">Bring us one issue or one job. You do not need a full management plan to get expert help.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="ai-websites" className="scroll-mt-20 bg-[#21132F] text-white">
-        <div className="grid max-w-[1600px] lg:mx-auto lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="flex flex-col justify-center px-5 py-16 sm:px-8 sm:py-20 lg:px-14 xl:px-20">
-            <p className="font-mono-data text-[10px] uppercase tracking-[0.2em] text-[#CBB5D8]">Made it with AI? Keep going.</p>
-            <h2 className="mt-5 max-w-[11ch] font-display text-5xl font-normal leading-[0.96] sm:text-6xl">Creating the website was only the beginning.</h2>
-            <p className="mt-6 max-w-lg text-sm leading-7 text-white/70 sm:text-base">
-              Keep the website you made. Bring in HostSuite when you need updates, maintenance or a steady hand with the technical side. And when you are ready for a new direction, explore an AI-assisted rebuild with support available.
-            </p>
-            <Link href="/portal/ai-builder" className="mt-8 inline-flex w-fit items-center gap-2 border-b border-white/50 pb-2 text-sm font-semibold text-white hover:border-white">
-              Explore AI website creation <ArrowUpRight className="h-4 w-4" />
-            </Link>
-            <p className="mt-4 max-w-lg text-xs leading-6 text-white/45">A new website is an option—not the price of getting better support.</p>
-          </div>
-          <div className="relative min-h-[340px] overflow-hidden sm:min-h-[440px]">
-            <img
-              src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1600&q=85"
-              alt="Creative team working together in a bright studio"
-              className="absolute inset-0 h-full w-full object-cover object-center"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#21132F]/45 via-transparent to-transparent" />
+          <div className="relative min-h-[360px] overflow-hidden lg:min-h-full">
+            <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1800&q=90" alt="Creative team working together in a bright studio" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(234,227,217,0.2),transparent_30%)]" />
           </div>
         </div>
       </section>
