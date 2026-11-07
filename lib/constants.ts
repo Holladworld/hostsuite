@@ -20,10 +20,14 @@ export const NAV_LINKS = [
   { label: 'Knowledge', href: '/knowledge' },
   { label: 'Blog', href: '/blog' },
   { label: 'Pricing', href: '/#pricing' },
+  { label: 'Domains', href: '/domains' },
+  { label: 'Hosting', href: '/hosting' },
 ] as const;
 
 export const FOOTER_LINKS = {
   Solutions: [
+    { label: 'Find a Domain', href: '/domains' },
+    { label: 'Website Hosting', href: '/hosting' },
     { label: 'Managed Servers', href: '/services#managed-servers' },
     { label: 'Email Fixes', href: '/services#email-deliverability' },
     { label: 'Emergency Recovery', href: '/services#emergency-recovery' },
