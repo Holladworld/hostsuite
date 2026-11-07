@@ -4,67 +4,58 @@
 
 @layer base {
   :root {
-    /* HostSuite brand: deep purple #4A1F6B, action purple #5D2A86 */
-    --background: 270 20% 98%;
-    --foreground: 270 34% 12%;
+    --background: 270 33% 99%;
+    --foreground: 266 35% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 270 34% 12%;
+    --card-foreground: 266 35% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 270 34% 12%;
-    --primary: 274 52% 35%;
+    --popover-foreground: 266 35% 14%;
+    --primary: 273 54% 31%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 270 37% 27%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 270 16% 94%;
-    --muted-foreground: 270 8% 42%;
-    --accent: 270 37% 27%;
-    --accent-foreground: 0 0% 100%;
+    --secondary: 270 35% 94%;
+    --secondary-foreground: 270 42% 24%;
+    --muted: 270 24% 95%;
+    --muted-foreground: 265 12% 43%;
+    --accent: 274 52% 93%;
+    --accent-foreground: 274 52% 28%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
-    --warning: 38 92% 50%;
-    --info: 199 89% 48%;
-    --border: 270 14% 90%;
-    --input: 270 14% 90%;
-    --ring: 274 52% 35%;
-    --chart-1: 274 52% 35%;
-    --chart-2: 270 37% 27%;
-    --chart-3: 142 71% 45%;
-    --chart-4: 38 92% 50%;
-    --chart-5: 199 89% 48%;
-    --radius: 0.75rem;
+    --success: 142 71% 35%;
+    --warning: 38 92% 45%;
+    --info: 199 89% 42%;
+    --border: 270 18% 89%;
+    --input: 270 18% 89%;
+    --ring: 273 54% 31%;
+    --chart-1: 273 54% 31%;
+    --chart-2: 286 44% 48%;
+    --chart-3: 142 71% 35%;
+    --chart-4: 38 92% 45%;
+    --chart-5: 199 89% 42%;
+    --radius: 0.85rem;
   }
 }
 
 @layer base {
   * { @apply border-border; }
-  html,
-  body {
-    width: 100%;
-    min-width: 0;
-  }
+  html, body { width: 100%; min-width: 0; }
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   html { scroll-behavior: smooth; }
-  img,
-  video,
-  canvas {
-    max-width: 100%;
-  }
+  img, video, canvas { max-width: 100%; }
 }
 
 @layer utilities {
-  .font-mono-data { font-family: var(--font-ibm-plex-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  .font-mono-data { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
   .text-balance { text-wrap: balance; }
   .glass {
-    background: rgba(255, 255, 255, 0.78);
+    background: rgba(255, 255, 255, 0.82);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
   .glass-strong {
-    background: rgba(255, 255, 255, 0.94);
+    background: rgba(255, 255, 255, 0.96);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
@@ -102,11 +93,7 @@
 }
 
 @media (max-width: 640px) {
-  input,
-  textarea,
-  select {
-    font-size: 16px;
-  }
+  input, textarea, select { font-size: 16px; }
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
