@@ -1,69 +1,112 @@
 'use client';
 
+import { useRef } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, ArrowRight, Check } from 'lucide-react';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { ArrowUpRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSiteSettings } from '@/hooks/use-content';
 import { waLink } from '@/lib/constants';
 
 export function Hero() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end start'] });
+  const imageY = useTransform(scrollYProgress, [0, 1], ['0%', '14%']);
   const { settings } = useSiteSettings();
   const cmsHeadline = settings.hero?.headline?.trim();
   const cmsSubheadline = settings.hero?.subheadline?.trim();
   const headline = !cmsHeadline || cmsHeadline === 'Your digital infrastructure, in steadier hands.'
-    ? 'Your website should open doors. Not create problems.'
+    ? 'A better-run website. A lighter-running business.'
     : cmsHeadline;
   const subheadline = !cmsSubheadline || cmsSubheadline.startsWith('Websites, domains, hosting and business email')
-    ? 'When updates pile up, your developer disappears or business email stops delivering, HostSuite steps in. We look after the website you already have, so you can get back to running your business.'
+    ? 'From the developer who disappeared to the emails that never arrive, we take care of the digital details that keep your business moving.'
     : cmsSubheadline;
 
   return (
-    <section className="relative overflow-hidden bg-[#F3EEE6] text-[#21172A]">
-      <div className="mx-auto grid max-w-[1600px] lg:min-h-[650px] lg:grid-cols-[0.92fr_1.08fr]">
-        <div className="relative z-10 flex flex-col justify-center px-5 py-16 sm:px-8 sm:py-20 lg:px-14 lg:py-24 xl:px-20">
-          <p className="font-mono-data text-[10px] font-medium uppercase tracking-[0.22em] text-[#795F83]">
-            HOSTSUITE <span className="mx-2 text-[#B9AABD]">/</span> WEBSITE CARE & MANAGEMENT
-          </p>
-          <h1 className="mt-7 max-w-[12ch] font-display text-[clamp(3.5rem,6.5vw,6.8rem)] font-normal leading-[0.88] tracking-[-0.045em] text-balance">
+    <section ref={sectionRef} className="relative isolate overflow-hidden bg-[#17151A] text-[#F7F3EC]">
+      <div className="absolute inset-0 -z-20 overflow-hidden">
+        <motion.img
+          src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2200&q=90"
+          alt=""
+          aria-hidden="true"
+          className="h-[112%] w-full object-cover object-center opacity-65"
+          style={{ y: reduceMotion ? 0 : imageY }}
+          fetchPriority="high"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(19,16,21,0.98)_0%,rgba(25,20,27,0.92)_39%,rgba(25,20,27,0.46)_73%,rgba(25,20,27,0.18)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(19,16,21,0.58),transparent_42%)]" />
+      </div>
+
+      <div className="relative mx-auto flex min-h-[690px] max-w-[1600px] flex-col justify-between px-5 pb-8 pt-20 sm:px-8 sm:pt-24 lg:min-h-[760px] lg:px-16 lg:pb-12 xl:px-24">
+        <div className="max-w-[850px]">
+          <motion.p
+            initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+            className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#D8B68C]"
+          >
+            <span className="h-px w-9 bg-[#D8B68C]" />
+            Website care, without the complexity
+          </motion.p>
+
+          <motion.h1
+            initial={reduceMotion ? false : { opacity: 0, y: 36 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.85, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-8 max-w-[900px] font-display text-[clamp(3.4rem,8vw,7.8rem)] font-semibold leading-[0.91] tracking-[-0.075em] text-balance"
+          >
             {headline}
-          </h1>
-          <p className="mt-7 max-w-xl text-base leading-8 text-[#5E5662] sm:text-lg">
+          </motion.h1>
+
+          <motion.p
+            initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-8 max-w-[590px] text-base leading-8 text-white/76 sm:text-lg"
+          >
             {subheadline}
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" className="h-12 rounded-none bg-[#4A1F6B] px-6 text-white hover:bg-[#351449]">
+          </motion.p>
+
+          <motion.div
+            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.34, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-9 flex flex-col gap-3 sm:flex-row"
+          >
+            <Button asChild size="lg" className="h-14 rounded-none bg-[#D7B18A] px-7 text-sm font-bold text-[#211A1C] shadow-none hover:bg-[#E5C6A6]">
               <Link href="/#diagnostic" className="gap-3">
-                Tell us what is happening <ArrowRight className="h-4 w-4" />
+                Let’s sort out your website <ArrowUpRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="h-12 rounded-none border-[#B9AABD] bg-transparent px-6 text-[#35243D] hover:bg-[#E9E0EA]">
+            <Button asChild size="lg" variant="outline" className="h-14 rounded-none border-white/45 bg-white/[0.04] px-7 text-sm font-semibold text-white hover:bg-white/10 hover:text-white">
               <a href={waLink('Hello HostSuite, I would like to speak with someone about looking after my existing website.')} target="_blank" rel="noopener noreferrer">
-                Speak to our team
+                Speak to a real person
               </a>
             </Button>
-          </div>
-          <div className="mt-8 flex flex-wrap gap-x-5 gap-y-2 border-t border-[#D9CFD8] pt-5 text-[11px] font-medium text-[#6D6270]">
-            <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#79568B]" /> Keep your current website</span>
-            <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#79568B]" /> No forced hosting move</span>
-            <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-[#79568B]" /> Help without the jargon</span>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="relative min-h-[420px] overflow-hidden bg-[#2A1B31] sm:min-h-[520px] lg:min-h-full">
-          <img
-            src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2000&q=90"
-            alt="Warm, considered contemporary interior with natural materials and soft architectural light"
-            className="absolute inset-0 h-full w-full object-cover object-center"
-            fetchPriority="high"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1C1025]/75 via-[#1C1025]/5 to-[#1C1025]/10" />
-          <div className="absolute bottom-0 left-0 right-0 p-6 text-white sm:p-10 lg:p-12">
-            <p className="font-mono-data text-[10px] uppercase tracking-[0.2em] text-white/75">Considered care. Clear communication.</p>
-            <p className="mt-3 max-w-lg font-display text-3xl leading-tight sm:text-4xl lg:text-5xl">
-              Your business deserves a website that is looked after.
-            </p>
-          </div>
-          <span className="absolute right-5 top-5 font-mono-data text-[10px] tracking-[0.16em] text-white/75">HOSTSUITE / 01</span>
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.48 }}
+          className="mt-20 grid gap-5 border-t border-white/25 pt-6 sm:grid-cols-3 sm:gap-8"
+        >
+          {[
+            'Keep the website you already have',
+            'No forced hosting move',
+            'One-off help or ongoing care',
+          ].map((item) => (
+            <div key={item} className="flex items-center gap-3 text-xs font-medium tracking-[0.01em] text-white/75 sm:text-sm">
+              <Check className="h-4 w-4 shrink-0 text-[#D8B68C]" />
+              {item}
+            </div>
+          ))}
+        </motion.div>
+        <div className="pointer-events-none absolute bottom-12 right-8 hidden flex-col items-center gap-3 text-[9px] uppercase tracking-[0.22em] text-white/50 xl:flex">
+          <span>Scroll to explore</span>
+          <span className="h-14 w-px bg-gradient-to-b from-[#D8B68C] to-transparent" />
         </div>
       </div>
     </section>
