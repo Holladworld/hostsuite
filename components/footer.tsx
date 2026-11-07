@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Server, Mail, MessageCircle, ArrowUpRight, Instagram as InstagramIcon } from 'lucide-react';
+import { Mail, MessageCircle, ArrowUpRight, Instagram as InstagramIcon } from 'lucide-react';
 import { BRAND, SOCIAL_LINKS, waLink } from '@/lib/constants';
 
 const footerServices = [
