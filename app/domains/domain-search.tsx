@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, Globe, Loader2, Search, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Loader2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -17,8 +17,8 @@ export function DomainSearch() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const normalized = domain.trim().toLowerCase().replace(/^https?:\\/\\//, '').replace(/^www\\./, '').replace(/\\/$/, '');
-    if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/.test(normalized)) {
+    const normalized = domain.trim().toLowerCase().replace('https://', '').replace('http://', '').replace(/^www[.]/, '').split('/')[0];
+    if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:[.][a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/.test(normalized)) {
       setResult(null);
       setError('Enter a domain name such as yourbusiness.com.');
       return;
