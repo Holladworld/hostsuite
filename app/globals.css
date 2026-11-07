@@ -122,3 +122,16 @@
   input, select, textarea { width: 100%; }
   .font-mono-data { overflow-wrap: anywhere; }
 }
+
+
+@media (max-width: 639px) {
+  main h1 {
+    font-size: clamp(1.75rem, 7.5vw, 2.25rem) !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.04em;
+  }
+  main h2 {
+    overflow-wrap: anywhere;
+  }
+  main > div, main > section { min-width: 0; }
+}
