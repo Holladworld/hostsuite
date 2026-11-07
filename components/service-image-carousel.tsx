@@ -116,7 +116,7 @@ export function ServiceImageCarousel() {
     >
       <div className="mx-auto max-w-[1440px]">
         <div
-          className="relative isolate flex min-h-[250px] overflow-hidden rounded-[20px] sm:min-h-[390px] bg-[#321747] text-white shadow-[0_22px_60px_rgba(49,23,71,0.16)] sm:min-h-[390px] lg:min-h-[430px]"
+          className="relative isolate flex min-h-[250px] overflow-hidden rounded-[20px] bg-[#321747] text-white shadow-[0_22px_60px_rgba(49,23,71,0.16)] sm:min-h-[390px] lg:min-h-[430px]"
           role="group"
           aria-roledescription="slide"
           aria-label={`${active + 1} of ${slides.length}: ${slide.eyebrow}`}
@@ -143,7 +143,7 @@ export function ServiceImageCarousel() {
               </p>
               <Link
                 href={slide.href}
-                className="mt-4 inline-flex min-h-10 items-center gap-3 rounded-xl bg-white px-4 py-2.5 text-xs sm:mt-7 sm:min-h-12 sm:px-5 sm:py-3.5 sm:text-sm text-sm font-extrabold text-[#4A1F6B] shadow-lg transition hover:-translate-y-0.5 hover:bg-[#F5EAFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B]"
+                className="mt-4 inline-flex min-h-10 items-center gap-3 rounded-xl bg-white px-4 py-2.5 text-xs sm:mt-7 sm:min-h-12 sm:px-5 sm:py-3.5 sm:text-sm font-extrabold text-[#4A1F6B] shadow-lg transition hover:-translate-y-0.5 hover:bg-[#F5EAFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B]"
               >
                 {slide.action}<ArrowUpRight className="h-4 w-4" />
               </Link>
