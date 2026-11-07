@@ -65,9 +65,9 @@ export function PortalDashboardV2() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2.5"><div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Server className="h-5 w-5" /><span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-background" /></div><div className="leading-none"><span className="block font-display text-lg font-bold tracking-tight">HostSuite</span><span className="text-[10px] uppercase tracking-wider text-muted-foreground">Client Portal</span></div></Link>
-          <div className="flex items-center gap-3"><span className="hidden max-w-[240px] truncate text-sm text-muted-foreground sm:block">{user.email}</span><Button variant="outline" size="sm" onClick={handleSignOut} className="gap-1.5"><LogOut className="h-4 w-4" /> Sign out</Button></div>
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3"><span className="hidden max-w-[240px] truncate text-sm text-muted-foreground sm:block">{user.email}</span><Button variant="outline" size="sm" onClick={handleSignOut} className="gap-1.5"><LogOut className="h-4 w-4" /> Sign out</Button></div>
         </div>
       </header>
 
