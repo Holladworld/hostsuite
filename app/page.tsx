@@ -11,11 +11,11 @@ export default function Home() {
   return (
     <SiteShell>
       <Hero />
+      <PromoBanner />
+      <Services />
       <Suspense fallback={null}>
         <DiagnosticTool />
       </Suspense>
-      <PromoBanner />
-      <Services />
       <CreditOffsetBanner />
       <Pricing />
     </SiteShell>
