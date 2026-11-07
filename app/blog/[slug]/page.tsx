@@ -258,7 +258,7 @@ function BlogContent({ content }: { content: string }) {
     <div className="space-y-6">
       {blocks.map((block, i) => {
         if (block.type === 'heading') {
-          const Tag = (`h${block.level}` as 'h2' | 'h3' | 'h4') ?? 'h2';
+          const Tag = (['h2', 'h3', 'h4'].includes(`h${block.level}`) ? `h${block.level}` : 'h2') as 'h2' | 'h3' | 'h4';
           return (
             <Tag key={i} className="font-display text-xl font-bold text-foreground mt-8">
               {block.text}
