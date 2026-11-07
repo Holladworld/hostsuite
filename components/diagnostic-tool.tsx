@@ -189,13 +189,14 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
       <div className="pointer-events-none absolute inset-0 opacity-[0.18]" aria-hidden />
       <div className="relative mx-auto max-w-[1500px] px-5 sm:px-9 lg:px-16 xl:px-24">
         <div className="grid gap-8 border-b border-[#D6CBC0] pb-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[#A96549]/20 bg-[#A96549]/5 px-3 py-1.5 text-xs font-semibold text-[#87533F]">
-            <Sparkles className="h-3.5 w-3.5" />
-            A straightforward first assessment
-          </span>
-          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-[#211C1A] sm:text-4xl">
-            Start with what needs fixing.
-          </h2>
+          <div>
+            <span className="font-mono-data text-[10px] font-medium uppercase tracking-[0.18em] text-[#87533F]">
+              A straightforward first assessment
+            </span>
+            <h2 className="mt-5 max-w-[620px] font-display text-[clamp(2.7rem,5vw,5rem)] leading-[0.92] tracking-[-0.06em] text-[#211C1A]">
+              Start with what needs fixing.
+            </h2>
+          </div>
           <p className="max-w-[520px] text-sm leading-7 text-[#756A60] lg:justify-self-end">
             Choose the issue, share a little context and see an initial estimate. We will review the details with you before any work begins.
           </p>
@@ -228,7 +229,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 </span>
               </div>
               {i < 2 && (
-                <div className="mx-2 mb-5 h-0.5 flex-1 rounded-full bg-border">
+                <div className="mx-2 mb-5 h-0.5 flex-1 rounded-full bg-[#D6CBC0]">
                   <div
                     className="h-full rounded-full bg-[#A96549] transition-all duration-500"
                     style={{ width: step > s.n ? '100%' : '0%' }}
@@ -240,7 +241,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
         </div>
 
         {/* Card */}
-        <div className="mt-8 overflow-hidden rounded-2xl border border-[#D6CBC0] bg-[#F8F5EF] shadow-xl shadow-primary/5">
+        <div className="mt-8 overflow-hidden rounded-2xl border border-[#D6CBC0] bg-[#F8F5EF] shadow-xl shadow-[#A96549]/5">
           <AnimatePresence mode="wait">
             {/* STEP 1 */}
             {step === 1 && !done && (
@@ -444,7 +445,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-start gap-2 rounded-lg bg-secondary/5 p-3 text-xs text-[#A96549]/90">
+                <div className="mt-4 flex items-start gap-2 rounded-lg bg-[#A96549]/5 p-3 text-xs text-[#A96549]/90">
                   <MessageCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   Submitting opens a WhatsApp chat with our engineers, pre-filled with your diagnostic details.
                 </div>
@@ -469,7 +470,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   We have received your diagnostic details and opened a WhatsApp chat with our engineers. If the chat did not open, tap the button below.
                 </p>
                 <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                  <Button asChild className="bg-secondary text-[#A96549]-foreground hover:bg-secondary/90">
+                  <Button asChild className="bg-[#A96549] text-[#F8F3EB] hover:bg-[#87533F]">
                     <a
                       href={waLink('Hello HostSuite, I just submitted a diagnostic request and would like to continue.')}
                       target="_blank"
@@ -509,7 +510,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 <Button
                   onClick={submit}
                   disabled={submitting}
-                  className="bg-secondary text-[#A96549]-foreground hover:bg-secondary/90"
+                  className="bg-[#A96549] text-[#F8F3EB] hover:bg-[#87533F]"
                 >
                   {submitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
