@@ -9,40 +9,22 @@ const technicalText = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500',
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://hostsuite.app'),
-  title: 'HostSuite — Digital infrastructure, without the headache.',
-  description:
-    'Domains, websites, hosting, business email, monitoring and technical help — managed simply for growing businesses.',
-  keywords: [
-    'managed hosting Nigeria',
-    'business email',
-    'website management',
-    'web infrastructure',
-    'technical support',
-    'HostSuite',
-  ],
+  title: 'HostSuite — Website management, without the technical weight.',
+  description: 'Website recovery, business email fixes and ongoing website care for businesses that already have a website. Keep what works. Get dependable support.',
+  keywords: ['website management Nigeria', 'website recovery', 'business email support', 'website maintenance', 'HostSuite'],
   openGraph: {
-    title: 'HostSuite — Digital infrastructure, without the headache.',
-    description:
-      'Build it. Launch it. Keep it running. Get help when something goes wrong.',
+    title: 'HostSuite — Website management, without the technical weight.',
+    description: 'Keep the website you already have. Get practical help with access, email, maintenance and ongoing care.',
     type: 'website',
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${editorial.variable} ${interfaceText.variable} ${technicalText.variable}`}>
       <body className="font-body antialiased">
         {children}
-        <Toaster
-          position="bottom-right"
-          richColors
-          closeButton
-          toastOptions={{ classNames: { toast: 'font-body' } }}
-        />
+        <Toaster position="bottom-right" richColors closeButton toastOptions={{ classNames: { toast: 'font-body' } }} />
       </body>
     </html>
   );

@@ -1,163 +1,112 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Globe2, Mail, ShieldCheck, Wrench } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowDownRight, ArrowUpRight, Check } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/use-content';
 import { waLink } from '@/lib/constants';
 
-const slides = [
-  {
-    eyebrow: 'YOUR DIGITAL HOME',
-    title: 'Build it. Launch it. Keep it running.',
-    text: 'Your website, domain, hosting and business email — set up without the technical headache.',
-    image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    action: 'Get started',
-  },
-  {
-    eyebrow: 'WHEN THINGS BREAK',
-    title: 'Your developer disappeared? Bring it to us.',
-    text: 'Website errors, broken email, DNS problems or a mysterious outage. Tell us what happened and we will help you find the fix.',
-    image: 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    action: 'Get technical help',
-  },
-  {
-    eyebrow: 'DO IT YOURSELF OR LET US',
-    title: 'Your infrastructure. Your choice.',
-    text: 'Use HostSuite as a simple self-service platform, or let our team handle the technical work while you run your business.',
-    image: 'https://images.pexels.com/photos/3862375/pexels-photo-3862375.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    action: 'Explore services',
-  },
-];
-
-const quickNeeds = [
-  { icon: Globe2, label: 'I need a domain' },
-  { icon: Globe2, label: 'I need a website' },
-  { icon: Mail, label: 'I need business email' },
-  { icon: Wrench, label: 'Something is broken' },
-];
-
 export function Hero() {
   const { settings } = useSiteSettings();
-  const [active, setActive] = useState(0);
-  const slide = slides[active];
-
-  useEffect(() => {
-    const id = window.setInterval(() => setActive((current) => (current + 1) % slides.length), 6500);
-    return () => window.clearInterval(id);
-  }, []);
-
-  const headline = settings.hero?.headline || slide.title;
-  const subheadline = settings.hero?.subheadline || slide.text;
+  const reduceMotion = useReducedMotion();
+  const cmsHeadline = settings.hero?.headline?.trim();
+  const cmsSubheadline = settings.hero?.subheadline?.trim();
+  const headline = !cmsHeadline || cmsHeadline === 'Build it. Launch it. Keep it running.'
+    ? <>Your website<br /><em className="font-normal text-[#B96E4D]">shouldn’t</em> run<br />your business.</>
+    : cmsHeadline;
+  const subheadline = !cmsSubheadline || cmsSubheadline.startsWith('Your website, domain, hosting')
+    ? 'When your developer disappears, your emails stop arriving or the small fixes pile up, we step in. Keep the website you have. Get the support you need.'
+    : cmsSubheadline;
 
   return (
-    <section className="relative overflow-hidden bg-[#4A1F6B] text-white">
-      <div className="absolute inset-0">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={slide.image}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${slide.image})` }}
-            aria-hidden="true"
-          />
-        </AnimatePresence>
-        <div className="absolute inset-0 bg-[#4A1F6B]/80" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#4A1F6B] via-[#4A1F6B]/90 to-[#4A1F6B]/55" />
-      </div>
-
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-10 lg:px-8 lg:pb-20 lg:pt-14">
-        <div className="grid min-h-[440px] items-center gap-10 sm:min-h-[500px] lg:min-h-[560px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
-          <div className="max-w-2xl">
-            <motion.div
-              key={`eyebrow-${active}`}
-              initial={{ opacity: 0, y: 8 }}
+    <section className="relative isolate overflow-hidden bg-[#F3EEE5] text-[#211C1A]">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.24]" aria-hidden="true" style={{ backgroundImage: 'linear-gradient(#B8AA9B 1px, transparent 1px), linear-gradient(90deg, #B8AA9B 1px, transparent 1px)', backgroundSize: '72px 72px', maskImage: 'linear-gradient(to bottom, black, transparent 82%)' }} />
+      <div className="relative mx-auto grid min-h-[680px] max-w-[1600px] items-stretch lg:min-h-[760px] lg:grid-cols-[1.02fr_0.98fr]">
+        <div className="relative z-10 flex flex-col justify-between px-5 pb-10 pt-20 sm:px-9 sm:pt-24 lg:px-16 lg:pb-14 lg:pt-24 xl:pl-24">
+          <div>
+            <p className="flex items-center gap-3 font-mono-data text-[10px] font-medium uppercase tracking-[0.2em] text-[#805B49]">
+              <span className="h-px w-10 bg-[#A66A4D]" /> WEBSITE MANAGEMENT, MADE HUMAN
+            </p>
+            <motion.h1
+              initial={reduceMotion ? false : { opacity: 0, y: 26 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[11px] font-semibold tracking-[0.12em] text-white/90 backdrop-blur-sm sm:mb-5 sm:px-3.5 sm:py-2 sm:text-xs sm:tracking-[0.16em]"
+              transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+              className="mt-10 max-w-[800px] font-display text-[clamp(4.2rem,8.6vw,9.2rem)] leading-[0.83] tracking-[-0.065em] text-[#211C1A] [text-wrap:balance]"
             >
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{slide.eyebrow}</span>
-            </motion.div>
-
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={active}
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.45 }}
-              >
-                <h1 className="max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
-                  {headline}
-                </h1>
-                <p className="mt-5 max-w-xl text-base leading-7 text-white/80 sm:mt-6 sm:text-lg">
-                  {subheadline}
-                </p>
-              </motion.div>
-            </AnimatePresence>
-
-            <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row">
-              <Button asChild size="lg" className="w-full bg-[#5D2A86] text-white shadow-lg shadow-black/15 hover:bg-[#4A1F6B] sm:w-auto">
-                <Link href="/#diagnostic" scroll className="gap-2">
-                  {slide.action}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="w-full border-white/35 bg-white/10 text-white hover:bg-white/15 hover:text-white sm:w-auto">
-                <a href={waLink('Hello HostSuite, I need help with my business technology.')} target="_blank" rel="noopener noreferrer">
-                  Talk to a human
-                </a>
-              </Button>
-            </div>
-
-            <div className="mt-8 flex items-center gap-2" aria-label="Hero slides">
-              {slides.map((item, index) => (
-                <button
-                  key={item.eyebrow}
-                  type="button"
-                  onClick={() => setActive(index)}
-                  aria-label={`Show slide ${index + 1}`}
-                  aria-current={index === active}
-                  className={`h-1.5 rounded-full transition-all ${index === active ? 'w-9 bg-white' : 'w-4 bg-white/35 hover:bg-white/60'}`}
-                />
-              ))}
-              <span className="ml-2 text-xs text-white/60">Auto-rotating</span>
+              {headline}
+            </motion.h1>
+            <motion.p
+              initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, delay: 0.15 }}
+              className="mt-9 max-w-[470px] text-base leading-8 text-[#655C55] sm:text-lg"
+            >
+              {subheadline}
+            </motion.p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Link href="/#diagnostic" className="inline-flex min-h-14 items-center justify-between gap-8 bg-[#211C1A] px-6 text-sm font-semibold text-[#F8F3EB] transition-colors hover:bg-[#87533F]">
+                Tell us what’s happening <ArrowUpRight className="h-4 w-4" />
+              </Link>
+              <a href={waLink('Hello HostSuite, I would like to speak with someone about looking after my existing website.')} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-14 items-center justify-center border border-[#BFB3A6] px-6 text-sm font-semibold text-[#302823] transition-colors hover:border-[#87533F] hover:text-[#87533F]">
+                Talk to a person
+              </a>
             </div>
           </div>
+          <div className="mt-16 grid max-w-[620px] grid-cols-1 gap-3 border-t border-[#CFC4B7] pt-5 text-xs font-medium text-[#655C55] sm:grid-cols-3">
+            {['Keep the website you already own', 'No forced hosting move', 'One-off help or ongoing care'].map((item) => (
+              <p key={item} className="flex items-start gap-2"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#A76548]" />{item}</p>
+            ))}
+          </div>
+        </div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            className="hidden lg:block"
-          >
-            <div className="rounded-3xl border border-white/20 bg-white/95 p-5 text-foreground shadow-2xl shadow-black/20 backdrop-blur-xl">
-              <p className="text-sm font-semibold">What do you need today?</p>
-              <p className="mt-1 text-sm text-muted-foreground">Start with one thing. HostSuite can help with the rest.</p>
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                {quickNeeds.map(({ icon: Icon, label }) => (
-                  <Link
-                    key={label}
-                    href="/#diagnostic"
-                    className="group rounded-2xl border border-border bg-background p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
-                  >
-                    <Icon className="h-5 w-5 text-[#5D2A86]" />
-                    <span className="mt-8 block text-sm font-semibold">{label}</span>
-                    <span className="mt-1 block text-xs text-muted-foreground group-hover:text-foreground">Tell us what you need →</span>
-                  </Link>
-                ))}
-              </div>
-              <div className="mt-4 rounded-2xl bg-[#4A1F6B] px-4 py-3 text-white">
-                <p className="text-sm font-semibold">Not sure what you need?</p>
-                <p className="mt-1 text-xs text-white/70">That's okay. Describe the problem in plain English.</p>
-              </div>
+        <div className="relative min-h-[520px] overflow-hidden bg-[#29201E] text-[#F4EDE3] lg:min-h-full">
+          <div className="absolute inset-0 opacity-30" aria-hidden="true" style={{ backgroundImage: 'radial-gradient(#C9A78B 0.7px, transparent 0.7px)', backgroundSize: '18px 18px' }} />
+          <div className="absolute -right-24 top-16 h-[470px] w-[470px] rounded-full border border-[#C59A79]/30" />
+          <div className="absolute -right-8 top-32 h-[340px] w-[340px] rounded-full border border-[#C59A79]/25" />
+          <div className="relative flex h-full min-h-[520px] flex-col justify-between p-6 sm:p-10 lg:min-h-[760px] lg:p-12">
+            <div className="flex items-start justify-between border-b border-white/20 pb-5">
+              <span className="font-mono-data text-[10px] uppercase tracking-[0.2em] text-[#D8B99B]">The HostSuite approach</span>
+              <span className="font-mono-data text-[10px] text-white/45">01 / 03</span>
             </div>
-          </motion.div>
+            <motion.div
+              initial={reduceMotion ? false : { opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative mx-auto w-full max-w-[520px] py-10"
+            >
+              <div className="absolute -left-5 top-3 z-10 hidden h-28 w-28 items-center justify-center rounded-full border border-[#D2A17E] bg-[#A75F43] text-center font-mono-data text-[9px] uppercase leading-5 tracking-[0.12em] text-white sm:flex">
+                Less<br />technical<br />stress
+              </div>
+              <div className="relative rotate-[-2deg] border border-[#D9C5B1]/40 bg-[#F0E8DC] p-3 shadow-[0_28px_90px_rgba(0,0,0,0.35)] sm:p-5">
+                <div className="flex items-center justify-between border-b border-[#D7C9B9] pb-3 text-[#4A4039]">
+                  <span className="font-display text-lg font-semibold tracking-[-0.05em]">yourbusiness.com</span>
+                  <span className="font-mono-data text-[8px] uppercase tracking-[0.14em] text-[#927F70]">Website care file</span>
+                </div>
+                <div className="grid min-h-[245px] grid-cols-[1fr_0.72fr] gap-3 py-4">
+                  <div className="flex flex-col justify-between bg-[#D8C9B8] p-4 text-[#30251F]">
+                    <span className="font-mono-data text-[8px] uppercase tracking-[0.15em]">Your business, online</span>
+                    <p className="font-display text-[clamp(2rem,4vw,3.7rem)] leading-[0.88] tracking-[-0.07em]">Back to<br /><em className="font-normal">business.</em></p>
+                    <span className="h-1 w-16 bg-[#A75F43]" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex-1 bg-[#B16B4E] p-3 text-white"><span className="font-mono-data text-[8px] uppercase tracking-[0.12em]">01 / Recover</span><div className="mt-8 h-px bg-white/50" /><p className="mt-2 text-[10px] leading-4">Access restored.<br />You’re back in control.</p></div>
+                    <div className="flex-1 bg-[#34302D] p-3 text-[#F2E8DC]"><span className="font-mono-data text-[8px] uppercase tracking-[0.12em]">02 / Maintain</span><div className="mt-8 h-px bg-white/30" /><p className="mt-2 text-[10px] leading-4">Updates handled.<br />Nothing left to guess.</p></div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between border-t border-[#D7C9B9] pt-3 font-mono-data text-[8px] uppercase tracking-[0.13em] text-[#74665A]">
+                  <span>Care, clarity, continuity</span><span>HS / 2026</span>
+                </div>
+              </div>
+              <div className="absolute -bottom-1 -right-2 rotate-[4deg] bg-[#D5B38F] px-5 py-4 text-[#29201E] shadow-xl sm:-right-8">
+                <span className="block font-mono-data text-[8px] uppercase tracking-[0.15em]">The promise</span>
+                <span className="mt-1 block font-display text-2xl leading-none tracking-[-0.05em]">You stay in control.</span>
+              </div>
+            </motion.div>
+            <div className="flex items-end justify-between border-t border-white/20 pt-5">
+              <p className="max-w-[250px] text-xs leading-6 text-white/55">Practical help for the digital work you shouldn’t have to manage alone.</p>
+              <Link href="/#services" className="flex h-12 w-12 items-center justify-center border border-white/35 text-white transition-colors hover:bg-white hover:text-[#29201E]" aria-label="Explore website care"><ArrowDownRight className="h-5 w-5" /></Link>
+            </div>
+          </div>
         </div>
       </div>
     </section>
