@@ -6,7 +6,7 @@ export const BRAND = {
 };
 
 // Keep the public support contact in the deployment environment, never in source.
-export const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '').replace(/\\D/g, '');
+export const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '').replace(/\D/g, '');
 export const WHATSAPP_DISPLAY = WHATSAPP_NUMBER ? `+${WHATSAPP_NUMBER}` : 'WhatsApp support';
 
 export function waLink(message: string) {
