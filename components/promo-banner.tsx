@@ -50,7 +50,7 @@ export function PromoBanner() {
 
   return (
     <section
-      className="relative isolate overflow-hidden bg-[#21132F] text-white"
+      className="relative isolate overflow-hidden bg-[#20191D] text-white"
       aria-label="Common website management situations"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -67,10 +67,10 @@ export function PromoBanner() {
           aria-hidden="true"
         />
       ))}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#1B1024]/95 via-[#24132F]/82 to-[#24132F]/35" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#171316]/95 via-[#20191D]/82 to-[#20191D]/35" />
       <div className="mx-auto flex min-h-[112px] max-w-[1600px] items-center justify-between gap-4 px-5 py-3 sm:min-h-[124px] sm:px-8 lg:px-14 xl:px-20">
         <div className="min-w-0 max-w-4xl" aria-live="polite" aria-atomic="true">
-          <p className="font-mono-data text-[9px] tracking-[0.16em] text-[#D9C5E2]">{slide.number} <span className="mx-1.5 text-white/40">/ 03</span> {slide.eyebrow}</p>
+          <p className="font-mono-data text-[9px] tracking-[0.16em] text-[#D6B08B]">{slide.number} <span className="mx-1.5 text-white/40">/ 03</span> {slide.eyebrow}</p>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-5 gap-y-1">
             <h2 className="font-display text-xl font-normal leading-tight sm:text-2xl lg:text-[1.8rem]">{slide.title}</h2>
             <Link href={slide.href} className="inline-flex shrink-0 items-center gap-1.5 border-b border-white/60 pb-1 text-xs font-semibold text-white hover:border-white">
@@ -79,10 +79,10 @@ export function PromoBanner() {
           </div>
         </div>
         <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
-          <button type="button" onClick={previous} aria-label="Previous banner" className="flex h-9 w-9 items-center justify-center border border-white/35 text-white transition hover:bg-white hover:text-[#24132F]">
+          <button type="button" onClick={previous} aria-label="Previous banner" className="flex h-9 w-9 items-center justify-center border border-white/35 text-white transition hover:bg-white hover:text-[#20191D]">
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <button type="button" onClick={next} aria-label="Next banner" className="flex h-9 w-9 items-center justify-center border border-white/35 text-white transition hover:bg-white hover:text-[#24132F]">
+          <button type="button" onClick={next} aria-label="Next banner" className="flex h-9 w-9 items-center justify-center border border-white/35 text-white transition hover:bg-white hover:text-[#20191D]">
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
