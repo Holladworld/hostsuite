@@ -31,12 +31,12 @@ export function Hero() {
             {subheadline}
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" className="h-13 rounded-none bg-[#4A1F6B] px-6 text-white hover:bg-[#351449]">
+            <Button asChild size="lg" className="h-12 rounded-none bg-[#4A1F6B] px-6 text-white hover:bg-[#351449]">
               <Link href="/#diagnostic" className="gap-3">
                 Get help with my website <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="h-13 rounded-none border-[#B9AABD] bg-transparent px-6 text-[#35243D] hover:bg-[#EDE5F0]">
+            <Button asChild size="lg" variant="outline" className="h-12 rounded-none border-[#B9AABD] bg-transparent px-6 text-[#35243D] hover:bg-[#EDE5F0]">
               <a href={waLink('Hello HostSuite, I would like to talk to someone about managing my existing website.')} target="_blank" rel="noopener noreferrer">
                 Talk to a person
               </a>
