@@ -107,6 +107,18 @@ export const PAIN_POINTS = [
     costMax: 25000,
   },
   {
+    id: 'renewal-help',
+    icon: 'Globe',
+    title: 'Need Help Renewing a Domain or Hosting',
+    short: 'Domain / Hosting Renewal',
+    description:
+      'Your domain or hosting is due for renewal, has expired, or you are unsure how to renew it without losing your website or email.',
+    turnaroundHours: 24,
+    costMin: 0,
+    costMax: 0,
+    requiresAssessment: true,
+  },
+  {
     id: 'custom-build',
     icon: 'Wrench',
     title: 'Need Custom App / Backend System Built',

@@ -37,6 +37,7 @@ const painIconMap: Record<string, React.ElementType> = {
   GaugeCircle,
   BadgeDollarSign,
   Wrench,
+  Globe,
 };
 
 type Step = 1 | 2 | 3;
@@ -71,16 +72,19 @@ export function DiagnosticTool() {
   const estimate = useMemo(() => {
     if (selectedPoints.length === 0) return null;
     const maxTurnaround = Math.max(...selectedPoints.map((p) => p.turnaroundHours));
+    const requiresAssessment = selectedPoints.some((p) => 'requiresAssessment' in p && p.requiresAssessment);
     const totalMin = selectedPoints.reduce((s, p) => s + p.costMin, 0);
     const totalMax = selectedPoints.reduce((s, p) => s + p.costMax, 0);
     let tier = 'Starter Ops';
-    if (totalMax > 100000) tier = 'Enterprise / Fractional CTO';
+    if (requiresAssessment) tier = 'Assessment required';
+    else if (totalMax > 100000) tier = 'Enterprise / Fractional CTO';
     else if (totalMax > 40000) tier = 'Managed Growth';
     return {
       turnaround: maxTurnaround,
       costMin: totalMin,
       costMax: totalMax,
       tier,
+      requiresAssessment,
     };
   }, [selectedPoints]);
 
@@ -156,8 +160,9 @@ export function DiagnosticTool() {
 ${painTitles.map((t) => `• ${t}`).join('\n')}
 
 *Description:* ${description || '—'}
+*Assessment:* ${estimate.requiresAssessment ? "A team member needs to review the renewal details before confirming the cost." : "Initial estimate"}
 *Estimated Tier:* ${estimate.tier}
-*Est. Cost:* ${formatNairaRange(estimate.costMin, estimate.costMax)}
+*Est. Cost:* ${estimate.requiresAssessment ? "To be confirmed after review" : formatNairaRange(estimate.costMin, estimate.costMax)}
 *Est. Turnaround:* ${formatTurnaround(estimate.turnaround)}
 
 *Email:* ${email || '—'}
@@ -198,7 +203,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
             </h2>
           </div>
           <p className="max-w-[520px] text-sm leading-7 text-[#71657B] lg:justify-self-end">
-            Choose the issue, share a little context and see an initial estimate. We will review the details with you before any work begins.
+            Choose what you need help with, share a little context and see an initial estimate where available. Renewal requests are reviewed before we confirm pricing.
           </p>
         </div>
 
@@ -254,10 +259,10 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 className="p-6 sm:p-8"
               >
                 <h3 className="font-display text-xl font-semibold text-[#281936]">
-                  What is breaking your business right now?
+                  What would you like help with?
                 </h3>
                 <p className="mt-1 text-sm text-[#71657B]">
-                  Select all that apply — the more we know, the faster we fix it.
+                  Select all that apply — whether something needs fixing or you need help with a renewal.
                 </p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   {PAIN_POINTS.map((p: PainPoint) => {
@@ -400,16 +405,16 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                     </div>
                     <div className="rounded-xl border border-[#E5DCEC] bg-white p-4">
                       <BadgeDollarSign className="h-5 w-5 text-[#4A1F6B]" />
-                      <p className="mt-2 text-xs text-[#71657B]">Est. Cost Range</p>
+                      <p className="mt-2 text-xs text-[#71657B]">{estimate.requiresAssessment ? 'Cost' : 'Est. Cost Range'}</p>
                       <p className="font-mono-data text-sm font-semibold text-[#281936]">
-                        {formatNairaRange(estimate.costMin, estimate.costMax)}
+                        {estimate.requiresAssessment ? 'To be confirmed' : formatNairaRange(estimate.costMin, estimate.costMax)}
                       </p>
                     </div>
                     <div className="rounded-xl border border-[#4A1F6B]/30 bg-[#4A1F6B]/5 p-4">
                       <Sparkles className="h-5 w-5 text-[#5D2A86]" />
-                      <p className="mt-2 text-xs text-[#71657B]">Recommended Tier</p>
+                      <p className="mt-2 text-xs text-[#71657B]">{estimate.requiresAssessment ? 'Next step' : 'Recommended Tier'}</p>
                       <p className="font-display text-sm font-semibold text-[#5D2A86]">
-                        {estimate.tier}
+                        {estimate.requiresAssessment ? 'Review renewal details' : estimate.tier}
                       </p>
                     </div>
                   </div>
