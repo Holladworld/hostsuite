@@ -43,7 +43,7 @@ export function PromoBanner() {
   const slide = slides[active];
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const timer = window.setInterval(() => setActive((current) => (current + 1) % slides.length), 6500);
     return () => window.clearInterval(timer);
   }, [paused]);
@@ -62,7 +62,14 @@ export function PromoBanner() {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
       }}
     >
-      <div className="absolute inset-0 -z-20 bg-cover bg-center transition-[background-image] duration-700" style={{ backgroundImage: `url('${slide.image}')`, backgroundPosition: slide.position }} />
+      {slides.map((item, index) => (
+        <div
+          key={item.number}
+          className={`absolute inset-0 -z-20 bg-cover transition-opacity duration-700 motion-reduce:transition-none ${active === index ? 'opacity-100' : 'opacity-0'}`}
+          style={{ backgroundImage: `url('${item.image}')`, backgroundPosition: item.position }}
+          aria-hidden="true"
+        />
+      ))}
       <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#1B1024]/95 via-[#24132F]/78 to-[#24132F]/25" />
       <div className="mx-auto flex min-h-[300px] max-w-[1440px] items-center justify-between gap-8 px-5 py-9 sm:min-h-[320px] sm:px-8 lg:px-14 lg:py-10 xl:px-20">
         <div className="max-w-2xl" aria-live="polite" aria-atomic="true">
