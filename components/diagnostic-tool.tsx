@@ -165,7 +165,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
 
       window.open(waLink(waText), '_blank', 'noopener,noreferrer');
       setDone(true);
-      toast.success('Your request is in. Check WhatsApp to continue the conversation.');
+      toast.success('A good first step.. Check WhatsApp to continue the conversation.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not submit. Try again.');
     } finally {
@@ -185,28 +185,28 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
   }
 
   return (
-    <section id="diagnostic" className="relative scroll-mt-20 py-20 lg:py-28">
-      <div className="pointer-events-none absolute inset-0 bg-dots opacity-30" aria-hidden />
-      <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary">
+    <section id="diagnostic" className="relative scroll-mt-20 bg-[#21132F] py-20 text-white lg:py-24">
+      
+      <div className="relative mx-auto max-w-6xl px-5 sm:px-8 lg:px-12">
+        <div className="max-w-2xl">
+          <span className="inline-flex items-center gap-2 font-mono-data text-[10px] uppercase tracking-[0.2em] text-[#CBB5D8]">
             <Sparkles className="h-3.5 w-3.5" />
-            Interactive Diagnostic &amp; Instant Quote
+            A considered first step
           </span>
-          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Tell Us Your Pain
+          <h2 className="mt-5 max-w-[12ch] font-display text-5xl font-normal leading-[0.98] tracking-[-0.03em] text-white sm:text-6xl">
+            Tell us what your website needs.
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-            Pick what is breaking your business, tell us about your setup, and get an instant estimated fix time and cost — then we continue on WhatsApp.
+          <p className="mt-5 max-w-xl text-sm leading-7 text-white/70 sm:text-base">
+            Choose what is happening. We will help you understand the next step, the likely effort and how to get it handled. No technical vocabulary required.
           </p>
         </div>
 
         {/* Stepper */}
-        <div className="mx-auto mt-8 flex max-w-md items-center justify-between">
+        <div className="mt-9 flex max-w-lg items-center justify-between">
           {[
-            { n: 1, label: 'Your Issue' },
-            { n: 2, label: 'Your Setup' },
-            { n: 3, label: 'Your Quote' },
+            { n: 1, label: 'What is happening' },
+            { n: 2, label: 'Your website' },
+            { n: 3, label: 'Next step' },
           ].map((s, i) => (
             <div key={s.n} className="flex flex-1 items-center">
               <div className="flex flex-col items-center gap-1.5">
@@ -228,9 +228,9 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 </span>
               </div>
               {i < 2 && (
-                <div className="mx-2 mb-5 h-0.5 flex-1 rounded-full bg-border">
+                <div className="mx-2 mb-5 h-0.5 flex-1 rounded-none bg-border">
                   <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
+                    className="h-full rounded-none bg-primary transition-all duration-500"
                     style={{ width: step > s.n ? '100%' : '0%' }}
                   />
                 </div>
@@ -240,7 +240,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
         </div>
 
         {/* Card */}
-        <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-primary/5">
+        <div className="mt-8 overflow-hidden border border-[#DED5DF] bg-[#F8F5EF] shadow-[0_24px_70px_rgba(0,0,0,0.18)]">
           <AnimatePresence mode="wait">
             {/* STEP 1 */}
             {step === 1 && !done && (
@@ -253,10 +253,10 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 className="p-6 sm:p-8"
               >
                 <h3 className="font-display text-xl font-semibold text-foreground">
-                  What is breaking your business right now?
+                  What would you like us to take off your hands?
                 </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Select all that apply — the more we know, the faster we fix it.
+                  Select everything that applies. We will take it from there.
                 </p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   {PAIN_POINTS.map((p: PainPoint) => {
@@ -267,14 +267,14 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                         key={p.id}
                         type="button"
                         onClick={() => togglePain(p.id)}
-                        className={`group relative flex items-start gap-3 rounded-xl border p-4 text-left transition-all ${
+                        className={`group relative flex items-start gap-3 rounded-none border p-4 text-left transition-all ${
                           active
                             ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
                             : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
                         }`}
                       >
                         <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-none transition-colors ${
                             active ? 'bg-primary text-primary-foreground' : 'bg-muted text-primary'
                           }`}
                         >
@@ -309,10 +309,10 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 className="p-6 sm:p-8"
               >
                 <h3 className="font-display text-xl font-semibold text-foreground">
-                  Tell us about your setup
+                  A little context helps us come prepared.
                 </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  A few details so our engineers come prepared.
+                  Share what you can. You do not need to know the technical details.
                 </p>
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -355,13 +355,13 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   />
                 </div>
 
-                <div className="mt-4 rounded-lg bg-muted/60 p-3">
+                <div className="mt-4 rounded-none bg-[#F0EBE4] p-3">
                   <p className="text-xs font-medium text-muted-foreground">You selected:</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {selectedPoints.map((p) => (
                       <span
                         key={p.id}
-                        className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                        className="rounded-none bg-[#E9E0EA] px-2.5 py-1 text-xs font-medium text-primary"
                       >
                         {p.short}
                       </span>
@@ -382,10 +382,10 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 className="p-6 sm:p-8"
               >
                 <h3 className="font-display text-xl font-semibold text-foreground">
-                  Estimated Fix &amp; Instant Quote
+                  A clear starting point
                 </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Based on your selections — where should we send the full assessment?
+                  This is an initial guide based on what you selected. We will confirm the details with you.
                 </p>
 
                 {estimate && (
@@ -404,7 +404,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                         {formatNairaRange(estimate.costMin, estimate.costMax)}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+                    <div className="rounded-none border border-primary/30 bg-[#F0EAF2] p-4">
                       <Sparkles className="h-5 w-5 text-primary" />
                       <p className="mt-2 text-xs text-muted-foreground">Recommended Tier</p>
                       <p className="font-display text-sm font-semibold text-primary">
@@ -444,7 +444,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-start gap-2 rounded-lg bg-secondary/5 p-3 text-xs text-secondary/90">
+                <div className="mt-4 flex items-start gap-2 rounded-none bg-[#EEE7F0] p-3 text-xs text-secondary/90">
                   <MessageCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   Submitting opens a WhatsApp chat with our engineers, pre-filled with your diagnostic details.
                 </div>
@@ -466,7 +466,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   Your request is in
                 </h3>
                 <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                  We have received your diagnostic details and opened a WhatsApp chat with our engineers. If the chat did not open, tap the button below.
+                  We have received your details and opened a WhatsApp conversation so we can understand the request and agree what happens next.
                 </p>
                 <div className="mt-6 flex flex-col gap-2 sm:flex-row">
                   <Button asChild className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
@@ -489,7 +489,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
 
           {/* Footer controls */}
           {!done && (
-            <div className="flex items-center justify-between border-t border-border bg-muted/30 px-6 py-4 sm:px-8">
+            <div className="flex items-center justify-between border-t border-[#DED5DF] bg-[#F0EBE4] px-6 py-4 sm:px-8">
               <Button
                 variant="ghost"
                 onClick={back}
