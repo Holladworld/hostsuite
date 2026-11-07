@@ -1,14 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ArrowUpRight, Check, Mail, ShieldCheck, Wrench } from 'lucide-react';
 import { useSiteSettings } from '@/hooks/use-content';
 import { waLink } from '@/lib/constants';
 
 export function Hero() {
   const { settings } = useSiteSettings();
-  const reduceMotion = useReducedMotion();
   const cmsHeadline = settings.hero?.headline?.trim();
   const cmsSubheadline = settings.hero?.subheadline?.trim();
   const headline = !cmsHeadline || cmsHeadline === 'Build it. Launch it. Keep it running.'
@@ -23,11 +22,11 @@ export function Hero() {
       <div className="pointer-events-none absolute -right-24 -top-28 h-[420px] w-[420px] rounded-full bg-[#E9DDF4] opacity-70 blur-3xl" aria-hidden="true" />
       <div className="relative mx-auto grid max-w-[1440px] items-center gap-12 px-5 pb-14 pt-14 sm:px-8 sm:pb-20 sm:pt-16 lg:min-h-[590px] lg:grid-cols-[1.02fr_0.98fr] lg:gap-8 lg:px-12 lg:py-16">
         <div className="relative z-10">
-          <motion.p initial={reduceMotion ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 rounded-full border border-[#E2D5ED] bg-white px-3.5 py-2 text-[11px] font-bold tracking-[0.02em] text-[#5B3477] shadow-sm">
+          <motion.p initial={false} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 rounded-full border border-[#E2D5ED] bg-white px-3.5 py-2 text-[11px] font-bold tracking-[0.02em] text-[#5B3477] shadow-sm">
             <span className="h-2 w-2 rounded-full bg-[#8D5BB5]" /> WEBSITE SUPPORT FOR BUSINESSES
           </motion.p>
           <motion.h1
-            initial={reduceMotion ? false : { opacity: 0, y: 22 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
             className="mt-7 max-w-[690px] font-display text-[clamp(3.5rem,6.5vw,6.4rem)] font-semibold leading-[0.98] tracking-[-0.065em] text-[#261C30] [text-wrap:balance]"
@@ -35,7 +34,7 @@ export function Hero() {
             {headline}
           </motion.h1>
           <motion.p
-            initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.12 }}
             className="mt-6 max-w-[540px] text-base leading-8 text-[#62576B] sm:text-lg"
@@ -58,7 +57,7 @@ export function Hero() {
         </div>
 
         <motion.div
-          initial={reduceMotion ? false : { opacity: 0, scale: 0.97, y: 16 }}
+          initial={false}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.12 }}
           className="relative mx-auto w-full max-w-[610px] lg:ml-auto"
