@@ -8,7 +8,7 @@ const situations = [
   { n: '01', label: 'ACCESS & RECOVERY', title: 'Your developer has gone quiet.', copy: 'We help you regain access, understand what you own and get your website back into capable hands.', action: 'Recover my access', href: '/?issue=developer-ghosted#diagnostic', tint: 'bg-[#F1E8F8]', accent: 'text-[#67339A]' },
   { n: '02', label: 'BUSINESS EMAIL', title: 'Important messages aren’t arriving.', copy: 'Bounced mail, spam placement and mailbox problems deserve a proper diagnosis—not guesswork.', action: 'Fix my business email', href: '/services#email-deliverability', tint: 'bg-[#FCEDE6]', accent: 'text-[#A84F36]' },
   { n: '03', label: 'ONGOING WEBSITE CARE', title: 'The small jobs keep piling up.', copy: 'Updates, backups, security, content changes and maintenance—handled carefully and explained in plain language.', action: 'Explore website care', href: '/services#managed-servers', tint: 'bg-[#EAF3EE]', accent: 'text-[#347451]' },
-  { n: '04', label: 'AI-BUILT WEBSITES', title: 'You built it. We’ll help it go further.', copy: 'Keep the freedom of building with AI. Bring in a real team for upkeep, improvements and the technical details.', action: 'Support my AI-built site', href: '/portal/ai-builder', tint: 'bg-[#E9EFFB]', accent: 'text-[#3F5D9C]' },
+  { n: '04', label: 'AI-BUILT WEBSITES', title: 'You built it. We’ll help it go further.', copy: 'Keep the freedom of building with AI. Bring in a real team for upkeep, improvements and the technical details.', action: 'Support my AI-built site', href: '/portal/website-builder', tint: 'bg-[#E9EFFB]', accent: 'text-[#3F5D9C]' },
 ];
 
 export function Services() {
@@ -88,7 +88,7 @@ export function Services() {
             <p className="text-xs font-extrabold uppercase tracking-[0.13em] text-[#75469B]">For the AI-built generation</p>
             <h2 className="mt-4 max-w-[680px] font-display text-[clamp(2.8rem,5vw,4.8rem)] font-semibold leading-[1.02] tracking-[-0.055em]">Built it with AI?<br /><span className="text-[#6D3AA0]">We’ll help you keep it great.</span></h2>
             <p className="mt-5 max-w-[530px] text-sm leading-7 text-[#655A6D]">Keep the website you created. Bring in HostSuite when you need maintenance, improvements or a steady hand with the technical side. A rebuild is an option—not a condition of getting support.</p>
-            <Link href="/portal/ai-builder" className="mt-7 inline-flex w-fit items-center gap-2 rounded-xl bg-[#4A1F6B] px-5 py-3.5 text-xs font-extrabold text-white transition-colors hover:bg-[#5D2A86]">Explore AI website creation <ArrowUpRight className="h-4 w-4" /></Link>
+            <Link href="/portal/website-builder" className="mt-7 inline-flex w-fit items-center gap-2 rounded-xl bg-[#4A1F6B] px-5 py-3.5 text-xs font-extrabold text-white transition-colors hover:bg-[#5D2A86]">Explore AI website creation <ArrowUpRight className="h-4 w-4" /></Link>
           </div>
           <div className="relative flex min-h-[280px] items-center justify-center overflow-hidden bg-[#6B3A91] p-8 text-white lg:min-h-full">
             <div className="absolute -right-12 -top-16 h-64 w-64 rounded-full border-[36px] border-white/10" />
