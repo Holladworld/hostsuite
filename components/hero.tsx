@@ -8,8 +8,14 @@ import { waLink } from '@/lib/constants';
 
 export function Hero() {
   const { settings } = useSiteSettings();
-  const headline = settings.hero?.headline?.trim() || 'Your website. Looked after.';
-  const subheadline = settings.hero?.subheadline?.trim() || 'Already have a website? We help keep it working, make changes when you need them, and take care of the technical things you do not have time for.';
+  const cmsHeadline = settings.hero?.headline?.trim();
+  const cmsSubheadline = settings.hero?.subheadline?.trim();
+  const headline = !cmsHeadline || cmsHeadline === 'Your digital infrastructure, in steadier hands.'
+    ? 'Your website. Looked after.'
+    : cmsHeadline;
+  const subheadline = !cmsSubheadline || cmsSubheadline.startsWith('Websites, domains, hosting and business email')
+    ? 'Already have a website? We help keep it working, make changes when you need them, and take care of the technical things you do not have time for.'
+    : cmsSubheadline;
 
   return (
     <section className="relative overflow-hidden bg-[#F4F0E9] text-[#21172A]">
