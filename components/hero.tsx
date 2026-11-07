@@ -1,163 +1,112 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Globe2, Mail, ShieldCheck, Wrench } from 'lucide-react';
+import { useRef } from 'react';
 import Link from 'next/link';
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import { ArrowUpRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSiteSettings } from '@/hooks/use-content';
 import { waLink } from '@/lib/constants';
 
-const slides = [
-  {
-    eyebrow: 'YOUR DIGITAL HOME',
-    title: 'Build it. Launch it. Keep it running.',
-    text: 'Your website, domain, hosting and business email — set up without the technical headache.',
-    image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    action: 'Get started',
-  },
-  {
-    eyebrow: 'WHEN THINGS BREAK',
-    title: 'Your developer disappeared? Bring it to us.',
-    text: 'Website errors, broken email, DNS problems or a mysterious outage. Tell us what happened and we will help you find the fix.',
-    image: 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    action: 'Get technical help',
-  },
-  {
-    eyebrow: 'DO IT YOURSELF OR LET US',
-    title: 'Your infrastructure. Your choice.',
-    text: 'Use HostSuite as a simple self-service platform, or let our team handle the technical work while you run your business.',
-    image: 'https://images.pexels.com/photos/3862375/pexels-photo-3862375.jpeg?auto=compress&cs=tinysrgb&w=1920',
-    action: 'Explore services',
-  },
-];
-
-const quickNeeds = [
-  { icon: Globe2, label: 'I need a domain' },
-  { icon: Globe2, label: 'I need a website' },
-  { icon: Mail, label: 'I need business email' },
-  { icon: Wrench, label: 'Something is broken' },
-];
-
 export function Hero() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end start'] });
+  const imageY = useTransform(scrollYProgress, [0, 1], ['0%', '14%']);
   const { settings } = useSiteSettings();
-  const [active, setActive] = useState(0);
-  const slide = slides[active];
-
-  useEffect(() => {
-    const id = window.setInterval(() => setActive((current) => (current + 1) % slides.length), 6500);
-    return () => window.clearInterval(id);
-  }, []);
-
-  const headline = settings.hero?.headline || slide.title;
-  const subheadline = settings.hero?.subheadline || slide.text;
+  const cmsHeadline = settings.hero?.headline?.trim();
+  const cmsSubheadline = settings.hero?.subheadline?.trim();
+  const headline = !cmsHeadline || cmsHeadline === 'Your digital infrastructure, in steadier hands.'
+    ? 'A better-run website. A lighter-running business.'
+    : cmsHeadline;
+  const subheadline = !cmsSubheadline || cmsSubheadline.startsWith('Websites, domains, hosting and business email')
+    ? 'From the developer who disappeared to the emails that never arrive, we take care of the digital details that keep your business moving.'
+    : cmsSubheadline;
 
   return (
-    <section className="relative overflow-hidden bg-[#4A1F6B] text-white">
-      <div className="absolute inset-0">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={slide.image}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${slide.image})` }}
-            aria-hidden="true"
-          />
-        </AnimatePresence>
-        <div className="absolute inset-0 bg-[#4A1F6B]/80" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#4A1F6B] via-[#4A1F6B]/90 to-[#4A1F6B]/55" />
+    <section ref={sectionRef} className="relative isolate overflow-hidden bg-[#17151A] text-[#F7F3EC]">
+      <div className="absolute inset-0 -z-20 overflow-hidden">
+        <motion.img
+          src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=2200&q=90"
+          alt=""
+          aria-hidden="true"
+          className="h-[112%] w-full object-cover object-center opacity-65"
+          style={{ y: reduceMotion ? 0 : imageY }}
+          fetchPriority="high"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(19,16,21,0.98)_0%,rgba(25,20,27,0.92)_39%,rgba(25,20,27,0.46)_73%,rgba(25,20,27,0.18)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(19,16,21,0.58),transparent_42%)]" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-10 lg:px-8 lg:pb-20 lg:pt-14">
-        <div className="grid min-h-[440px] items-center gap-10 sm:min-h-[500px] lg:min-h-[560px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
-          <div className="max-w-2xl">
-            <motion.div
-              key={`eyebrow-${active}`}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[11px] font-semibold tracking-[0.12em] text-white/90 backdrop-blur-sm sm:mb-5 sm:px-3.5 sm:py-2 sm:text-xs sm:tracking-[0.16em]"
-            >
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">{slide.eyebrow}</span>
-            </motion.div>
+      <div className="relative mx-auto flex min-h-[690px] max-w-[1600px] flex-col justify-between px-5 pb-8 pt-20 sm:px-8 sm:pt-24 lg:min-h-[760px] lg:px-16 lg:pb-12 xl:px-24">
+        <div className="max-w-[850px]">
+          <motion.p
+            initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+            className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#D8B68C]"
+          >
+            <span className="h-px w-9 bg-[#D8B68C]" />
+            Website care, without the complexity
+          </motion.p>
 
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={active}
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.45 }}
-              >
-                <h1 className="max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
-                  {headline}
-                </h1>
-                <p className="mt-5 max-w-xl text-base leading-7 text-white/80 sm:mt-6 sm:text-lg">
-                  {subheadline}
-                </p>
-              </motion.div>
-            </AnimatePresence>
+          <motion.h1
+            initial={reduceMotion ? false : { opacity: 0, y: 36 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.85, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-8 max-w-[900px] font-display text-[clamp(3.4rem,8vw,7.8rem)] font-semibold leading-[0.91] tracking-[-0.075em] text-balance"
+          >
+            {headline}
+          </motion.h1>
 
-            <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row">
-              <Button asChild size="lg" className="w-full bg-[#5D2A86] text-white shadow-lg shadow-black/15 hover:bg-[#4A1F6B] sm:w-auto">
-                <Link href="/#diagnostic" scroll className="gap-2">
-                  {slide.action}
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="w-full border-white/35 bg-white/10 text-white hover:bg-white/15 hover:text-white sm:w-auto">
-                <a href={waLink('Hello HostSuite, I need help with my business technology.')} target="_blank" rel="noopener noreferrer">
-                  Talk to a human
-                </a>
-              </Button>
-            </div>
-
-            <div className="mt-8 flex items-center gap-2" aria-label="Hero slides">
-              {slides.map((item, index) => (
-                <button
-                  key={item.eyebrow}
-                  type="button"
-                  onClick={() => setActive(index)}
-                  aria-label={`Show slide ${index + 1}`}
-                  aria-current={index === active}
-                  className={`h-1.5 rounded-full transition-all ${index === active ? 'w-9 bg-white' : 'w-4 bg-white/35 hover:bg-white/60'}`}
-                />
-              ))}
-              <span className="ml-2 text-xs text-white/60">Auto-rotating</span>
-            </div>
-          </div>
+          <motion.p
+            initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-8 max-w-[590px] text-base leading-8 text-white/76 sm:text-lg"
+          >
+            {subheadline}
+          </motion.p>
 
           <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            className="hidden lg:block"
+            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.34, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-9 flex flex-col gap-3 sm:flex-row"
           >
-            <div className="rounded-3xl border border-white/20 bg-white/95 p-5 text-foreground shadow-2xl shadow-black/20 backdrop-blur-xl">
-              <p className="text-sm font-semibold">What do you need today?</p>
-              <p className="mt-1 text-sm text-muted-foreground">Start with one thing. HostSuite can help with the rest.</p>
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                {quickNeeds.map(({ icon: Icon, label }) => (
-                  <Link
-                    key={label}
-                    href="/#diagnostic"
-                    className="group rounded-2xl border border-border bg-background p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
-                  >
-                    <Icon className="h-5 w-5 text-[#5D2A86]" />
-                    <span className="mt-8 block text-sm font-semibold">{label}</span>
-                    <span className="mt-1 block text-xs text-muted-foreground group-hover:text-foreground">Tell us what you need →</span>
-                  </Link>
-                ))}
-              </div>
-              <div className="mt-4 rounded-2xl bg-[#4A1F6B] px-4 py-3 text-white">
-                <p className="text-sm font-semibold">Not sure what you need?</p>
-                <p className="mt-1 text-xs text-white/70">That's okay. Describe the problem in plain English.</p>
-              </div>
-            </div>
+            <Button asChild size="lg" className="h-14 rounded-none bg-[#D7B18A] px-7 text-sm font-bold text-[#211A1C] shadow-none hover:bg-[#E5C6A6]">
+              <Link href="/#diagnostic" className="gap-3">
+                Let’s sort out your website <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="h-14 rounded-none border-white/45 bg-white/[0.04] px-7 text-sm font-semibold text-white hover:bg-white/10 hover:text-white">
+              <a href={waLink('Hello HostSuite, I would like to speak with someone about looking after my existing website.')} target="_blank" rel="noopener noreferrer">
+                Speak to a real person
+              </a>
+            </Button>
           </motion.div>
+        </div>
+
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.48 }}
+          className="mt-20 grid gap-5 border-t border-white/25 pt-6 sm:grid-cols-3 sm:gap-8"
+        >
+          {[
+            'Keep the website you already have',
+            'No forced hosting move',
+            'One-off help or ongoing care',
+          ].map((item) => (
+            <div key={item} className="flex items-center gap-3 text-xs font-medium tracking-[0.01em] text-white/75 sm:text-sm">
+              <Check className="h-4 w-4 shrink-0 text-[#D8B68C]" />
+              {item}
+            </div>
+          ))}
+        </motion.div>
+        <div className="pointer-events-none absolute bottom-12 right-8 hidden flex-col items-center gap-3 text-[9px] uppercase tracking-[0.22em] text-white/50 xl:flex">
+          <span>Scroll to explore</span>
+          <span className="h-14 w-px bg-gradient-to-b from-[#D8B68C] to-transparent" />
         </div>
       </div>
     </section>

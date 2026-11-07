@@ -118,7 +118,7 @@ export default function ServicesPage() {
                           asChild
                           className="bg-primary text-primary-foreground hover:bg-primary/90"
                         >
-                          <Link href={`/#diagnostic?issue=${s.painId}`} scroll className="gap-2">
+                          <Link href={`/?issue=${s.painId}#diagnostic`} scroll className="gap-2">
                             Request Service <ArrowRight className="h-4 w-4" />
                           </Link>
                         </Button>

@@ -11,8 +11,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ['var(--font-instrument-serif)', 'Georgia', 'serif'],
-        body: ['var(--font-manrope)', 'Arial', 'sans-serif'],
+        display: ['var(--font-syne)', 'Arial', 'sans-serif'],
+        body: ['var(--font-dm-sans)', 'Arial', 'sans-serif'],
         mono: ['var(--font-ibm-plex-mono)', 'ui-monospace', 'monospace'],
       },
       backgroundImage: {

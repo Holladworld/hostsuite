@@ -165,7 +165,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
 
       window.open(waLink(waText), '_blank', 'noopener,noreferrer');
       setDone(true);
-      toast.success('Your request is in. Check WhatsApp to continue the conversation.');
+      toast.success('Your details are ready. Check WhatsApp to continue the conversation.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not submit. Try again.');
     } finally {
@@ -185,63 +185,45 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
   }
 
   return (
-    <section id="diagnostic" className="relative scroll-mt-20 py-20 lg:py-28">
-      <div className="pointer-events-none absolute inset-0 bg-dots opacity-30" aria-hidden />
-      <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            Interactive Diagnostic &amp; Instant Quote
-          </span>
-          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Tell Us Your Pain
+    <section id="diagnostic" className="relative scroll-mt-20 overflow-hidden bg-[#20191D] py-24 text-white sm:py-28 lg:py-32">
+      <div className="pointer-events-none absolute -right-40 top-0 h-[560px] w-[560px] rounded-full border border-white/[0.06]" />
+      <div className="pointer-events-none absolute -right-16 top-24 h-[320px] w-[320px] rounded-full border border-white/[0.06]" />
+      <div className="relative mx-auto grid max-w-[1440px] gap-12 px-5 sm:px-8 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16 lg:px-16 xl:px-24">
+        <div className="lg:sticky lg:top-32 lg:self-start">
+          <p className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.22em] text-[#D6B08B]"><span className="h-px w-8 bg-[#D6B08B]" /> Start with what’s happening</p>
+          <h2 className="mt-7 max-w-[520px] font-display text-[clamp(2.8rem,5vw,5.2rem)] font-semibold leading-[0.97] tracking-[-0.07em] text-white">
+            Tell us what’s getting in the way.
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-            Pick what is breaking your business, tell us about your setup, and get an instant estimated fix time and cost — then we continue on WhatsApp.
+          <p className="mt-6 max-w-md text-sm leading-7 text-white/65 sm:text-base">
+            Choose the issues you want help with. We’ll ask only for the details we need, then give you a clear starting point and a way to speak with our team.
           </p>
+          <div className="mt-10 border-t border-white/20 pt-6">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D6B08B]">A simpler way to get help</p>
+            <p className="mt-3 max-w-sm text-sm leading-7 text-white/55">No technical language. No pressure to move your hosting. Just a clear conversation about what your website needs.</p>
+          </div>
         </div>
 
-        {/* Stepper */}
-        <div className="mx-auto mt-8 flex max-w-md items-center justify-between">
-          {[
-            { n: 1, label: 'Your Issue' },
-            { n: 2, label: 'Your Setup' },
-            { n: 3, label: 'Your Quote' },
-          ].map((s, i) => (
-            <div key={s.n} className="flex flex-1 items-center">
-              <div className="flex flex-col items-center gap-1.5">
-                <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all ${
-                    step >= s.n
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border bg-background text-muted-foreground'
-                  }`}
-                >
-                  {step > s.n ? <CheckCircle2 className="h-5 w-5" /> : s.n}
+        <div className="min-w-0">
+          <div className="mb-6 flex items-center justify-between gap-3 border-b border-white/20 pb-5">
+            {[
+              { n: 1, label: 'The issue' },
+              { n: 2, label: 'Your website' },
+              { n: 3, label: 'Your next step' },
+            ].map((s, i) => (
+              <div key={s.n} className="flex flex-1 items-center">
+                <div className="flex items-center gap-2.5">
+                  <span className={`flex h-8 w-8 items-center justify-center border text-xs font-bold transition-colors ${step >= s.n ? 'border-[#D6B08B] bg-[#D6B08B] text-[#20191D]' : 'border-white/30 text-white/55'}`}>
+                    {step > s.n ? <CheckCircle2 className="h-4 w-4" /> : s.n}
+                  </span>
+                  <span className={`hidden text-[10px] font-semibold uppercase tracking-[0.12em] sm:inline ${step >= s.n ? 'text-white' : 'text-white/40'}`}>{s.label}</span>
                 </div>
-                <span
-                  className={`text-[11px] font-medium ${
-                    step >= s.n ? 'text-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  {s.label}
-                </span>
+                {i < 2 && <div className="mx-3 h-px flex-1 bg-white/20" />}
               </div>
-              {i < 2 && (
-                <div className="mx-2 mb-5 h-0.5 flex-1 rounded-full bg-border">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{ width: step > s.n ? '100%' : '0%' }}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        {/* Card */}
-        <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-primary/5">
-          <AnimatePresence mode="wait">
+          <div className="overflow-hidden border border-[#E2D8CC] bg-[#F6F1E9] shadow-[0_30px_100px_rgba(0,0,0,0.25)]">
+            <AnimatePresence mode="wait">
             {/* STEP 1 */}
             {step === 1 && !done && (
               <motion.div
@@ -252,11 +234,11 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 transition={{ duration: 0.3 }}
                 className="p-6 sm:p-8"
               >
-                <h3 className="font-display text-xl font-semibold text-foreground">
-                  What is breaking your business right now?
+                <h3 className="font-display text-xl font-semibold text-[#211B1D]">
+                  What would you like us to take off your hands?
                 </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Select all that apply — the more we know, the faster we fix it.
+                <p className="mt-1 text-sm text-[#69615C]">
+                  Select everything that applies. We will take it from there.
                 </p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   {PAIN_POINTS.map((p: PainPoint) => {
@@ -267,29 +249,29 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                         key={p.id}
                         type="button"
                         onClick={() => togglePain(p.id)}
-                        className={`group relative flex items-start gap-3 rounded-xl border p-4 text-left transition-all ${
+                        className={`group relative flex items-start gap-3 rounded-none border p-4 text-left transition-all ${
                           active
-                            ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-                            : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
+                            ? 'border-[#B48A68] bg-[#D6B08B]/5 ring-1 ring-primary/30'
+                            : 'border-[#D8CFC4] bg-white hover:border-[#B48A68]/40 hover:bg-[#EEE8DF]/40'
                         }`}
                       >
                         <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                            active ? 'bg-primary text-primary-foreground' : 'bg-muted text-primary'
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-none transition-colors ${
+                            active ? 'bg-[#D6B08B] text-[#211A20]' : 'bg-[#EEE8DF] text-[#6D4438]'
                           }`}
                         >
                           <Icon className="h-5 w-5" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold leading-snug text-foreground">
+                          <p className="text-sm font-semibold leading-snug text-[#211B1D]">
                             {p.title}
                           </p>
-                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          <p className="mt-1 text-xs leading-relaxed text-[#69615C]">
                             {p.description}
                           </p>
                         </div>
                         {active && (
-                          <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary" />
+                          <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-[#6D4438]" />
                         )}
                       </button>
                     );
@@ -308,18 +290,18 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 transition={{ duration: 0.3 }}
                 className="p-6 sm:p-8"
               >
-                <h3 className="font-display text-xl font-semibold text-foreground">
-                  Tell us about your setup
+                <h3 className="font-display text-xl font-semibold text-[#211B1D]">
+                  A little context helps us come prepared.
                 </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  A few details so our engineers come prepared.
+                <p className="mt-1 text-sm text-[#69615C]">
+                  Share what you can. You do not need to know the technical details.
                 </p>
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="diag-company">Company Name</Label>
                     <div className="relative">
-                      <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#69615C]" />
                       <Input
                         id="diag-company"
                         placeholder="Acme Nigeria Ltd."
@@ -332,7 +314,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   <div className="space-y-2">
                     <Label htmlFor="diag-domain">Domain URL</Label>
                     <div className="relative">
-                      <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#69615C]" />
                       <Input
                         id="diag-domain"
                         placeholder="company.com.ng"
@@ -355,13 +337,13 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   />
                 </div>
 
-                <div className="mt-4 rounded-lg bg-muted/60 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">You selected:</p>
+                <div className="mt-4 rounded-none bg-[#EEE8DF] p-3">
+                  <p className="text-xs font-medium text-[#69615C]">You selected:</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {selectedPoints.map((p) => (
                       <span
                         key={p.id}
-                        className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                        className="rounded-none bg-[#EAE3D9] px-2.5 py-1 text-xs font-medium text-[#6D4438]"
                       >
                         {p.short}
                       </span>
@@ -381,33 +363,33 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 transition={{ duration: 0.3 }}
                 className="p-6 sm:p-8"
               >
-                <h3 className="font-display text-xl font-semibold text-foreground">
-                  Estimated Fix &amp; Instant Quote
+                <h3 className="font-display text-xl font-semibold text-[#211B1D]">
+                  A clear starting point
                 </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Based on your selections — where should we send the full assessment?
+                <p className="mt-1 text-sm text-[#69615C]">
+                  This is an initial guide based on what you selected. We will confirm the details with you.
                 </p>
 
                 {estimate && (
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-xl border border-border bg-background p-4">
-                      <Clock className="h-5 w-5 text-secondary" />
-                      <p className="mt-2 text-xs text-muted-foreground">Est. Turnaround</p>
-                      <p className="font-mono-data text-sm font-semibold text-foreground">
+                    <div className="rounded-none border border-[#D8CFC4] bg-white p-4">
+                      <Clock className="h-5 w-5 text-[#6D4438]" />
+                      <p className="mt-2 text-xs text-[#69615C]">Est. Turnaround</p>
+                      <p className="font-mono-data text-sm font-semibold text-[#211B1D]">
                         {formatTurnaround(estimate.turnaround)}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-border bg-background p-4">
-                      <BadgeDollarSign className="h-5 w-5 text-secondary" />
-                      <p className="mt-2 text-xs text-muted-foreground">Est. Cost Range</p>
-                      <p className="font-mono-data text-sm font-semibold text-foreground">
+                    <div className="rounded-none border border-[#D8CFC4] bg-white p-4">
+                      <BadgeDollarSign className="h-5 w-5 text-[#6D4438]" />
+                      <p className="mt-2 text-xs text-[#69615C]">Est. Cost Range</p>
+                      <p className="font-mono-data text-sm font-semibold text-[#211B1D]">
                         {formatNairaRange(estimate.costMin, estimate.costMax)}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      <p className="mt-2 text-xs text-muted-foreground">Recommended Tier</p>
-                      <p className="font-display text-sm font-semibold text-primary">
+                    <div className="rounded-none border border-[#B48A68]/30 bg-[#EAE3D9] p-4">
+                      <Sparkles className="h-5 w-5 text-[#6D4438]" />
+                      <p className="mt-2 text-xs text-[#69615C]">Recommended Tier</p>
+                      <p className="font-display text-sm font-semibold text-[#6D4438]">
                         {estimate.tier}
                       </p>
                     </div>
@@ -418,7 +400,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   <div className="space-y-2">
                     <Label htmlFor="diag-email">Corporate Email</Label>
                     <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#69615C]" />
                       <Input
                         id="diag-email"
                         type="email"
@@ -432,7 +414,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   <div className="space-y-2">
                     <Label htmlFor="diag-wa">WhatsApp Number</Label>
                     <div className="relative">
-                      <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#69615C]" />
                       <Input
                         id="diag-wa"
                         placeholder="234 803 000 0000"
@@ -444,7 +426,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-start gap-2 rounded-lg bg-secondary/5 p-3 text-xs text-secondary/90">
+                <div className="mt-4 flex items-start gap-2 rounded-none bg-[#EEE8DF] p-3 text-xs text-[#6D4438]/90">
                   <MessageCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   Submitting opens a WhatsApp chat with our engineers, pre-filled with your diagnostic details.
                 </div>
@@ -462,14 +444,14 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/10 text-success">
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
-                <h3 className="mt-4 font-display text-2xl font-bold text-foreground">
-                  Your request is in
+                <h3 className="mt-4 font-display text-2xl font-bold text-[#211B1D]">
+                  We’ll take it from here.
                 </h3>
-                <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                  We have received your diagnostic details and opened a WhatsApp chat with our engineers. If the chat did not open, tap the button below.
+                <p className="mt-2 max-w-md text-sm text-[#69615C]">
+                  We have received your details and opened a WhatsApp conversation so we can understand the request and agree what happens next.
                 </p>
                 <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                  <Button asChild className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+                  <Button asChild className="bg-[#211A20] text-white hover:bg-[#211A20]/90">
                     <a
                       href={waLink('Hello HostSuite, I just submitted a diagnostic request and would like to continue.')}
                       target="_blank"
@@ -489,7 +471,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
 
           {/* Footer controls */}
           {!done && (
-            <div className="flex items-center justify-between border-t border-border bg-muted/30 px-6 py-4 sm:px-8">
+            <div className="flex items-center justify-between border-t border-[#DED5DF] bg-[#EEE8DF] px-6 py-4 sm:px-8">
               <Button
                 variant="ghost"
                 onClick={back}
@@ -501,7 +483,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
               {step < 3 ? (
                 <Button
                   onClick={next}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="bg-[#D6B08B] text-[#211A20] hover:bg-[#D6B08B]/90"
                 >
                   Continue <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -509,7 +491,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 <Button
                   onClick={submit}
                   disabled={submitting}
-                  className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                  className="bg-[#211A20] text-white hover:bg-[#211A20]/90"
                 >
                   {submitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -522,6 +504,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
               )}
             </div>
           )}
+          </div>
         </div>
       </div>
     </section>
