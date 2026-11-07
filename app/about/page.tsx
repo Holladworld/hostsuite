@@ -124,8 +124,8 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="mt-12 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-            <table className="w-full text-sm">
+          <div className="mt-12 overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
+            <table className="w-full min-w-[620px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30 text-left text-xs uppercase tracking-wider text-muted-foreground">
                   <th className="px-5 py-4 font-medium">Technology</th>

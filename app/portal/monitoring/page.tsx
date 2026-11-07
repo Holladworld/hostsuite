@@ -9,7 +9,7 @@ import { MONITOR_CHECKS } from '@/lib/monitoring';
 export default function MonitoringPage() {
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border"><div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8"><Link href="/portal/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Back to portal</Link><Link href="/" className="font-display text-lg font-bold tracking-tight">HostSuite</Link></div></header>
+      <header className="border-b border-border"><div className="mx-auto flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8"><Link href="/portal/dashboard" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Back to portal</Link><Link href="/" className="font-display text-lg font-bold tracking-tight">HostSuite</Link></div></header>
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
         <div><p className="text-sm font-medium text-primary">Monitoring</p><h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Know when something needs attention</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">HostSuite will eventually check your website, domain, SSL, email and backups so you do not have to.</p></div>
 

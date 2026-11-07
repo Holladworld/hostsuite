@@ -185,19 +185,19 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
   }
 
   return (
-    <section id="diagnostic" className="relative scroll-mt-20 bg-[#F3EEE5] py-24 lg:py-32">
+    <section id="diagnostic" className="relative scroll-mt-20 bg-[#F8F5FB] py-24 lg:py-32">
       <div className="pointer-events-none absolute inset-0 opacity-[0.18]" aria-hidden />
       <div className="relative mx-auto max-w-[1500px] px-5 sm:px-9 lg:px-16 xl:px-24">
-        <div className="grid gap-8 border-b border-[#D6CBC0] pb-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+        <div className="grid gap-8 border-b border-[#E5DCEC] pb-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
           <div>
-            <span className="font-mono-data text-[10px] font-medium uppercase tracking-[0.18em] text-[#87533F]">
+            <span className="font-mono-data text-[10px] font-medium uppercase tracking-[0.18em] text-[#5D2A86]">
               A straightforward first assessment
             </span>
-            <h2 className="mt-5 max-w-[620px] font-display text-[clamp(2.7rem,5vw,5rem)] leading-[0.92] tracking-[-0.06em] text-[#211C1A]">
+            <h2 className="mt-5 max-w-[620px] font-display text-[clamp(2.7rem,5vw,5rem)] leading-[0.92] tracking-[-0.06em] text-[#281936]">
               Start with what needs fixing.
             </h2>
           </div>
-          <p className="max-w-[520px] text-sm leading-7 text-[#756A60] lg:justify-self-end">
+          <p className="max-w-[520px] text-sm leading-7 text-[#71657B] lg:justify-self-end">
             Choose the issue, share a little context and see an initial estimate. We will review the details with you before any work begins.
           </p>
         </div>
@@ -214,24 +214,24 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 <div
                   className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all ${
                     step >= s.n
-                      ? 'border-[#A96549] bg-[#A96549] text-[#F8F3EB]'
-                      : 'border-[#D6CBC0] bg-white text-[#756A60]'
+                      ? 'border-[#4A1F6B] bg-[#4A1F6B] text-[#FFFFFF]'
+                      : 'border-[#E5DCEC] bg-white text-[#71657B]'
                   }`}
                 >
                   {step > s.n ? <CheckCircle2 className="h-5 w-5" /> : s.n}
                 </div>
                 <span
                   className={`text-[11px] font-medium ${
-                    step >= s.n ? 'text-[#211C1A]' : 'text-[#756A60]'
+                    step >= s.n ? 'text-[#281936]' : 'text-[#71657B]'
                   }`}
                 >
                   {s.label}
                 </span>
               </div>
               {i < 2 && (
-                <div className="mx-2 mb-5 h-0.5 flex-1 rounded-full bg-[#D6CBC0]">
+                <div className="mx-2 mb-5 h-0.5 flex-1 rounded-full bg-[#E5DCEC]">
                   <div
-                    className="h-full rounded-full bg-[#A96549] transition-all duration-500"
+                    className="h-full rounded-full bg-[#4A1F6B] transition-all duration-500"
                     style={{ width: step > s.n ? '100%' : '0%' }}
                   />
                 </div>
@@ -241,7 +241,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
         </div>
 
         {/* Card */}
-        <div className="mt-8 overflow-hidden rounded-2xl border border-[#D6CBC0] bg-[#F8F5EF] shadow-xl shadow-[#A96549]/5">
+        <div className="mt-8 overflow-hidden rounded-2xl border border-[#E5DCEC] bg-[#FFFFFF] shadow-xl shadow-[#4A1F6B]/5">
           <AnimatePresence mode="wait">
             {/* STEP 1 */}
             {step === 1 && !done && (
@@ -253,10 +253,10 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 transition={{ duration: 0.3 }}
                 className="p-6 sm:p-8"
               >
-                <h3 className="font-display text-xl font-semibold text-[#211C1A]">
+                <h3 className="font-display text-xl font-semibold text-[#281936]">
                   What is breaking your business right now?
                 </h3>
-                <p className="mt-1 text-sm text-[#756A60]">
+                <p className="mt-1 text-sm text-[#71657B]">
                   Select all that apply — the more we know, the faster we fix it.
                 </p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -270,27 +270,27 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                         onClick={() => togglePain(p.id)}
                         className={`group relative flex items-start gap-3 rounded-xl border p-4 text-left transition-all ${
                           active
-                            ? 'border-[#A96549] bg-[#A96549]/5 ring-1 ring-[#A96549]/30'
-                            : 'border-[#D6CBC0] bg-white hover:border-[#A96549]/40 hover:bg-[#EEE7DD]/70'
+                            ? 'border-[#4A1F6B] bg-[#4A1F6B]/5 ring-1 ring-[#4A1F6B]/30'
+                            : 'border-[#E5DCEC] bg-white hover:border-[#4A1F6B]/40 hover:bg-[#F2ECF7]/70'
                         }`}
                       >
                         <div
                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                            active ? 'bg-[#A96549] text-[#F8F3EB]' : 'bg-[#EEE7DD] text-[#87533F]'
+                            active ? 'bg-[#4A1F6B] text-[#FFFFFF]' : 'bg-[#F2ECF7] text-[#5D2A86]'
                           }`}
                         >
                           <Icon className="h-5 w-5" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold leading-snug text-[#211C1A]">
+                          <p className="text-sm font-semibold leading-snug text-[#281936]">
                             {p.title}
                           </p>
-                          <p className="mt-1 text-xs leading-relaxed text-[#756A60]">
+                          <p className="mt-1 text-xs leading-relaxed text-[#71657B]">
                             {p.description}
                           </p>
                         </div>
                         {active && (
-                          <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-[#87533F]" />
+                          <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-[#5D2A86]" />
                         )}
                       </button>
                     );
@@ -309,10 +309,10 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 transition={{ duration: 0.3 }}
                 className="p-6 sm:p-8"
               >
-                <h3 className="font-display text-xl font-semibold text-[#211C1A]">
+                <h3 className="font-display text-xl font-semibold text-[#281936]">
                   Tell us about your setup
                 </h3>
-                <p className="mt-1 text-sm text-[#756A60]">
+                <p className="mt-1 text-sm text-[#71657B]">
                   A few details so our engineers come prepared.
                 </p>
 
@@ -320,7 +320,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   <div className="space-y-2">
                     <Label htmlFor="diag-company">Company Name</Label>
                     <div className="relative">
-                      <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#756A60]" />
+                      <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71657B]" />
                       <Input
                         id="diag-company"
                         placeholder="Acme Nigeria Ltd."
@@ -333,7 +333,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   <div className="space-y-2">
                     <Label htmlFor="diag-domain">Domain URL</Label>
                     <div className="relative">
-                      <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#756A60]" />
+                      <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71657B]" />
                       <Input
                         id="diag-domain"
                         placeholder="company.com.ng"
@@ -356,13 +356,13 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   />
                 </div>
 
-                <div className="mt-4 rounded-lg bg-[#EEE7DD] p-3">
-                  <p className="text-xs font-medium text-[#756A60]">You selected:</p>
+                <div className="mt-4 rounded-lg bg-[#F2ECF7] p-3">
+                  <p className="text-xs font-medium text-[#71657B]">You selected:</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {selectedPoints.map((p) => (
                       <span
                         key={p.id}
-                        className="rounded-full bg-[#A96549]/10 px-2.5 py-1 text-xs font-medium text-[#87533F]"
+                        className="rounded-full bg-[#4A1F6B]/10 px-2.5 py-1 text-xs font-medium text-[#5D2A86]"
                       >
                         {p.short}
                       </span>
@@ -382,33 +382,33 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 transition={{ duration: 0.3 }}
                 className="p-6 sm:p-8"
               >
-                <h3 className="font-display text-xl font-semibold text-[#211C1A]">
+                <h3 className="font-display text-xl font-semibold text-[#281936]">
                   Estimated Fix &amp; Instant Quote
                 </h3>
-                <p className="mt-1 text-sm text-[#756A60]">
+                <p className="mt-1 text-sm text-[#71657B]">
                   Based on your selections — where should we send the full assessment?
                 </p>
 
                 {estimate && (
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-xl border border-[#D6CBC0] bg-white p-4">
-                      <Clock className="h-5 w-5 text-[#A96549]" />
-                      <p className="mt-2 text-xs text-[#756A60]">Est. Turnaround</p>
-                      <p className="font-mono-data text-sm font-semibold text-[#211C1A]">
+                    <div className="rounded-xl border border-[#E5DCEC] bg-white p-4">
+                      <Clock className="h-5 w-5 text-[#4A1F6B]" />
+                      <p className="mt-2 text-xs text-[#71657B]">Est. Turnaround</p>
+                      <p className="font-mono-data text-sm font-semibold text-[#281936]">
                         {formatTurnaround(estimate.turnaround)}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-[#D6CBC0] bg-white p-4">
-                      <BadgeDollarSign className="h-5 w-5 text-[#A96549]" />
-                      <p className="mt-2 text-xs text-[#756A60]">Est. Cost Range</p>
-                      <p className="font-mono-data text-sm font-semibold text-[#211C1A]">
+                    <div className="rounded-xl border border-[#E5DCEC] bg-white p-4">
+                      <BadgeDollarSign className="h-5 w-5 text-[#4A1F6B]" />
+                      <p className="mt-2 text-xs text-[#71657B]">Est. Cost Range</p>
+                      <p className="font-mono-data text-sm font-semibold text-[#281936]">
                         {formatNairaRange(estimate.costMin, estimate.costMax)}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-[#A96549]/30 bg-[#A96549]/5 p-4">
-                      <Sparkles className="h-5 w-5 text-[#87533F]" />
-                      <p className="mt-2 text-xs text-[#756A60]">Recommended Tier</p>
-                      <p className="font-display text-sm font-semibold text-[#87533F]">
+                    <div className="rounded-xl border border-[#4A1F6B]/30 bg-[#4A1F6B]/5 p-4">
+                      <Sparkles className="h-5 w-5 text-[#5D2A86]" />
+                      <p className="mt-2 text-xs text-[#71657B]">Recommended Tier</p>
+                      <p className="font-display text-sm font-semibold text-[#5D2A86]">
                         {estimate.tier}
                       </p>
                     </div>
@@ -419,7 +419,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   <div className="space-y-2">
                     <Label htmlFor="diag-email">Corporate Email</Label>
                     <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#756A60]" />
+                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71657B]" />
                       <Input
                         id="diag-email"
                         type="email"
@@ -433,7 +433,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   <div className="space-y-2">
                     <Label htmlFor="diag-wa">WhatsApp Number</Label>
                     <div className="relative">
-                      <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#756A60]" />
+                      <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71657B]" />
                       <Input
                         id="diag-wa"
                         placeholder="234 803 000 0000"
@@ -445,7 +445,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-start gap-2 rounded-lg bg-[#A96549]/5 p-3 text-xs text-[#A96549]/90">
+                <div className="mt-4 flex items-start gap-2 rounded-lg bg-[#4A1F6B]/5 p-3 text-xs text-[#4A1F6B]/90">
                   <MessageCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   Submitting opens a WhatsApp chat with our engineers, pre-filled with your diagnostic details.
                 </div>
@@ -463,14 +463,14 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/10 text-success">
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
-                <h3 className="mt-4 font-display text-2xl font-bold text-[#211C1A]">
+                <h3 className="mt-4 font-display text-2xl font-bold text-[#281936]">
                   Your request is in
                 </h3>
-                <p className="mt-2 max-w-md text-sm text-[#756A60]">
+                <p className="mt-2 max-w-md text-sm text-[#71657B]">
                   We have received your diagnostic details and opened a WhatsApp chat with our engineers. If the chat did not open, tap the button below.
                 </p>
                 <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                  <Button asChild className="bg-[#A96549] text-[#F8F3EB] hover:bg-[#87533F]">
+                  <Button asChild className="bg-[#4A1F6B] text-[#FFFFFF] hover:bg-[#5D2A86]">
                     <a
                       href={waLink('Hello HostSuite, I just submitted a diagnostic request and would like to continue.')}
                       target="_blank"
@@ -490,7 +490,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
 
           {/* Footer controls */}
           {!done && (
-            <div className="flex items-center justify-between border-t border-[#D6CBC0] bg-[#EEE7DD]/30 px-6 py-4 sm:px-8">
+            <div className="flex items-center justify-between border-t border-[#E5DCEC] bg-[#F2ECF7]/30 px-6 py-4 sm:px-8">
               <Button
                 variant="ghost"
                 onClick={back}
@@ -502,7 +502,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
               {step < 3 ? (
                 <Button
                   onClick={next}
-                  className="bg-[#A96549] text-[#F8F3EB] hover:bg-[#A96549]/90"
+                  className="bg-[#4A1F6B] text-[#FFFFFF] hover:bg-[#4A1F6B]/90"
                 >
                   Continue <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -510,7 +510,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 <Button
                   onClick={submit}
                   disabled={submitting}
-                  className="bg-[#A96549] text-[#F8F3EB] hover:bg-[#87533F]"
+                  className="bg-[#4A1F6B] text-[#FFFFFF] hover:bg-[#5D2A86]"
                 >
                   {submitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

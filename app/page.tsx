@@ -10,8 +10,8 @@ import { CreditOffsetBanner } from '@/components/credit-offset-banner';
 export default function Home() {
   return (
     <SiteShell>
-      <Hero />
       <PromoBanner />
+      <Hero />
       <Services />
       <Suspense fallback={null}>
         <DiagnosticTool />

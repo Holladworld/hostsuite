@@ -54,10 +54,10 @@ export function PortalDashboardV3() {
 
   return <div className="min-h-screen bg-background">
     <header className="border-b bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8">
         <div className="lg:hidden"><Link href="/portal/dashboard" className="font-display text-lg font-bold">HostSuite</Link></div>
         <div className="hidden lg:block"><span className="text-sm text-muted-foreground">Client workspace</span></div>
-        <div className="flex items-center gap-3"><span className="hidden max-w-52 truncate text-sm text-muted-foreground sm:block">{user.email}</span><Button size="sm" variant="outline" onClick={async () => { await signOut(); router.push('/portal'); }}><LogOut className="mr-2 h-4 w-4" /> Sign out</Button></div>
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3"><span className="hidden max-w-52 truncate text-sm text-muted-foreground sm:block">{user.email}</span><Button size="sm" variant="outline" onClick={async () => { await signOut(); router.push('/portal'); }}><LogOut className="mr-2 h-4 w-4" /> Sign out</Button></div>
       </div>
     </header>
 
