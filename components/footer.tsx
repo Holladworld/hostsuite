@@ -19,13 +19,12 @@ const footerCompany = [
 
 export function Footer() {
   return (
-    <footer className="mt-auto bg-[#21132F] text-[#F7F1FA]">
+    <footer className="mt-auto bg-[#20191D] text-[#F7F1EA]">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16 lg:px-12">
         <div className="grid gap-12 border-b border-white/15 pb-12 lg:grid-cols-[1.3fr_0.8fr_0.9fr_1fr]">
           <div className="max-w-sm">
             <Link href="/" className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center bg-white font-display text-2xl text-[#4A1F6B]">H</span>
-              <span className="font-display text-3xl font-normal tracking-tight">HostSuite</span>
+              <span className="font-display text-3xl font-bold tracking-[-0.08em]">host<span className="text-[#D6B08B]">suite</span></span>
             </Link>
             <p className="mt-5 max-w-xs text-sm leading-7 text-white/65">
               Your website, looked after. Practical help, ongoing care and a team to call when the technical work gets in the way.
@@ -59,7 +58,7 @@ export function Footer() {
           <div>
             <h2 className="font-mono-data text-[10px] uppercase tracking-[0.16em] text-white/45">Talk to a person</h2>
             <a href={waLink('Hello HostSuite, I need help with my existing website.')} target="_blank" rel="noopener noreferrer" className="mt-5 flex items-start gap-3 border border-white/15 p-4 transition hover:border-white/40">
-              <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#C7A9D6]" />
+              <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#D6B08B]" />
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-white">WhatsApp support</span>
                 <span className="mt-1 block text-xs text-white/55">{BRAND.whatsappDisplay}</span>
