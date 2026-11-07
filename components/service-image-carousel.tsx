@@ -158,17 +158,17 @@ export function ServiceImageCarousel() {
                     onClick={() => setActive(index)}
                     aria-label={`Show ${item.eyebrow.toLowerCase()} slide`}
                     aria-current={index === active ? 'true' : undefined}
-                    className={`h-2 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B] ${index === active ? 'w-8 bg-white' : 'w-2 bg-white/55 hover:bg-white/90'}`}
+                    className={`h-1.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B] sm:h-2 ${index === active ? 'w-6 bg-white sm:w-8' : 'w-1.5 bg-white/55 hover:bg-white/90 sm:w-2'}`}
                   />
                 ))}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="mr-2 hidden text-[10px] font-semibold tracking-[0.12em] text-white/70 sm:inline">{String(active + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}</span>
-                <button type="button" onClick={previous} aria-label="Previous service" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><ArrowLeft className="h-4 w-4" /></button>
-                <button type="button" onClick={next} aria-label="Next service" className="flex h-10 w-10 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><ArrowRight className="h-4 w-4" /></button>
-                <button type="button" onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Resume automatic slides' : 'Pause automatic slides'} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
-                  {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                <button type="button" onClick={previous} aria-label="Previous service" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-9 sm:w-9"><ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></button>
+                <button type="button" onClick={next} aria-label="Next service" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-9 sm:w-9"><ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></button>
+                <button type="button" onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Resume automatic slides' : 'Pause automatic slides'} className="flex h-8 w-8 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-9 sm:w-9">
+                  {paused ? <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Pause className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                 </button>
               </div>
             </div>
