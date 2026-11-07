@@ -257,7 +257,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                       >
                         <div
                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-none transition-colors ${
-                            active ? 'bg-[#D6B08B] text-[#6D4438]-foreground' : 'bg-[#EEE8DF] text-[#6D4438]'
+                            active ? 'bg-[#D6B08B] text-[#211A20]' : 'bg-[#EEE8DF] text-[#6D4438]'
                           }`}
                         >
                           <Icon className="h-5 w-5" />
@@ -451,7 +451,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   We have received your details and opened a WhatsApp conversation so we can understand the request and agree what happens next.
                 </p>
                 <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                  <Button asChild className="bg-[#211A20] text-[#6D4438]-foreground hover:bg-[#211A20]/90">
+                  <Button asChild className="bg-[#211A20] text-white hover:bg-[#211A20]/90">
                     <a
                       href={waLink('Hello HostSuite, I just submitted a diagnostic request and would like to continue.')}
                       target="_blank"
@@ -483,7 +483,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
               {step < 3 ? (
                 <Button
                   onClick={next}
-                  className="bg-[#D6B08B] text-[#6D4438]-foreground hover:bg-[#D6B08B]/90"
+                  className="bg-[#D6B08B] text-[#211A20] hover:bg-[#D6B08B]/90"
                 >
                   Continue <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -491,7 +491,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 <Button
                   onClick={submit}
                   disabled={submitting}
-                  className="bg-[#211A20] text-[#6D4438]-foreground hover:bg-[#211A20]/90"
+                  className="bg-[#211A20] text-white hover:bg-[#211A20]/90"
                 >
                   {submitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
