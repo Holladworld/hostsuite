@@ -43,10 +43,10 @@ export function Hero() {
             {subheadline}
           </motion.p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/#diagnostic" className="inline-flex min-h-13 items-center justify-center gap-3 rounded-xl bg-[#4A1F6B] px-6 py-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(74,31,107,0.2)] transition-all hover:-translate-y-0.5 hover:bg-[#5D2A86]">
+            <Link href="/#diagnostic" className="inline-flex min-h-[52px] items-center justify-center gap-3 rounded-xl bg-[#4A1F6B] px-6 py-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(74,31,107,0.2)] transition-all hover:-translate-y-0.5 hover:bg-[#5D2A86]">
               Let’s sort out your website <ArrowUpRight className="h-4 w-4" />
             </Link>
-            <a href={waLink('Hello HostSuite, I would like to speak with someone about looking after my existing website.')} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-xl border border-[#D8CBE3] bg-white px-6 py-4 text-sm font-bold text-[#4A1F6B] transition-colors hover:border-[#9E7BB9] hover:bg-[#F5EFF9]">
+            <a href={waLink('Hello HostSuite, I would like to speak with someone about looking after my existing website.')} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-[#D8CBE3] bg-white px-6 py-4 text-sm font-bold text-[#4A1F6B] transition-colors hover:border-[#9E7BB9] hover:bg-[#F5EFF9]">
               Talk to a real person
             </a>
           </div>
