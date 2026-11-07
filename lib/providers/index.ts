@@ -9,7 +9,7 @@ import type { HostingProvider } from './types';
  * domain-reseller adapter and leaves unsupported hosting operations disabled.
  */
 export function getHostingProvider(): HostingProvider {
-  const provider = (process.env.HOSTING_PROVIDER || 'unconfigured').toLowerCase();
+  const provider = (process.env.HOSTING_PROVIDER?.trim() || 'unconfigured').toLowerCase();
 
   if (provider === 'mock') return mockProvider;
   if (provider === 'whogohost' || provider === 'go54') return whogohostProvider;
