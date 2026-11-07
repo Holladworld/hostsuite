@@ -100,3 +100,25 @@
 ::-webkit-scrollbar-track { background: hsl(var(--muted)); }
 ::-webkit-scrollbar-thumb { background: hsl(var(--primary) / 0.4); border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.6); }
+
+
+/* Responsive safety rails shared by public, portal and admin screens. */
+@layer base {
+  body { overflow-x: clip; }
+  main, section, article, aside, header, footer, nav, form { min-width: 0; }
+  h1, h2, h3, h4, p, a, button, label, span { overflow-wrap: break-word; }
+  input, select, textarea { min-width: 0; max-width: 100%; }
+  pre, code { max-width: 100%; overflow-wrap: anywhere; }
+  img, video, iframe, svg { max-width: 100%; }
+}
+
+@layer utilities {
+  .safe-mobile-bottom { padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem); }
+  .mobile-action-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+}
+
+@media (max-width: 639px) {
+  button, [role="button"], a[role="button"] { min-height: 40px; }
+  input, select, textarea { width: 100%; }
+  .font-mono-data { overflow-wrap: anywhere; }
+}
