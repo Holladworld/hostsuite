@@ -1,6 +1,21 @@
 import Link from 'next/link';
 import { Server, Mail, MessageCircle, ArrowUpRight, Instagram as InstagramIcon } from 'lucide-react';
-import { BRAND, FOOTER_LINKS, SOCIAL_LINKS, waLink } from '@/lib/constants';
+import { BRAND, SOCIAL_LINKS, waLink } from '@/lib/constants';
+
+const footerServices = [
+  { label: 'Website management', href: '/#services' },
+  { label: 'Access recovery', href: '/services#emergency-recovery' },
+  { label: 'Business email help', href: '/services#email-deliverability' },
+  { label: 'Website migration', href: '/services#zero-downtime-migration' },
+];
+
+const footerCompany = [
+  { label: 'About HostSuite', href: '/about' },
+  { label: 'Knowledge Center', href: '/knowledge' },
+  { label: 'Blog & Guides', href: '/blog' },
+  { label: 'Pricing', href: '/#pricing' },
+  { label: 'Customer portal', href: '/portal' },
+];
 
 export function Footer() {
   return (
@@ -9,11 +24,11 @@ export function Footer() {
         <div className="grid gap-12 border-b border-white/15 pb-12 lg:grid-cols-[1.3fr_0.8fr_0.9fr_1fr]">
           <div className="max-w-sm">
             <Link href="/" className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center bg-white text-[#4A1F6B]"><Server className="h-5 w-5" /></span>
+              <span className="flex h-10 w-10 items-center justify-center bg-white font-display text-2xl text-[#4A1F6B]">H</span>
               <span className="font-display text-3xl font-normal tracking-tight">HostSuite</span>
             </Link>
             <p className="mt-5 max-w-xs text-sm leading-7 text-white/65">
-              Websites, hosting, domains and business email — with practical technical support when you need it.
+              Your website, looked after. Practical help, ongoing care and a team to call when the technical work gets in the way.
             </p>
             <p className="mt-3 font-mono-data text-[10px] uppercase tracking-[0.14em] text-white/40">A {BRAND.parent} product</p>
             <div className="mt-6 flex flex-wrap gap-2">
@@ -26,25 +41,24 @@ export function Footer() {
           </div>
 
           <div>
-            <h2 className="font-mono-data text-[10px] uppercase tracking-[0.16em] text-white/45">Services</h2>
+            <h2 className="font-mono-data text-[10px] uppercase tracking-[0.16em] text-white/45">Website help</h2>
             <ul className="mt-5 space-y-3 text-sm">
-              {FOOTER_LINKS.Solutions.map((link) => <li key={link.href}><Link href={link.href} className="text-white/65 transition hover:text-white">{link.label}</Link></li>)}
+              {footerServices.map((link) => <li key={link.href}><Link href={link.href} className="text-white/65 transition hover:text-white">{link.label}</Link></li>)}
             </ul>
           </div>
 
           <div>
-            <h2 className="font-mono-data text-[10px] uppercase tracking-[0.16em] text-white/45">Company</h2>
+            <h2 className="font-mono-data text-[10px] uppercase tracking-[0.16em] text-white/45">HostSuite</h2>
             <ul className="mt-5 space-y-3 text-sm">
-              {FOOTER_LINKS.Company.map((link) => <li key={link.href}><Link href={link.href} className="text-white/65 transition hover:text-white">{link.label}</Link></li>)}
-            </ul>
-            <ul className="mt-5 space-y-3 text-sm">
-              {FOOTER_LINKS.Legal.map((link) => <li key={link.href}><Link href={link.href} className="text-white/65 transition hover:text-white">{link.label}</Link></li>)}
+              {footerCompany.map((link) => <li key={link.href}><Link href={link.href} className="text-white/65 transition hover:text-white">{link.label}</Link></li>)}
+              <li><Link href="/terms" className="text-white/65 transition hover:text-white">Terms of Service</Link></li>
+              <li><Link href="/privacy" className="text-white/65 transition hover:text-white">Privacy Policy</Link></li>
             </ul>
           </div>
 
           <div>
-            <h2 className="font-mono-data text-[10px] uppercase tracking-[0.16em] text-white/45">Contact HostSuite</h2>
-            <a href={waLink('Hello HostSuite, I need help with my business technology.')} target="_blank" rel="noopener noreferrer" className="mt-5 flex items-start gap-3 border border-white/15 p-4 transition hover:border-white/40">
+            <h2 className="font-mono-data text-[10px] uppercase tracking-[0.16em] text-white/45">Talk to a person</h2>
+            <a href={waLink('Hello HostSuite, I need help with my existing website.')} target="_blank" rel="noopener noreferrer" className="mt-5 flex items-start gap-3 border border-white/15 p-4 transition hover:border-white/40">
               <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#C7A9D6]" />
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-white">WhatsApp support</span>
@@ -60,7 +74,7 @@ export function Footer() {
 
         <div className="flex flex-col gap-3 pt-6 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
           <p>&copy; 2026 Vobels Limited. All rights reserved.</p>
-          <p>Clear service choices. Practical technical support. No unnecessary jargon.</p>
+          <p>Keep your website. Keep control. Get the help you need.</p>
         </div>
       </div>
     </footer>
