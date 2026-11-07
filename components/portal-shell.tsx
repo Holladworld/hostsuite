@@ -37,8 +37,8 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
 
       <div className="min-w-0 pb-20 lg:pb-0">{children}</div>
 
-      <nav aria-label="Portal navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden">
-        <div className="flex overflow-x-auto overscroll-contain px-1 pb-[env(safe-area-inset-bottom)]">
+      <nav aria-label="Portal navigation" className="safe-mobile-bottom fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur lg:hidden">
+        <div className="flex overflow-x-auto overscroll-x-contain px-1">
           {items.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href !== '/portal/dashboard' && pathname.startsWith(`${href}/`));
             return (
