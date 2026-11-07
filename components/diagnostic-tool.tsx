@@ -165,7 +165,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
 
       window.open(waLink(waText), '_blank', 'noopener,noreferrer');
       setDone(true);
-      toast.success('A good first step.. Check WhatsApp to continue the conversation.');
+      toast.success('Your details are ready. Check WhatsApp to continue the conversation.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not submit. Try again.');
     } finally {
@@ -190,7 +190,6 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8 lg:px-12">
         <div className="max-w-2xl">
           <span className="inline-flex items-center gap-2 font-mono-data text-[10px] uppercase tracking-[0.2em] text-[#CBB5D8]">
-            <Sparkles className="h-3.5 w-3.5" />
             A considered first step
           </span>
           <h2 className="mt-5 max-w-[12ch] font-display text-5xl font-normal leading-[0.98] tracking-[-0.03em] text-white sm:text-6xl">
@@ -211,7 +210,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
             <div key={s.n} className="flex flex-1 items-center">
               <div className="flex flex-col items-center gap-1.5">
                 <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all ${
+                  className={`flex h-9 w-9 items-center justify-center rounded-none border-2 text-sm font-semibold transition-all ${
                     step >= s.n
                       ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border bg-background text-muted-foreground'
