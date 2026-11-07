@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { SiteShell } from '@/components/site-shell';
 import { Hero } from '@/components/hero';
+import { ServiceImageCarousel } from '@/components/service-image-carousel';
 import { PromoBanner } from '@/components/promo-banner';
 import { Services } from '@/components/services';
 import { DiagnosticTool } from '@/components/diagnostic-tool';
@@ -12,6 +13,7 @@ export default function Home() {
     <SiteShell>
       <PromoBanner />
       <Hero />
+      <ServiceImageCarousel />
       <Services />
       <Suspense fallback={null}>
         <DiagnosticTool />
