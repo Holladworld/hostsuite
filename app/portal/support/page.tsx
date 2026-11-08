@@ -88,7 +88,12 @@ export default function SupportPage() {
     if (!ticket.current_quote_revision_id || ticket.quote_status !== 'awaiting_payment') return;
     setPayingTicketId(ticket.id);
     try {
-      const response = await fetch(`/api/billing/tickets/${ticket.id}/checkout`, { method: 'POST' });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Your session has expired. Sign in again.');
+      const response = await fetch(`/api/billing/tickets/${ticket.id}/checkout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const result = await response.json() as { error?: string; authorizationUrl?: string };
       if (!response.ok || !result.authorizationUrl) throw new Error(result.error ?? 'Unable to start payment.');
       window.location.assign(result.authorizationUrl);
