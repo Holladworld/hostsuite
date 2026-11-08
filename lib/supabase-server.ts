@@ -22,7 +22,7 @@ export async function createServerSupabaseClient() {
 }
 
 /** Verify the Supabase bearer token with Auth before authorizing privileged work. */
-export async function getVerifiedAdmin(request: Request): Promise<User | null> {
+export async function getVerifiedUser(request: Request): Promise<User | null> {
   const authorization = request.headers.get('authorization');
   const match = authorization?.match(/^Bearer\s+(.+)$/i);
   const accessToken = match?.[1]?.trim();
@@ -32,8 +32,13 @@ export async function getVerifiedAdmin(request: Request): Promise<User | null> {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
   const { data: { user }, error } = await client.auth.getUser(accessToken);
-  if (error || !user?.email) return null;
-  return user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? user : null;
+  return error ? null : user;
+}
+
+export async function getVerifiedAdmin(request: Request): Promise<User | null> {
+  const user = await getVerifiedUser(request);
+  if (!user?.email || user.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return null;
+  return user;
 }
 
 export async function verifyAdmin(request: Request): Promise<boolean> {
