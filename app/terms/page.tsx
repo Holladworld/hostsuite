@@ -1,5 +1,5 @@
 import { LegalLayout } from '@/components/legal-layout';
-import { BRAND } from '@/lib/constants';
+import { BRAND, WHATSAPP_DISPLAY } from '@/lib/constants';
 
 export default function TermsPage() {
   return (
@@ -77,7 +77,7 @@ export default function TermsPage() {
         {
           heading: 'Contact',
           body: [
-            `For any questions about these terms, contact us at ${BRAND.supportEmail} or via WhatsApp at ${BRAND.whatsappDisplay}.`,
+            `For any questions about these terms, contact us at ${BRAND.supportEmail} or via WhatsApp at ${WHATSAPP_DISPLAY}.`,
           ],
         },
       ]}

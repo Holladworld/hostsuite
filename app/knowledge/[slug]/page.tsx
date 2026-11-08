@@ -18,7 +18,7 @@ import { SiteShell } from '@/components/site-shell';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useKnowledgeBaseBySlug, usePublishedKnowledgeBase } from '@/hooks/use-content';
-import { waLink, BRAND } from '@/lib/constants';
+import { waLink, BRAND, WHATSAPP_DISPLAY } from '@/lib/constants';
 
 export default function KnowledgeArticlePage() {
   const params = useParams<{ slug: string }>();
@@ -159,7 +159,7 @@ export default function KnowledgeArticlePage() {
               Still stuck? We can fix it for you.
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              WhatsApp our Emergency Ops Desk at {BRAND.whatsappDisplay}. A real engineer picks up.
+              WhatsApp our Emergency Ops Desk at {WHATSAPP_DISPLAY}. A real engineer picks up.
             </p>
           </div>
           <Button

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Server, Mail, MessageCircle, ShieldCheck, ArrowUpRight, Instagram as InstagramIcon } from 'lucide-react';
-import { BRAND, FOOTER_LINKS, SOCIAL_LINKS, waLink } from '@/lib/constants';
+import { BRAND, FOOTER_LINKS, SOCIAL_LINKS, WHATSAPP_DISPLAY, waLink } from '@/lib/constants';
 
 export function Footer() {
   return (
@@ -31,7 +31,7 @@ export function Footer() {
           <div>
             <h4 className="font-display text-sm font-semibold uppercase tracking-wider text-background/90">Emergency Ops Desk</h4>
             <div className="mt-4 space-y-4">
-              <a href={waLink('Hello HostSuite, I need emergency infrastructure help.')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/15 px-4 py-3 text-sm font-semibold text-background transition-all hover:border-primary/50 hover:bg-primary/25"><MessageCircle className="h-5 w-5 shrink-0 text-primary" /><div className="flex min-w-0 flex-col"><span>WhatsApp Emergency Desk</span><span className="text-xs font-normal text-background/50">{BRAND.whatsappDisplay}</span></div></a>
+              <a href={waLink('Hello HostSuite, I need emergency infrastructure help.')} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/15 px-4 py-3 text-sm font-semibold text-background transition-all hover:border-primary/50 hover:bg-primary/25"><MessageCircle className="h-5 w-5 shrink-0 text-primary" /><div className="flex min-w-0 flex-col"><span>WhatsApp Emergency Desk</span><span className="text-xs font-normal text-background/50">{WHATSAPP_DISPLAY}</span></div></a>
               <a href={`mailto:${BRAND.supportEmail}`} className="flex min-w-0 items-start gap-3 text-sm text-background/60 transition-colors hover:text-background"><Mail className="mt-0.5 h-4 w-4 shrink-0 text-background/40" /><span className="break-all">{BRAND.supportEmail}</span></a>
               <div className="flex items-center gap-3 rounded-lg border border-background/10 bg-background/5 px-4 py-2.5"><span className="relative flex h-2.5 w-2.5 shrink-0"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" /><span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" /></span><div className="flex flex-col"><span className="text-xs font-semibold text-background/90">Lagos Node — Operational</span><span className="text-[11px] text-background/50">99.99% Uptime</span></div></div>
             </div>
