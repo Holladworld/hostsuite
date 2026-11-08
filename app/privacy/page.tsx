@@ -1,5 +1,5 @@
 import { LegalLayout } from '@/components/legal-layout';
-import { BRAND } from '@/lib/constants';
+import { BRAND, WHATSAPP_DISPLAY } from '@/lib/constants';
 
 export default function PrivacyPage() {
   return (
@@ -87,7 +87,7 @@ export default function PrivacyPage() {
         {
           heading: 'Contact',
           body: [
-            `For privacy questions or data requests, contact us at ${BRAND.supportEmail} or via WhatsApp at ${BRAND.whatsappDisplay}.`,
+            `For privacy questions or data requests, contact us at ${BRAND.supportEmail} or via WhatsApp at ${WHATSAPP_DISPLAY}.`,
           ],
         },
       ]}
