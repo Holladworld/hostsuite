@@ -29,6 +29,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     : 'NGN';
 
   if (!agreedScope) return NextResponse.json({ error: 'Record the agreed scope before creating a ticket.' }, { status: 400 });
+  if (quoteCurrency !== 'NGN') return NextResponse.json({ error: 'Ticket quote checkout currently supports NGN only.' }, { status: 400 });
   if (quotedAmount !== null && (!Number.isFinite(quotedAmount) || quotedAmount < 0)) {
     return NextResponse.json({ error: 'Enter a valid agreed amount.' }, { status: 400 });
   }
