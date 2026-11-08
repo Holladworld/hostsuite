@@ -5,7 +5,9 @@ import { extractJson, generatedSiteSchema, SITE_GENERATION_INSTRUCTIONS } from '
 import { getAIProvider } from '@/lib/ai/provider';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { mergeGeneratedSiteIntoProjectMetadata } from '@/lib/ai-projects';
-import { AI_PROJECT_GENERATION_CLAIMABLE_STATUSES, AI_PROJECT_GENERATION_IN_PROGRESS } from '@/lib/ai-project-state';
+import { getAiGenerationDailyLimit, getAiGenerationLeaseSeconds } from '@/lib/ai-generation-config';
+
+export const runtime = 'nodejs';
 
 const requestSchema = z.object({
   businessName: z.string().min(2).max(120),
@@ -20,8 +22,8 @@ async function requireUser(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!token || !url || !anonKey) return null;
   const supabase = createClient(url, anonKey, { auth: { persistSession: false } });
-  const { data: { user } } = await supabase.auth.getUser(token);
-  return user;
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  return error ? null : user;
 }
 
 async function recordUsage(input: {
@@ -34,27 +36,52 @@ async function recordUsage(input: {
   totalTokens?: number;
   status: 'completed' | 'failed';
 }) {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!serviceKey || !url) return;
-
-  const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
-  await admin.from('ai_usage_events').insert({
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin.from('ai_usage_events').insert({
     user_id: input.userId,
     project_id: input.projectId || null,
     action: 'generation',
     provider: input.provider,
     model: input.model,
-    input_tokens: input.inputTokens || 0,
-    output_tokens: input.outputTokens || 0,
-    total_tokens: input.totalTokens || 0,
+    input_tokens: input.inputTokens ?? 0,
+    output_tokens: input.outputTokens ?? 0,
+    total_tokens: input.totalTokens ?? 0,
     status: input.status,
   });
+  if (error) throw error;
+}
+
+async function finishAttempt(input: {
+  attemptId: string;
+  status: 'completed' | 'failed';
+  provider: string;
+  model: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  metadata?: Record<string, unknown> | null;
+}) {
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin.rpc('finish_ai_generation', {
+    p_attempt_id: input.attemptId,
+    p_status: input.status,
+    p_provider: input.provider,
+    p_model: input.model,
+    p_input_tokens: input.inputTokens ?? 0,
+    p_output_tokens: input.outputTokens ?? 0,
+    p_total_tokens: input.totalTokens ?? 0,
+    p_project_metadata: input.metadata ?? null,
+  });
+  if (error) throw error;
+  return data === true;
 }
 
 export async function POST(request: NextRequest) {
   let userId: string | null = null;
   let projectId: string | undefined;
+  let attemptId: string | null = null;
+  let providerName = process.env.AI_PROVIDER || 'openai-compatible';
+  let modelName = process.env.AI_MODEL || 'unknown';
 
   try {
     const user = await requireUser(request);
@@ -67,54 +94,34 @@ export async function POST(request: NextRequest) {
     }
     projectId = parsed.data.projectId;
 
-    let projectMetadata: Record<string, unknown> | null = null;
-    if (projectId) {
-      const admin = createAdminSupabaseClient();
-      const { data: project, error: projectError } = await admin
-        .from('ai_projects')
-        .select('id,metadata,status')
-        .eq('id', projectId)
-        .eq('user_id', userId)
-        .eq('kind', 'website')
-        .single();
+    const admin = createAdminSupabaseClient();
+    attemptId = crypto.randomUUID();
+    const { data: claimRows, error: claimError } = await admin.rpc('claim_ai_generation', {
+      p_user_id: userId,
+      p_project_id: projectId ?? null,
+      p_attempt_id: attemptId,
+      p_daily_limit: getAiGenerationDailyLimit(),
+      p_lease_seconds: getAiGenerationLeaseSeconds(),
+    });
+    if (claimError) throw claimError;
 
-      if (projectError || !project) {
-        return NextResponse.json({ error: 'Website project not found.' }, { status: 404 });
-      }
-      if (project.status === 'deployed') {
+    const claim = Array.isArray(claimRows) ? claimRows[0] : claimRows;
+    if (!claim?.allowed) {
+      if (claim?.reason === 'daily_limit_reached') {
         return NextResponse.json(
-          { error: 'This website is already deployed. Create a separate draft to make changes without affecting the live website.' },
-          { status: 409 }
+          { error: 'You have reached today’s website-generation limit. Please try again tomorrow.' },
+          { status: 429 }
         );
       }
-      if (project.status === 'archived' || project.status === 'generating') {
-        return NextResponse.json({ error: 'This website project cannot be generated in its current state.' }, { status: 409 });
-      }
-
-      projectMetadata = project.metadata && typeof project.metadata === 'object' && !Array.isArray(project.metadata)
-        ? project.metadata as Record<string, unknown>
-        : {};
-
-      const { data: claimedProject, error: statusError } = await admin
-        .from('ai_projects')
-        .update({ status: 'generating' })
-        .eq('id', projectId)
-        .eq('user_id', userId)
-        .eq('kind', 'website')
-        .in('status', [...AI_PROJECT_GENERATION_CLAIMABLE_STATUSES])
-        .select('id')
-        .maybeSingle();
-
-      if (statusError) throw statusError;
-      if (!claimedProject) {
-        return NextResponse.json(
-          { error: 'This website project changed state. Refresh it before trying again.' },
-          { status: 409 }
-        );
-      }
+      return NextResponse.json(
+        { error: 'This website project is currently unavailable for generation. Refresh the project and try again.' },
+        { status: 409 }
+      );
     }
 
     const provider = getAIProvider();
+    providerName = provider.name;
+    modelName = provider.model;
     const prompt = `${SITE_GENERATION_INSTRUCTIONS}\n\nBusiness name: ${parsed.data.businessName}\nWebsite type: ${parsed.data.websiteType}\nBusiness description: ${parsed.data.description}`;
 
     const result = await provider.generate({
@@ -124,39 +131,43 @@ export async function POST(request: NextRequest) {
     });
 
     const site = generatedSiteSchema.parse(extractJson(result.content));
+    let metadata: Record<string, unknown> | null = null;
 
     if (projectId) {
-      const admin = createAdminSupabaseClient();
-      const { data: savedProject, error: saveError } = await admin
+      const { data: project, error: projectError } = await admin
         .from('ai_projects')
-        .update({
-          status: 'ready',
-          provider: provider.name,
-          model: provider.model,
-          metadata: mergeGeneratedSiteIntoProjectMetadata(projectMetadata, site),
-        })
+        .select('metadata')
         .eq('id', projectId)
         .eq('user_id', userId)
-        .eq('kind', 'website')
-        .eq('status', AI_PROJECT_GENERATION_IN_PROGRESS)
-        .select('id')
-        .maybeSingle();
+        .eq('generation_attempt_id', attemptId)
+        .single();
+      if (projectError || !project) throw new Error('The website project generation lease is no longer active.');
+      metadata = mergeGeneratedSiteIntoProjectMetadata(project.metadata, site);
+    }
 
-      if (saveError) throw saveError;
-      if (!savedProject) {
-        return NextResponse.json(
-          { error: 'This website project changed state while it was generating. Refresh it before continuing.' },
-          { status: 409 }
-        );
-      }
+    const completed = await finishAttempt({
+      attemptId,
+      status: 'completed',
+      provider: providerName,
+      model: modelName,
+      inputTokens: result.usage?.inputTokens,
+      outputTokens: result.usage?.outputTokens,
+      totalTokens: result.usage?.totalTokens,
+      metadata,
+    });
+    if (!completed) {
+      return NextResponse.json(
+        { error: 'This generation attempt expired before it could be saved. Please retry the project.' },
+        { status: 409 }
+      );
     }
 
     try {
       await recordUsage({
         userId,
         projectId,
-        provider: provider.name,
-        model: provider.model,
+        provider: providerName,
+        model: modelName,
         inputTokens: result.usage?.inputTokens,
         outputTokens: result.usage?.outputTokens,
         totalTokens: result.usage?.totalTokens,
@@ -169,31 +180,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       site,
       usage: result.usage || null,
-      provider: provider.name,
-      model: provider.model,
+      provider: providerName,
+      model: modelName,
     });
   } catch (error) {
     console.error('Website generation error:', error);
-    if (userId && projectId) {
+    if (userId && attemptId) {
       try {
-        const admin = createAdminSupabaseClient();
-        await admin
-          .from('ai_projects')
-          .update({ status: 'failed' })
-          .eq('id', projectId)
-          .eq('user_id', userId)
-          .eq('kind', 'website')
-          .eq('status', 'generating');
+        await finishAttempt({
+          attemptId,
+          status: 'failed',
+          provider: providerName,
+          model: modelName,
+        });
       } catch (persistenceError) {
-        console.error('Could not update failed AI project status:', persistenceError);
+        console.error('Could not finalize failed AI generation attempt:', persistenceError);
       }
     }
 
-    if (userId) {
-      const providerName = process.env.AI_PROVIDER || 'openai-compatible';
-      const model = process.env.AI_MODEL || 'unknown';
+    if (userId && attemptId) {
       try {
-        await recordUsage({ userId, projectId, provider: providerName, model, status: 'failed' });
+        await recordUsage({ userId, projectId, provider: providerName, model: modelName, status: 'failed' });
       } catch (usageError) {
         console.error('Could not record failed AI usage:', usageError);
       }
