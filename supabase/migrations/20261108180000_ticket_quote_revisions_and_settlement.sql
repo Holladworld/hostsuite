@@ -339,7 +339,11 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF auth.uid() IS NULL OR NOT public.is_admin() THEN
+  IF auth.uid() IS NULL THEN
+    NEW.status := 'new';
+    NEW.linked_user_id := NULL;
+    NEW.converted_at := NULL;
+  ELSIF NOT public.is_admin() THEN
     NEW.status := 'new';
     NEW.linked_user_id := NULL;
     NEW.converted_at := NULL;
