@@ -51,34 +51,29 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     }
 
     if (!order) {
-      const provider = getPaymentProvider();
-      if (!provider.isConfigured()) return NextResponse.json({ error: 'Payment is temporarily unavailable.' }, { status: 503 });
-      const reference = `HS-TICKET-${crypto.randomUUID().replaceAll('-', '').slice(0, 20).toUpperCase()}`;
-      const idempotencyKey = crypto.randomUUID();
-      const invoice = `HS-${new Date().getUTCFullYear()}-${crypto.randomUUID().replaceAll('-', '').slice(0, 10).toUpperCase()}`;
-      const { data: created, error: orderError } = await admin.from('billing_orders').insert({
-        user_id: user.id, status: 'pending', currency: quote.currency, subtotal: quote.amount, total: quote.amount,
-        provider: provider.name, provider_reference: reference, idempotency_key: idempotencyKey,
-        metadata: { source: 'ticket_quote', ticket_id: ticket.id, ticket_quote_revision_id: quote.id },
-      }).select('id,status,currency,total,provider,provider_reference,metadata').single();
-      if (orderError) throw orderError;
+      const providerForNewOrder = getPaymentProvider();
+      if (!providerForNewOrder.isConfigured()) return NextResponse.json({ error: 'Payment is temporarily unavailable.' }, { status: 503 });
+      const { data: createdOrderId, error: createOrderError } = await admin.rpc('create_ticket_quote_order', {
+        p_ticket_id: ticket.id,
+        p_user_id: user.id,
+        p_quote_revision_id: quote.id,
+        p_provider: providerForNewOrder.name,
+      });
+      if (createOrderError || !createdOrderId) {
+        const message = createOrderError?.message ?? '';
+        if (message.includes('QUOTE_NOT_CURRENT') || message.includes('QUOTE_NOT_PAYABLE')) {
+          return NextResponse.json({ error: 'This quote changed while checkout was starting. Refresh the ticket and use the latest amount.' }, { status: 409 });
+        }
+        throw createOrderError ?? new Error('Could not create the quote order.');
+      }
+      const { data: created, error: createdOrderFetchError } = await admin.from('billing_orders')
+        .select('id,status,currency,total,provider,provider_reference,metadata').eq('id', createdOrderId).single();
+      if (createdOrderFetchError) throw createdOrderFetchError;
       order = created;
-      invoiceNumber = invoice;
-      const { error: itemError } = await admin.from('billing_order_items').insert({
-        order_id: order.id, product_name: `HostSuite support ticket ${ticket.id.slice(0, 8)} — quote ${quote.id.slice(0, 8)}`,
-        quantity: 1, unit_price: quote.amount, total: quote.amount,
-        metadata: { source: 'ticket_quote', ticket_id: ticket.id, ticket_quote_revision_id: quote.id },
-      });
-      if (itemError) throw itemError;
-      const { error: invoiceError } = await admin.from('billing_invoices').insert({
-        user_id: user.id, order_id: order.id, invoice_number: invoice, status: 'open',
-        currency: quote.currency, subtotal: quote.amount, total: quote.amount,
-      });
-      if (invoiceError) throw invoiceError;
-    } else {
-      const { data: invoice } = await admin.from('billing_invoices').select('invoice_number').eq('order_id', order.id).maybeSingle();
-      invoiceNumber = invoice?.invoice_number ?? '';
     }
+    const { data: invoice } = await admin.from('billing_invoices')
+      .select('invoice_number').eq('order_id', order.id).maybeSingle();
+    invoiceNumber = invoice?.invoice_number ?? '';
 
     if (Number(order.total) !== Number(quote.amount) || order.currency !== quote.currency) {
       return NextResponse.json({ error: 'The saved payment order does not match the current approved quote. Contact HostSuite.' }, { status: 409 });
