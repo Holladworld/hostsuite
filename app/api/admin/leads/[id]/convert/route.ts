@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
-import { createServerSupabaseClient, verifyAdmin } from '@/lib/supabase-server';
+import { getVerifiedAdmin } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 
@@ -12,7 +12,8 @@ type ConvertPayload = {
 };
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
-  if (!(await verifyAdmin())) {
+  const adminUser = await getVerifiedAdmin(request);
+  if (!adminUser) {
     return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
   }
 
@@ -58,15 +59,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: 'No HostSuite account matches this email yet. Ask the customer to create an account with this email, then convert the diagnostic.' }, { status: 409 });
   }
 
-  const server = await createServerSupabaseClient();
-  const { data: { user: adminUser } } = await server.auth.getUser();
   const { data: ticketId, error: conversionError } = await admin.rpc('convert_diagnostic_lead_to_ticket_with_quote', {
     p_lead_id: leadId,
     p_user_id: customer.id,
     p_agreed_scope: agreedScope,
     p_quoted_amount: quotedAmount,
     p_quote_currency: quoteCurrency,
-    p_created_by: adminUser?.id ?? null,
+    p_created_by: adminUser.id,
   });
 
   if (conversionError || !ticketId) {
