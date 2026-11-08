@@ -76,6 +76,14 @@ export default function SupportPage() {
     if (user) void loadTickets();
   }, [authLoading, user, router, loadTickets]);
 
+  useEffect(() => {
+    if (!user || typeof window === 'undefined') return;
+    if (new URLSearchParams(window.location.search).get('payment') === 'return') {
+      void loadTickets();
+      toast.message('Payment submitted. We are checking the gateway confirmation; refresh this page if the status has not updated yet.');
+    }
+  }, [user, loadTickets]);
+
   async function payApprovedQuote(ticket: TicketRow) {
     if (!ticket.current_quote_revision_id || ticket.quote_status !== 'awaiting_payment') return;
     setPayingTicketId(ticket.id);
@@ -186,7 +194,10 @@ export default function SupportPage() {
         <section className="mt-12">
           <div className="flex items-end justify-between gap-4">
             <div><h2 className="font-display text-xl font-semibold">Your ticket history</h2><p className="mt-1 text-sm text-muted-foreground">Every request remains attached to this account.</p></div>
-            <Badge variant="outline">{tickets.length} {tickets.length === 1 ? 'request' : 'requests'}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">{tickets.length} {tickets.length === 1 ? 'request' : 'requests'}</Badge>
+              <Button size="sm" variant="outline" onClick={() => void loadTickets()} disabled={ticketsLoading}>Refresh</Button>
+            </div>
           </div>
           {ticketsLoading ? <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : tickets.length === 0 ? (
             <div className="mt-4 rounded-2xl border border-dashed p-8 text-center"><Ticket className="mx-auto h-8 w-8 text-muted-foreground/50" /><p className="mt-3 font-medium">No requests yet</p><p className="mt-1 text-sm text-muted-foreground">Your new support requests and converted diagnostic tickets will appear here.</p></div>
