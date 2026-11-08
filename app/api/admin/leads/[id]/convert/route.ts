@@ -46,7 +46,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const email = requestedEmail || (typeof lead.email === 'string' ? lead.email.trim().toLowerCase() : '');
   if (!email) return NextResponse.json({ error: 'This diagnostic has no customer email. Add an email to the lead before conversion.' }, { status: 422 });
 
-  let customer = null as Awaited<ReturnType<typeof admin.auth.admin.getUserById>>['data']['user'] | null;
+  let customer: { id: string; email?: string } | null = null;
   for (let page = 1; !customer; page += 1) {
     const { data: userPage, error: usersError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
     if (usersError) return NextResponse.json({ error: 'Could not verify the customer account.' }, { status: 500 });
