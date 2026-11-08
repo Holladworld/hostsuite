@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getVerifiedUser } from '@/lib/supabase-server';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { getPaymentProvider } from '@/lib/payments/providers';
 
@@ -11,8 +11,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ticketId)) {
       return NextResponse.json({ error: 'Invalid ticket reference.' }, { status: 400 });
     }
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getVerifiedUser(request);
     if (!user?.email) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
 
     const admin = createAdminSupabaseClient();
