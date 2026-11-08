@@ -234,7 +234,7 @@ export default function SupportPage() {
                             <div className="mt-2 space-y-2">
                               {quoteRevisions.filter((quote) => quote.ticket_id === ticket.id).map((quote) => (
                                 <div key={quote.id} className="flex flex-wrap items-start justify-between gap-2 text-xs">
-                                  <div><p className="font-medium">Revision {quote.revision} · {quote.currency} {Number(quote.amount).toLocaleString()}</p><p className="mt-0.5 text-muted-foreground">{quote.change_reason || 'Quote issued'}</p></div>
+                                  <div><p className="font-medium">Revision {quote.revision} · {quote.currency} {Number(quote.amount).toLocaleString()}</p><p className="mt-0.5 text-muted-foreground">{quote.agreed_scope}</p><p className="mt-0.5 text-muted-foreground">{quote.change_reason || 'Quote issued'}</p></div>
                                   <span className="capitalize text-muted-foreground">{quote.status.replaceAll('_', ' ')}</span>
                                 </div>
                               ))}
