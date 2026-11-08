@@ -41,12 +41,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     let order = existing;
     let invoiceNumber = '';
-    if (order?.status === 'paid') return NextResponse.json({ error: 'This quote has already been paid.' }, { status: 409 });
+    if (order?.status === 'paid') {
+      return NextResponse.json({ error: 'This quote has already been paid.' }, { status: 409 });
+    }
     if (order && order.status !== 'pending') {
-      const { data: reopened, error } = await admin.from('billing_orders')
-        .update({ status: 'pending' }).eq('id', order.id).select('id,status,currency,total,provider,provider_reference,metadata').single();
-      if (error) throw error;
-      order = reopened;
+      return NextResponse.json({
+        error: 'This payment order is closed and cannot be reopened. Ask HostSuite to issue a fresh quote checkout.',
+      }, { status: 409 });
     }
 
     if (!order) {
