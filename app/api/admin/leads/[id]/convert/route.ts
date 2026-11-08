@@ -58,12 +58,15 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: 'No HostSuite account matches this email yet. Ask the customer to create an account with this email, then convert the diagnostic.' }, { status: 409 });
   }
 
-  const { data: ticketId, error: conversionError } = await admin.rpc('convert_diagnostic_lead_to_ticket', {
+  const server = await createServerSupabaseClient();
+  const { data: { user: adminUser } } = await server.auth.getUser();
+  const { data: ticketId, error: conversionError } = await admin.rpc('convert_diagnostic_lead_to_ticket_with_quote', {
     p_lead_id: leadId,
     p_user_id: customer.id,
     p_agreed_scope: agreedScope,
     p_quoted_amount: quotedAmount,
     p_quote_currency: quoteCurrency,
+    p_created_by: adminUser?.id ?? null,
   });
 
   if (conversionError || !ticketId) {
@@ -77,21 +80,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Could not convert this diagnostic into a customer ticket.' }, { status: 500 });
   }
 
-  if (quotedAmount !== null && quotedAmount > 0) {
-    const server = await createServerSupabaseClient();
-    const { data: { user: adminUser } } = await server.auth.getUser();
-    const { error: quoteError } = await admin.rpc('create_ticket_quote_revision', {
-      p_ticket_id: ticketId,
-      p_scope: agreedScope,
-      p_amount: quotedAmount,
-      p_currency: quoteCurrency,
-      p_reason: 'Initial quote agreed during diagnostic conversion',
-      p_created_by: adminUser?.id ?? null,
-    });
-    if (quoteError) {
-      return NextResponse.json({ error: 'The ticket was created, but its initial quote could not be saved. Open the ticket and create the quote from the admin Tickets panel.' }, { status: 500 });
-    }
-  }
 
   return NextResponse.json({ success: true, ticketId, customerId: customer.id });
 }
