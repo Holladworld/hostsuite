@@ -24,6 +24,8 @@ CREATE INDEX IF NOT EXISTS idx_ticket_quote_revisions_ticket
   ON public.ticket_quote_revisions(ticket_id, revision DESC);
 
 ALTER TABLE public.ticket_quote_revisions ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.ticket_quote_revisions FROM anon, authenticated;
+GRANT SELECT ON TABLE public.ticket_quote_revisions TO authenticated;
 DROP POLICY IF EXISTS "customers_read_own_ticket_quote_revisions" ON public.ticket_quote_revisions;
 CREATE POLICY "customers_read_own_ticket_quote_revisions"
   ON public.ticket_quote_revisions FOR SELECT TO authenticated
