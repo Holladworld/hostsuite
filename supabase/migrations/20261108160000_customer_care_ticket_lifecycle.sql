@@ -92,12 +92,12 @@ BEGIN
     ELSE 'Diagnostic support request'
   END;
 
-  ticket_details := concat_ws(E'\\n\\n',
+  ticket_details := concat_ws(E'\n\n',
     CASE WHEN NULLIF(lead_row.description, '') IS NOT NULL
-      THEN 'Customer description:' || E'\\n' || lead_row.description END,
+      THEN 'Customer description:' || E'\n' || lead_row.description END,
     CASE WHEN lead_row.estimated_cost_min IS NOT NULL AND lead_row.estimated_cost_max IS NOT NULL
       THEN 'Initial estimate: ' || lead_row.estimated_cost_min::text || ' – ' || lead_row.estimated_cost_max::text || ' NGN' END,
-    'Agreed scope:' || E'\\n' || trim(p_agreed_scope),
+    'Agreed scope:' || E'\n' || trim(p_agreed_scope),
     CASE WHEN NULLIF(lead_row.whatsapp, '') IS NOT NULL
       THEN 'WhatsApp: ' || lead_row.whatsapp END
   );
