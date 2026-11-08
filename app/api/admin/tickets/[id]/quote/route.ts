@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
-import { createServerSupabaseClient, verifyAdmin } from '@/lib/supabase-server';
+import { getVerifiedAdmin } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 
 type Payload = { scope?: unknown; amount?: unknown; currency?: unknown; reason?: unknown };
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
-  if (!(await verifyAdmin())) return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
+  const adminUser = await getVerifiedAdmin(request);
+  if (!adminUser) return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
   const { id: ticketId } = await context.params;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ticketId)) {
     return NextResponse.json({ error: 'Invalid ticket reference.' }, { status: 400 });
@@ -23,8 +24,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (!Number.isFinite(amount) || amount <= 0 || amount > 999999999999.99) return NextResponse.json({ error: 'Enter a valid amount greater than zero.' }, { status: 400 });
   if (currency !== 'NGN') return NextResponse.json({ error: 'Ticket checkout currently supports NGN only.' }, { status: 400 });
 
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
   const admin = createAdminSupabaseClient();
   const { data: ticket, error: ticketError } = await admin.from('support_tickets').select('id,quote_status').eq('id', ticketId).maybeSingle();
   if (ticketError) return NextResponse.json({ error: 'Could not load this ticket.' }, { status: 500 });
@@ -37,7 +36,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     p_amount: amount,
     p_currency: currency,
     p_reason: reason || null,
-    p_created_by: user?.id ?? null,
+    p_created_by: adminUser.id,
   });
   if (error || !revisionId) {
     const message = error?.message ?? '';
@@ -48,8 +47,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   return NextResponse.json({ success: true, revisionId });
 }
 
-export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
-  if (!(await verifyAdmin())) return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  if (!(await getVerifiedAdmin(request))) return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
   const { id: ticketId } = await context.params;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ticketId)) {
     return NextResponse.json({ error: 'Invalid ticket reference.' }, { status: 400 });
