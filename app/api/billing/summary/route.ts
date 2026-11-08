@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getVerifiedUser } from '@/lib/supabase-auth';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { getPaymentProviderStatus } from '@/lib/payments/providers';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const authenticated = await getVerifiedUser(request);
+    const user = authenticated?.user;
     if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
 
     const admin = createAdminSupabaseClient();
