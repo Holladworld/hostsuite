@@ -5,6 +5,8 @@
 **Scope:** Customer journeys, application boundaries, current data model, shared services, permissions and implementation sequence.  
 **Non-goals:** This document does not authorize schema migrations, production changes, branch merges, DNS changes or infrastructure changes.
 
+**Technical foundation companion:** [Database Relationships and Security Audit](./DATABASE_RELATIONSHIPS_AND_SECURITY_AUDIT.md) records the migration-by-migration ownership/RLS review, API/service-role call-site audit, confirmed security findings and remediation gates. It distinguishes staging from the still-unmerged PR #58 schema proposal.
+
 ## 1. Product architecture decision
 
 HostSuite is one managed-services-first platform with four customer entry points:
