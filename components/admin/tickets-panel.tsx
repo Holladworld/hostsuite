@@ -54,6 +54,7 @@ export function AdminTicketsPanel() {
   const [quoteDrafts, setQuoteDrafts] = useState<Record<string, { scope: string; amount: string; reason: string }>>({});
   const [savingQuoteId, setSavingQuoteId] = useState<string | null>(null);
   const [quoteHistory, setQuoteHistory] = useState<Record<string, Array<{ id: string; revision: number; amount: number; currency: string; status: string; change_reason: string | null; created_at: string }>>>({});
+  const [quoteReconciliation, setQuoteReconciliation] = useState<Record<string, Array<{ id: string; total: number; currency: string; status: string; provider_reference: string | null; metadata: { reconciliation_reason?: string } | null }>>>({});
 
   // Domain form
   const [domainForm, setDomainForm] = useState({
@@ -130,9 +131,14 @@ export function AdminTicketsPanel() {
   async function handleLoadQuoteHistory(ticketId: string) {
     try {
       const response = await fetch(`/api/admin/tickets/${ticketId}/quote`, { cache: 'no-store' });
-      const result = await response.json() as { error?: string; revisions?: Array<{ id: string; revision: number; amount: number; currency: string; status: string; change_reason: string | null; created_at: string }> };
+      const result = await response.json() as {
+        error?: string;
+        revisions?: Array<{ id: string; revision: number; amount: number; currency: string; status: string; change_reason: string | null; created_at: string }>;
+        reconciliationOrders?: Array<{ id: string; total: number; currency: string; status: string; provider_reference: string | null; metadata: { reconciliation_reason?: string } | null }>;
+      };
       if (!response.ok) throw new Error(result.error ?? 'Could not load quote history.');
       setQuoteHistory((prev) => ({ ...prev, [ticketId]: result.revisions ?? [] }));
+      setQuoteReconciliation((prev) => ({ ...prev, [ticketId]: result.reconciliationOrders ?? [] }));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not load quote history.');
     }
@@ -322,6 +328,15 @@ export function AdminTicketsPanel() {
                                 <div><p className="font-medium">Revision {revision.revision} · {revision.currency} {Number(revision.amount).toLocaleString()}</p><p className="mt-0.5 text-muted-foreground">{revision.change_reason || 'No reason recorded'} · {new Date(revision.created_at).toLocaleString()}</p></div>
                                 <Badge variant="outline">{revision.status.replaceAll('_', ' ')}</Badge>
                               </div>
+                            ))}
+                          </div>
+                        ) : null}
+                        {quoteReconciliation[ticket.id]?.length ? (
+                          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                            <p className="text-sm font-semibold text-destructive">Payment requires manual reconciliation</p>
+                            <p className="mt-1 text-xs text-muted-foreground">A payment was reported for a quote revision that is no longer current. It was not applied to the ticket. Verify the gateway transaction and arrange a refund or correction before proceeding.</p>
+                            {quoteReconciliation[ticket.id].map((order) => (
+                              <p key={order.id} className="mt-2 text-xs">{order.provider_reference || order.id} · {order.currency} {Number(order.total).toLocaleString()} · {order.status}</p>
                             ))}
                           </div>
                         ) : null}
