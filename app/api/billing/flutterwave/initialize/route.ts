@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getVerifiedUser } from '@/lib/supabase-auth';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 
 const bodySchema = z.object({ productIds: z.array(z.string().uuid()).min(1).max(20), quantities: z.record(z.string(), z.number().positive()).optional(), redirectUrl: z.string().url().optional() });
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const authenticated = await getVerifiedUser(request);
+    const user = authenticated?.user;
     if (!user?.email) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
 
     const parsed = bodySchema.safeParse(await request.json());
