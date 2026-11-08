@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, ArrowLeft, ArrowRight, LifeBuoy, Loader2, Send, Ticket } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Send, Ticket } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
