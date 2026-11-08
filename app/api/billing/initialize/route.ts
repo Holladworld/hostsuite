@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createServerSupabaseClient } from '@/lib/supabase-server';
+import { getVerifiedUser } from '@/lib/supabase-auth';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { getPaymentProvider } from '@/lib/payments/providers';
 
@@ -13,8 +13,8 @@ const bodySchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const authenticated = await getVerifiedUser(request);
+    const user = authenticated?.user;
     if (!user?.email) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     const parsed = bodySchema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: 'Invalid checkout request.' }, { status: 400 });
