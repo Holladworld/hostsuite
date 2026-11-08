@@ -8,6 +8,7 @@ type ConvertPayload = {
   agreedScope?: unknown;
   quotedAmount?: unknown;
   quoteCurrency?: unknown;
+  customerEmail?: unknown;
 };
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -16,8 +17,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   }
 
   const { id: leadId } = await context.params;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(leadId)) {
+    return NextResponse.json({ error: 'Invalid diagnostic reference.' }, { status: 400 });
+  }
   const body = (await request.json().catch(() => null)) as ConvertPayload | null;
-  const agreedScope = typeof body?.agreedScope === 'string' ? body.agreedScope.trim() : '';
+  const agreedScope = typeof body?.agreedScope === 'string' ? body.agreedScope.trim().slice(0, 10000) : '';
+  const requestedEmail = typeof body?.customerEmail === 'string' ? body.customerEmail.trim().toLowerCase() : '';
   const quotedAmount = body?.quotedAmount === '' || body?.quotedAmount == null ? null : Number(body.quotedAmount);
   const quoteCurrency = typeof body?.quoteCurrency === 'string' && /^[A-Z]{3}$/.test(body.quoteCurrency)
     ? body.quoteCurrency
@@ -38,12 +43,16 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: 'This diagnostic has already been converted.', ticketId: existingTicket.id }, { status: 409 });
   }
 
-  const email = typeof lead.email === 'string' ? lead.email.trim().toLowerCase() : '';
+  const email = requestedEmail || (typeof lead.email === 'string' ? lead.email.trim().toLowerCase() : '');
   if (!email) return NextResponse.json({ error: 'This diagnostic has no customer email. Add an email to the lead before conversion.' }, { status: 422 });
 
-  const { data: userPage, error: usersError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  if (usersError) return NextResponse.json({ error: 'Could not verify the customer account.' }, { status: 500 });
-  const customer = userPage.users.find((user) => user.email?.toLowerCase() === email);
+  let customer = null as Awaited<ReturnType<typeof admin.auth.admin.getUserById>>['data']['user'] | null;
+  for (let page = 1; !customer; page += 1) {
+    const { data: userPage, error: usersError } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (usersError) return NextResponse.json({ error: 'Could not verify the customer account.' }, { status: 500 });
+    customer = userPage.users.find((user) => user.email?.toLowerCase() === email) ?? null;
+    if (customer || userPage.users.length < 1000) break;
+  }
   if (!customer) {
     return NextResponse.json({ error: 'No HostSuite account matches this email yet. Ask the customer to create an account with this email, then convert the diagnostic.' }, { status: 409 });
   }
