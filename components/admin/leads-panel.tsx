@@ -45,6 +45,10 @@ export function AdminLeadsPanel() {
     description: '',
   });
   const [adding, setAdding] = useState(false);
+  const [convertingLeadId, setConvertingLeadId] = useState<string | null>(null);
+  const [conversionScope, setConversionScope] = useState('');
+  const [conversionAmount, setConversionAmount] = useState('');
+  const [converting, setConverting] = useState(false);
 
   const filtered = useMemo(() => {
     if (filter === 'all') return leads;
@@ -79,6 +83,32 @@ export function AdminLeadsPanel() {
       toast.success('Manual lead added.');
       setAddOpen(false);
       setAddForm({ company_name: '', domain_url: '', email: '', whatsapp: '', description: '' });
+    }
+  }
+
+  async function handleConvertLead(leadId: string) {
+    if (!conversionScope.trim()) {
+      toast.error('Enter the work scope agreed with the customer on WhatsApp.');
+      return;
+    }
+    setConverting(true);
+    try {
+      const response = await fetch(`/api/admin/leads/${leadId}/convert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agreedScope: conversionScope, quotedAmount: conversionAmount }),
+      });
+      const result = await response.json() as { error?: string; ticketId?: string };
+      if (!response.ok) throw new Error(result.error ?? 'Could not create the customer ticket.');
+      toast.success('Diagnostic converted into a customer ticket.');
+      setConvertingLeadId(null);
+      setConversionScope('');
+      setConversionAmount('');
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not convert this diagnostic.');
+    } finally {
+      setConverting(false);
     }
   }
 
@@ -253,6 +283,33 @@ export function AdminLeadsPanel() {
                       ))}
                     </div>
                   </div>
+
+                  {convertingLeadId === lead.id ? (
+                    <div className="mt-5 space-y-3 rounded-xl border border-primary/20 bg-background p-4">
+                      <div>
+                        <p className="text-sm font-semibold">Convert this diagnostic into a customer ticket</p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">The customer must already have a HostSuite account using the email recorded on this lead. The diagnostic and WhatsApp conversation remain the original intake record.</p>
+                      </div>
+                      <div>
+                        <Label htmlFor={`scope-${lead.id}`}>Agreed work scope</Label>
+                        <Textarea id={`scope-${lead.id}`} value={conversionScope} onChange={(event) => setConversionScope(event.target.value)} className="mt-1 min-h-24" placeholder="Record what HostSuite agreed to deliver..." />
+                      </div>
+                      <div>
+                        <Label htmlFor={`amount-${lead.id}`}>Final agreed amount (NGN)</Label>
+                        <Input id={`amount-${lead.id}`} type="number" min="0" step="0.01" value={conversionAmount} onChange={(event) => setConversionAmount(event.target.value)} className="mt-1" placeholder="Leave blank if not yet priced" />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" onClick={() => handleConvertLead(lead.id)} disabled={converting}>{converting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Create customer ticket</Button>
+                        <Button size="sm" variant="outline" onClick={() => setConvertingLeadId(null)} disabled={converting}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4">
+                      <Button size="sm" variant="outline" onClick={() => { setConvertingLeadId(lead.id); setConversionScope(lead.description ?? ''); setConversionAmount(''); }}>
+                        Convert to customer ticket
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
