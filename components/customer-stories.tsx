@@ -18,8 +18,8 @@ const stories = [
     number: '02',
     name: 'Folake Oloyede',
     role: 'Founder, Beyond Books Accounting Solutions',
-    website: 'beyondbookacounting.ca',
-    href: 'https://beyondbookacounting.ca',
+    website: 'beyondbooksaccounting.ca',
+    href: 'https://beyondbooksaccounting.ca',
     title: 'A careful move from Wix, without losing what she had built.',
     story:
       'After being referred to Vobels, Folake needed to move her existing website away from Wix without losing the work already invested in it. The migration was handled without disrupting the website, and she appreciated how smoothly and quickly the project was completed.',
