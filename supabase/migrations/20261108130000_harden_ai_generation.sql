@@ -46,7 +46,7 @@ GRANT ALL ON public.ai_generation_attempts TO service_role;
 -- No client policies: this ledger is read/written only by trusted server functions.
 
 -- Drop every legacy policy, including unexpectedly named permissive write policies.
-DO $
+DO $policy_cleanup$
 DECLARE existing_policy record;
 BEGIN
   FOR existing_policy IN
@@ -56,7 +56,7 @@ BEGIN
     EXECUTE format('DROP POLICY %I ON public.ai_projects', existing_policy.policyname);
   END LOOP;
 END;
-$;
+$policy_cleanup$;
 
 CREATE POLICY ai_projects_owner_read
   ON public.ai_projects FOR SELECT TO authenticated
