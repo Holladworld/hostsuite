@@ -53,7 +53,7 @@ export function AdminTicketsPanel() {
   const [busy, setBusy] = useState(false);
   const [quoteDrafts, setQuoteDrafts] = useState<Record<string, { scope: string; amount: string; reason: string }>>({});
   const [savingQuoteId, setSavingQuoteId] = useState<string | null>(null);
-  const [quoteHistory, setQuoteHistory] = useState<Record<string, Array<{ id: string; revision: number; amount: number; currency: string; status: string; change_reason: string | null; created_at: string }>>>({});
+  const [quoteHistory, setQuoteHistory] = useState<Record<string, Array<{ id: string; revision: number; agreed_scope: string; amount: number; currency: string; status: string; change_reason: string | null; created_at: string; created_by_email?: string | null }>>>({});
   const [quoteReconciliation, setQuoteReconciliation] = useState<Record<string, Array<{ id: string; total: number; currency: string; status: string; provider_reference: string | null; metadata: { reconciliation_reason?: string } | null }>>>({});
 
   // Domain form
@@ -133,7 +133,7 @@ export function AdminTicketsPanel() {
       const response = await fetch(`/api/admin/tickets/${ticketId}/quote`, { cache: 'no-store' });
       const result = await response.json() as {
         error?: string;
-        revisions?: Array<{ id: string; revision: number; amount: number; currency: string; status: string; change_reason: string | null; created_at: string }>;
+        revisions?: Array<{ id: string; revision: number; agreed_scope: string; amount: number; currency: string; status: string; change_reason: string | null; created_at: string; created_by_email?: string | null }>;
         reconciliationOrders?: Array<{ id: string; total: number; currency: string; status: string; provider_reference: string | null; metadata: { reconciliation_reason?: string } | null }>;
       };
       if (!response.ok) throw new Error(result.error ?? 'Could not load quote history.');
@@ -325,7 +325,7 @@ export function AdminTicketsPanel() {
                           <div className="space-y-2 border-t pt-3">
                             {quoteHistory[ticket.id].map((revision) => (
                               <div key={revision.id} className="flex flex-wrap items-start justify-between gap-2 text-xs">
-                                <div><p className="font-medium">Revision {revision.revision} · {revision.currency} {Number(revision.amount).toLocaleString()}</p><p className="mt-0.5 text-muted-foreground">{revision.change_reason || 'No reason recorded'} · {new Date(revision.created_at).toLocaleString()}</p></div>
+                                <div><p className="font-medium">Revision {revision.revision} · {revision.currency} {Number(revision.amount).toLocaleString()}</p><p className="mt-0.5 text-muted-foreground">{revision.agreed_scope}</p><p className="mt-0.5 text-muted-foreground">{revision.change_reason || 'No reason recorded'} · {revision.created_by_email || 'Admin'} · {new Date(revision.created_at).toLocaleString()}</p></div>
                                 <Badge variant="outline">{revision.status.replaceAll('_', ' ')}</Badge>
                               </div>
                             ))}
