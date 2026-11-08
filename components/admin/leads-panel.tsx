@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAdminLeads } from '@/hooks/use-admin';
+import { supabase } from '@/lib/supabase-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -94,9 +95,11 @@ export function AdminLeadsPanel() {
     }
     setConverting(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Your admin session has expired. Sign in again.');
       const response = await fetch(`/api/admin/leads/${leadId}/convert`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ agreedScope: conversionScope, quotedAmount: conversionAmount, customerEmail: conversionEmail }),
       });
       const result = await response.json() as { error?: string; ticketId?: string };
