@@ -388,3 +388,19 @@ This audit changes documentation only. It does not:
 - claim live payment, recurring billing, monitoring or backup operations are verified.
 
 **Bottom line:** Keep the existing shared platform foundations. Fix the security and migration blockers first, then finish billing integrity and the canonical data contracts. Do not build additional customer portals or duplicate service/billing tables to work around these issues.
+
+
+### SEC-07 — Browser localStorage sessions are not a reliable server-route session source
+**Severity: High / authentication integration gap; audit and correct before relying on affected API routes**
+
+The browser Supabase client in `lib/supabase-client.ts` persists its session using the Supabase JS browser default (localStorage). The server helper in `lib/supabase-server.ts` creates a plain `@supabase/supabase-js` client, forwards the request cookie string as a global HTTP header, but does not configure a Supabase SSR cookie-storage adapter. A plain Supabase JS client does not automatically hydrate its Auth storage from an arbitrary Cookie request header. Several route handlers call `createServerSupabaseClient().auth.getUser()` without supplying an access token.
+
+**Required correction**
+- For request handlers, read the bearer access token from the incoming Authorization header and verify it with `auth.getUser(accessToken)`; then scope every query by the verified user ID.
+- Update browser fetch callers to send the current access token; never send the service-role key.
+- For server-rendered authenticated pages, adopt the official `@supabase/ssr` browser/server client pair and cookie-based session flow, or keep the page client-gated and rely on RLS for data access.
+- Do not mix localStorage-only sessions with an assumed server cookie session.
+- Add integration tests for signed-in, signed-out, expired-token and cross-user requests.
+- The focused PR #60 changes the admin service-instance API to verified bearer auth. PR #58 carries the same approach for its quote/admin routes and customer quote checkout. Other customer API routes that still use the old helper remain to be audited and migrated.
+
+This is a source-level finding, not a claim that a live request was reproduced against the deployed application.
