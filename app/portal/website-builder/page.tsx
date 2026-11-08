@@ -63,8 +63,12 @@ export default function WebsiteBuilderPage() {
         setBusinessName(typeof metadata.businessName === 'string' ? metadata.businessName : '');
         setWebsiteType(typeof metadata.businessType === 'string' ? metadata.businessType : '');
         setDescription(typeof metadata.description === 'string' ? metadata.description : '');
-        if (metadata.generatedSite && typeof metadata.generatedSite === 'object') {
+        if ((project.status === 'ready' || project.status === 'deployed') && metadata.generatedSite && typeof metadata.generatedSite === 'object') {
           setSite(metadata.generatedSite as GeneratedSite);
+        } else if (project.status === 'failed') {
+          setError('The latest generation attempt did not complete. Your saved business brief is still here, so you can review it and try again.');
+        } else if (project.status === 'generating') {
+          setError('This website is still being generated. Refresh this page in a moment to check its progress.');
         }
       } catch (loadError) {
         if (!cancelled) setError(loadError instanceof Error ? loadError.message : 'We could not open this website project.');

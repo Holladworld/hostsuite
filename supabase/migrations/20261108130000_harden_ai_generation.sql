@@ -41,7 +41,26 @@ CREATE INDEX IF NOT EXISTS idx_ai_generation_attempts_project_status
   ON public.ai_generation_attempts(project_id, status);
 
 ALTER TABLE public.ai_generation_attempts ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.ai_generation_attempts FROM anon, authenticated;
+GRANT ALL ON public.ai_generation_attempts TO service_role;
 -- No client policies: this ledger is read/written only by trusted server functions.
+
+-- Drop every legacy policy, including unexpectedly named permissive write policies.
+DO $
+DECLARE existing_policy record;
+BEGIN
+  FOR existing_policy IN
+    SELECT policyname FROM pg_policies
+     WHERE schemaname = 'public' AND tablename = 'ai_projects'
+  LOOP
+    EXECUTE format('DROP POLICY %I ON public.ai_projects', existing_policy.policyname);
+  END LOOP;
+END;
+$;
+
+CREATE POLICY ai_projects_owner_read
+  ON public.ai_projects FOR SELECT TO authenticated
+  USING (auth.uid() = user_id OR public.is_admin());
 
 CREATE OR REPLACE FUNCTION public.claim_ai_generation(
   p_user_id uuid,
@@ -67,6 +86,11 @@ BEGIN
 
   -- Serialize claims per user so concurrent requests cannot exceed the daily cap.
   PERFORM pg_advisory_xact_lock(hashtextextended(p_user_id::text, 0));
+
+  -- Expire abandoned work before counting, including non-project requests.
+  UPDATE public.ai_generation_attempts
+     SET status = 'abandoned', completed_at = now()
+   WHERE user_id = p_user_id AND status = 'running' AND lease_expires_at <= now();
 
   SELECT count(*)::integer
     INTO v_attempt_count

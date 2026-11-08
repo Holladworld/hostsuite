@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
   let userId: string | null = null;
   let projectId: string | undefined;
   let attemptId: string | null = null;
+  let generationClaimed = false;
   let providerName = process.env.AI_PROVIDER || 'openai-compatible';
   let modelName = process.env.AI_MODEL || 'unknown';
 
@@ -119,6 +120,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    generationClaimed = true;
     const provider = getAIProvider();
     providerName = provider.name;
     modelName = provider.model;
@@ -185,7 +187,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Website generation error:', error);
-    if (userId && attemptId) {
+    if (userId && attemptId && generationClaimed) {
       try {
         await finishAttempt({
           attemptId,
@@ -198,7 +200,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (userId && attemptId) {
+    if (userId && attemptId && generationClaimed) {
       try {
         await recordUsage({ userId, projectId, provider: providerName, model: modelName, status: 'failed' });
       } catch (usageError) {
