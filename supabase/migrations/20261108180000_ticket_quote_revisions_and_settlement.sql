@@ -152,11 +152,16 @@ BEGIN
     RAISE EXCEPTION 'NOT_A_TICKET_QUOTE_ORDER';
   END IF;
 
+  -- Lock the ticket before the revision, matching quote creation's lock order.
+  -- This avoids a ticket/revision lock inversion when an admin revises a quote
+  -- while a payment webhook is settling an older checkout.
   SELECT * INTO revision_row FROM public.ticket_quote_revisions
-  WHERE id = revision_id FOR UPDATE;
+  WHERE id = revision_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'QUOTE_REVISION_NOT_FOUND'; END IF;
   SELECT * INTO ticket_row FROM public.support_tickets
   WHERE id = revision_row.ticket_id FOR UPDATE;
+  SELECT * INTO revision_row FROM public.ticket_quote_revisions
+  WHERE id = revision_id FOR UPDATE;
 
   IF order_row.user_id <> ticket_row.user_id
     OR order_row.total <> revision_row.amount
