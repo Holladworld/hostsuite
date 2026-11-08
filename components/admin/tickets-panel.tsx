@@ -44,7 +44,7 @@ const priorityConfig: Record<string, string> = {
 };
 
 export function AdminTicketsPanel() {
-  const { tickets, loading, updateTicket } = useAdminTickets();
+  const { tickets, loading, load, updateTicket } = useAdminTickets();
   const { clients, addClientDomain, createTicketOnBehalf } = useAdminClients();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<Record<string, string | undefined>>({});
