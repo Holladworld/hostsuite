@@ -39,9 +39,24 @@ export async function POST(request: Request) {
     const transaction = verification?.data;
     if (!verificationResponse.ok || !verification?.status || transaction?.status !== 'success') return NextResponse.json({ error: 'Payment verification failed.' }, { status: 400 });
 
-    const { data: order } = await admin.from('billing_orders').select('id,total,currency').eq('provider', 'paystack').eq('provider_reference', reference).maybeSingle();
+    const { data: order } = await admin.from('billing_orders').select('id,total,currency,metadata,status').eq('provider', 'paystack').eq('provider_reference', reference).maybeSingle();
     if (!order) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
     if (Number(transaction.amount) !== Math.round(Number(order.total) * 100) || transaction.currency !== order.currency) return NextResponse.json({ error: 'Payment amount or currency mismatch.' }, { status: 400 });
+
+    if (order.metadata?.source === 'ticket_quote') {
+      const { data: settlement, error: settlementError } = await admin.rpc('settle_ticket_quote_payment', { p_order_id: order.id });
+      if (settlementError) throw settlementError;
+      if (settlement === 'stale_payment') {
+        await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'paystack').eq('event_id', eventId);
+        return NextResponse.json({ received: true, reconciliation: 'required' });
+      }
+      if (settlement === 'order_not_payable') {
+        await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'paystack').eq('event_id', eventId);
+        return NextResponse.json({ received: true, reconciliation: 'required' });
+      }
+      await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'paystack').eq('event_id', eventId);
+      return NextResponse.json({ received: true, ticketQuote: settlement });
+    }
 
     const now = new Date().toISOString();
     const { error: orderUpdateError } = await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
