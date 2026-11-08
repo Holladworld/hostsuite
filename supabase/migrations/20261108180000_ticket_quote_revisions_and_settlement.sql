@@ -145,7 +145,7 @@ RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
-AS $
+AS $$
 DECLARE
   ticket_id uuid;
 BEGIN
@@ -166,7 +166,7 @@ BEGIN
 
   RETURN ticket_id;
 END;
-$;
+$$;
 
 REVOKE ALL ON FUNCTION public.convert_diagnostic_lead_to_ticket_with_quote(uuid,uuid,text,numeric,text,uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.convert_diagnostic_lead_to_ticket_with_quote(uuid,uuid,text,numeric,text,uuid) TO service_role;
