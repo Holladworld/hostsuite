@@ -131,6 +131,46 @@ $$;
 REVOKE ALL ON FUNCTION public.create_ticket_quote_revision(uuid,text,numeric,text,text,uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_ticket_quote_revision(uuid,text,numeric,text,text,uuid) TO service_role;
 
+-- Convert the diagnostic and create its initial quote in one transaction.
+-- This prevents a ticket being left without its agreed quote if quote creation fails.
+CREATE OR REPLACE FUNCTION public.convert_diagnostic_lead_to_ticket_with_quote(
+  p_lead_id uuid,
+  p_user_id uuid,
+  p_agreed_scope text,
+  p_quoted_amount numeric DEFAULT NULL,
+  p_quote_currency text DEFAULT 'NGN',
+  p_created_by uuid DEFAULT NULL
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $
+DECLARE
+  ticket_id uuid;
+BEGIN
+  ticket_id := public.convert_diagnostic_lead_to_ticket(
+    p_lead_id, p_user_id, p_agreed_scope, p_quoted_amount, p_quote_currency
+  );
+
+  IF p_quoted_amount IS NOT NULL AND p_quoted_amount > 0 THEN
+    PERFORM public.create_ticket_quote_revision(
+      ticket_id,
+      p_agreed_scope,
+      p_quoted_amount,
+      p_quote_currency,
+      'Initial quote agreed during diagnostic conversion',
+      p_created_by
+    );
+  END IF;
+
+  RETURN ticket_id;
+END;
+$;
+
+REVOKE ALL ON FUNCTION public.convert_diagnostic_lead_to_ticket_with_quote(uuid,uuid,text,numeric,text,uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.convert_diagnostic_lead_to_ticket_with_quote(uuid,uuid,text,numeric,text,uuid) TO service_role;
+
 -- This is the only path by which a ticket quote can be marked paid.
 -- It locks the ticket and quote revision and compares the immutable order snapshot.
 CREATE OR REPLACE FUNCTION public.settle_ticket_quote_payment(p_order_id uuid)
