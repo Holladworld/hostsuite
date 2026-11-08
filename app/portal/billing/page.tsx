@@ -17,7 +17,7 @@ const money = (currency: string, value: number) => `${currency} ${Number(value).
 const statusTone = (status: string) => status === 'paid' || status === 'active' ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400' : status === 'failed' || status === 'cancelled' ? 'border-destructive/20 bg-destructive/5 text-destructive' : 'border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-400';
 
 export default function BillingPage() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -25,7 +25,12 @@ export default function BillingPage() {
   async function load() {
     setLoading(true); setError('');
     try {
-      const response = await fetch('/api/billing/summary', { cache: 'no-store' });
+      const accessToken = session?.access_token;
+      if (!accessToken) throw new Error('Your session has expired. Please sign in again.');
+      const response = await fetch('/api/billing/summary', {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? 'We could not load your billing information.');
       setSummary(result as Summary);
@@ -33,7 +38,7 @@ export default function BillingPage() {
     finally { setLoading(false); }
   }
 
-  useEffect(() => { if (user) void load(); }, [user]);
+  useEffect(() => { if (user && session?.access_token) void load(); }, [user, session?.access_token]);
 
   const invoices = summary?.invoices ?? [];
   const subscriptions = summary?.subscriptions ?? [];
