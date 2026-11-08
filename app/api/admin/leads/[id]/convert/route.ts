@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
-import { verifyAdmin } from '@/lib/supabase-server';
+import { createServerSupabaseClient, verifyAdmin } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 
@@ -74,6 +74,22 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Diagnostic not found.' }, { status: 404 });
     }
     return NextResponse.json({ error: 'Could not convert this diagnostic into a customer ticket.' }, { status: 500 });
+  }
+
+  if (quotedAmount !== null && quotedAmount > 0) {
+    const server = await createServerSupabaseClient();
+    const { data: { user: adminUser } } = await server.auth.getUser();
+    const { error: quoteError } = await admin.rpc('create_ticket_quote_revision', {
+      p_ticket_id: ticketId,
+      p_scope: agreedScope,
+      p_amount: quotedAmount,
+      p_currency: quoteCurrency,
+      p_reason: 'Initial quote agreed during diagnostic conversion',
+      p_created_by: adminUser?.id ?? null,
+    });
+    if (quoteError) {
+      return NextResponse.json({ error: 'The ticket was created, but its initial quote could not be saved. Open the ticket and create the quote from the admin Tickets panel.' }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ success: true, ticketId, customerId: customer.id });
