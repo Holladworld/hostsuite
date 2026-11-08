@@ -47,3 +47,17 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   return NextResponse.json({ success: true, revisionId });
 }
+
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+  if (!(await verifyAdmin())) return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
+  const { id: ticketId } = await context.params;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ticketId)) {
+    return NextResponse.json({ error: 'Invalid ticket reference.' }, { status: 400 });
+  }
+  const admin = createAdminSupabaseClient();
+  const { data, error } = await admin.from('ticket_quote_revisions')
+    .select('id,revision,agreed_scope,amount,currency,status,change_reason,created_at,created_by')
+    .eq('ticket_id', ticketId).order('revision', { ascending: false });
+  if (error) return NextResponse.json({ error: 'Could not load quote history.' }, { status: 500 });
+  return NextResponse.json({ revisions: data ?? [] });
+}
