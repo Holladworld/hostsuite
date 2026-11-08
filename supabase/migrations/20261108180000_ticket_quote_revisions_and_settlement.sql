@@ -212,3 +212,93 @@ GRANT EXECUTE ON FUNCTION public.settle_ticket_quote_payment(uuid) TO service_ro
 CREATE UNIQUE INDEX IF NOT EXISTS idx_billing_orders_ticket_quote_revision
   ON public.billing_orders ((metadata->>'ticket_quote_revision_id'))
   WHERE metadata->>'source' = 'ticket_quote';
+
+-- Atomically create the order, item and invoice for a specific current quote.
+-- Locking the ticket serializes simultaneous checkout attempts for one quote.
+CREATE OR REPLACE FUNCTION public.create_ticket_quote_order(
+  p_ticket_id uuid,
+  p_user_id uuid,
+  p_quote_revision_id uuid,
+  p_provider text
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  ticket_row public.support_tickets%ROWTYPE;
+  quote_row public.ticket_quote_revisions%ROWTYPE;
+  existing_order_id uuid;
+  new_order_id uuid;
+  order_reference text;
+  invoice_number text;
+BEGIN
+  IF p_provider NOT IN ('paystack','flutterwave') THEN
+    RAISE EXCEPTION 'UNSUPPORTED_PAYMENT_PROVIDER';
+  END IF;
+
+  SELECT * INTO ticket_row FROM public.support_tickets
+  WHERE id = p_ticket_id AND user_id = p_user_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'TICKET_NOT_FOUND'; END IF;
+  IF ticket_row.current_quote_revision_id IS DISTINCT FROM p_quote_revision_id
+    OR ticket_row.quote_status <> 'awaiting_payment' THEN
+    RAISE EXCEPTION 'QUOTE_NOT_CURRENT';
+  END IF;
+
+  SELECT * INTO quote_row FROM public.ticket_quote_revisions
+  WHERE id = p_quote_revision_id AND ticket_id = p_ticket_id FOR UPDATE;
+  IF NOT FOUND OR quote_row.status <> 'awaiting_payment' THEN
+    RAISE EXCEPTION 'QUOTE_NOT_PAYABLE';
+  END IF;
+
+  SELECT id INTO existing_order_id FROM public.billing_orders
+  WHERE user_id = p_user_id
+    AND metadata->>'source' = 'ticket_quote'
+    AND metadata->>'ticket_quote_revision_id' = p_quote_revision_id::text;
+  IF existing_order_id IS NOT NULL THEN
+    RETURN existing_order_id;
+  END IF;
+
+  new_order_id := gen_random_uuid();
+  order_reference := 'HS-TICKET-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 20));
+  invoice_number := 'HS-' || extract(year FROM now())::integer::text || '-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10));
+
+  INSERT INTO public.billing_orders(
+    id, user_id, status, currency, subtotal, total, provider, provider_reference,
+    idempotency_key, metadata
+  ) VALUES (
+    new_order_id, p_user_id, 'pending', quote_row.currency, quote_row.amount, quote_row.amount,
+    p_provider, order_reference, gen_random_uuid()::text,
+    jsonb_build_object(
+      'source','ticket_quote',
+      'ticket_id',p_ticket_id,
+      'ticket_quote_revision_id',p_quote_revision_id
+    )
+  );
+
+  INSERT INTO public.billing_order_items(
+    order_id, product_name, quantity, unit_price, total, metadata
+  ) VALUES (
+    new_order_id,
+    'HostSuite support ticket ' || substr(p_ticket_id::text, 1, 8) || ' — quote ' || substr(p_quote_revision_id::text, 1, 8),
+    1, quote_row.amount, quote_row.amount,
+    jsonb_build_object('source','ticket_quote','ticket_id',p_ticket_id,'ticket_quote_revision_id',p_quote_revision_id)
+  );
+
+  INSERT INTO public.billing_invoices(
+    user_id, order_id, invoice_number, status, currency, subtotal, total
+  ) VALUES (
+    p_user_id, new_order_id, invoice_number, 'open', quote_row.currency, quote_row.amount, quote_row.amount
+  );
+
+  UPDATE public.support_tickets SET billing_order_id = new_order_id
+  WHERE id = p_ticket_id AND current_quote_revision_id = p_quote_revision_id;
+
+  RETURN new_order_id;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.create_ticket_quote_order(uuid,uuid,uuid,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.create_ticket_quote_order(uuid,uuid,uuid,text) TO service_role;
+
