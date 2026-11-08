@@ -83,6 +83,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (Number(order.total) !== Number(quote.amount) || order.currency !== quote.currency) {
       return NextResponse.json({ error: 'The saved payment order does not match the current approved quote. Contact HostSuite.' }, { status: 409 });
     }
+    const savedAuthorizationUrl = typeof order.metadata?.authorization_url === 'string' ? order.metadata.authorization_url : '';
+    if (savedAuthorizationUrl) {
+      return NextResponse.json({ authorizationUrl: savedAuthorizationUrl, reference: order.provider_reference, orderId: order.id, invoiceNumber });
+    }
     const provider = getPaymentProvider(order.provider || undefined);
     if (!provider.isConfigured()) return NextResponse.json({ error: 'Payment is temporarily unavailable.' }, { status: 503 });
     const origin = new URL(request.url).origin;
@@ -91,6 +95,16 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       reference: order.provider_reference, callbackUrl: `${origin}/portal/support?payment=return`,
       orderId: order.id, userId: user.id,
     });
+    const { data: latestTicket, error: latestTicketError } = await admin.from('support_tickets')
+      .select('current_quote_revision_id,quote_status').eq('id', ticket.id).single();
+    if (latestTicketError) throw latestTicketError;
+    if (latestTicket.current_quote_revision_id !== quote.id || latestTicket.quote_status !== 'awaiting_payment') {
+      return NextResponse.json({ error: 'This quote changed while checkout was starting. Refresh the ticket and use the latest amount.' }, { status: 409 });
+    }
+    const { error: metadataError } = await admin.from('billing_orders').update({
+      metadata: { ...((order.metadata ?? {}) as Record<string, unknown>), authorization_url: payment.authorizationUrl, checkout_initialized_at: new Date().toISOString() },
+    }).eq('id', order.id).eq('status', 'pending');
+    if (metadataError) throw metadataError;
     await admin.from('support_tickets').update({ billing_order_id: order.id }).eq('id', ticket.id).eq('current_quote_revision_id', quote.id);
     return NextResponse.json({ authorizationUrl: payment.authorizationUrl, reference: order.provider_reference, orderId: order.id, invoiceNumber });
   } catch (error) {
