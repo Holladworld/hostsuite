@@ -58,6 +58,8 @@ BEGIN
 END;
 $policy_cleanup$;
 
+ALTER TABLE public.ai_projects ENABLE ROW LEVEL SECURITY;
+
 CREATE POLICY ai_projects_owner_read
   ON public.ai_projects FOR SELECT TO authenticated
   USING (auth.uid() = user_id OR public.is_admin());
