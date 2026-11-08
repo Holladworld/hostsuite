@@ -290,7 +290,7 @@ export function AdminLeadsPanel() {
                     <div className="mt-5 space-y-3 rounded-xl border border-primary/20 bg-background p-4">
                       <div>
                         <p className="text-sm font-semibold">Convert this diagnostic into a customer ticket</p>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">The customer must already have a HostSuite account using the email recorded on this lead. The diagnostic and WhatsApp conversation remain the original intake record.</p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">Use the email on the diagnostic or enter the email on the customer's existing HostSuite account. The diagnostic and WhatsApp conversation remain the original intake record.</p>
                       </div>
                       <div>
                         <Label htmlFor={`email-${lead.id}`}>Customer HostSuite account email</Label>
