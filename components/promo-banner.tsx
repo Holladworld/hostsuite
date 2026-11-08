@@ -23,15 +23,15 @@ export function PromoBanner() {
 
   return (
     <section aria-label="Website support highlights" className="relative z-10 bg-[#4A1F6B] text-white">
-      <div className="mx-auto flex min-h-[54px] max-w-[1440px] items-center justify-between gap-3 px-5 py-2 sm:px-8 lg:px-12">
-        <div className="flex min-w-0 items-center gap-3 sm:gap-5">
-          <span className="hidden shrink-0 rounded-md bg-white/12 px-2.5 py-1 text-[9px] font-extrabold tracking-[0.13em] text-[#E8D8F5] sm:inline">{slide.eyebrow}</span>
-          <p key={slide.title} className="truncate text-xs font-semibold sm:text-sm">{slide.title}</p>
+      <div className="mx-auto flex min-h-[42px] max-w-[1440px] items-center justify-between gap-2 px-4 py-1 sm:px-8 lg:px-12">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <span className="hidden shrink-0 rounded bg-white/12 px-2 py-0.5 text-[8px] font-extrabold tracking-[0.12em] text-[#E8D8F5] sm:inline">{slide.eyebrow}</span>
+          <p key={slide.title} className="truncate text-[11px] font-semibold leading-4 sm:text-xs">{slide.title}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-3 sm:gap-5">
-          <Link href={slide.href} className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-white px-3 py-2 text-[10px] font-extrabold text-[#4A1F6B] transition-colors hover:bg-[#F2EAF8] sm:px-4 sm:text-[11px]">{slide.action}<ArrowUpRight className="h-3.5 w-3.5" /></Link>
-          <div className="hidden items-center gap-1.5 sm:flex" aria-label="Choose highlight">
-            {slides.map((item, index) => <button key={item.eyebrow} type="button" onClick={() => setActive(index)} aria-label={`Show highlight ${index + 1}`} aria-current={index === active} className={`h-1.5 rounded-full transition-all ${index === active ? 'w-5 bg-white' : 'w-1.5 bg-white/45 hover:bg-white/75'}`} />)}
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <Link href={slide.href} className="inline-flex min-h-7 items-center gap-1 whitespace-nowrap rounded-md bg-white px-2.5 py-1 text-[9px] font-extrabold leading-none text-[#4A1F6B] transition-colors hover:bg-[#F2EAF8] sm:px-3 sm:text-[10px]">{slide.action}<ArrowUpRight className="h-3 w-3" /></Link>
+          <div className="hidden items-center gap-1 sm:flex" aria-label="Choose highlight">
+            {slides.map((item, index) => <button key={item.eyebrow} type="button" onClick={() => setActive(index)} aria-label={`Show highlight ${index + 1}`} aria-current={index === active} className={`h-1 rounded-full transition-all ${index === active ? 'w-4 bg-white' : 'w-1 bg-white/45 hover:bg-white/75'}`} />)}
           </div>
         </div>
       </div>

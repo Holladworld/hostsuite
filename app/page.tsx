@@ -5,6 +5,7 @@ import { ServiceImageCarousel } from '@/components/service-image-carousel';
 import { PromoBanner } from '@/components/promo-banner';
 import { Services } from '@/components/services';
 import { DiagnosticTool } from '@/components/diagnostic-tool';
+import { CustomerStories } from '@/components/customer-stories';
 import { Pricing } from '@/components/pricing';
 import { CreditOffsetBanner } from '@/components/credit-offset-banner';
 
@@ -18,6 +19,7 @@ export default function Home() {
       <Suspense fallback={null}>
         <DiagnosticTool />
       </Suspense>
+      <CustomerStories />
       <CreditOffsetBanner />
       <Pricing />
     </SiteShell>
