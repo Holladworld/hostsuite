@@ -65,8 +65,13 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
       .order('created_at', { ascending: false }),
   ]);
   if (error || ordersError) return NextResponse.json({ error: 'Could not load quote history.' }, { status: 500 });
+  const revisions = await Promise.all((data ?? []).map(async (revision) => {
+    if (!revision.created_by) return { ...revision, created_by_email: null };
+    const { data: actor } = await admin.auth.admin.getUserById(revision.created_by);
+    return { ...revision, created_by_email: actor.user?.email ?? revision.created_by };
+  }));
   const reconciliationOrders = (orders ?? []).filter((order) =>
     Boolean((order.metadata as Record<string, unknown> | null)?.needs_manual_reconciliation)
   );
-  return NextResponse.json({ revisions: data ?? [], reconciliationOrders });
+  return NextResponse.json({ revisions, reconciliationOrders });
 }
