@@ -53,6 +53,7 @@ export function AdminTicketsPanel() {
   const [busy, setBusy] = useState(false);
   const [quoteDrafts, setQuoteDrafts] = useState<Record<string, { scope: string; amount: string; reason: string }>>({});
   const [savingQuoteId, setSavingQuoteId] = useState<string | null>(null);
+  const [quoteHistory, setQuoteHistory] = useState<Record<string, Array<{ id: string; revision: number; amount: number; currency: string; status: string; change_reason: string | null; created_at: string }>>>({});
 
   // Domain form
   const [domainForm, setDomainForm] = useState({
@@ -123,6 +124,17 @@ export function AdminTicketsPanel() {
       toast.error(error instanceof Error ? error.message : 'Could not save the quote.');
     } finally {
       setSavingQuoteId(null);
+    }
+  }
+
+  async function handleLoadQuoteHistory(ticketId: string) {
+    try {
+      const response = await fetch(`/api/admin/tickets/${ticketId}/quote`, { cache: 'no-store' });
+      const result = await response.json() as { error?: string; revisions?: Array<{ id: string; revision: number; amount: number; currency: string; status: string; change_reason: string | null; created_at: string }> };
+      if (!response.ok) throw new Error(result.error ?? 'Could not load quote history.');
+      setQuoteHistory((prev) => ({ ...prev, [ticketId]: result.revisions ?? [] }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not load quote history.');
     }
   }
 
@@ -302,6 +314,17 @@ export function AdminTicketsPanel() {
                           {savingQuoteId === ticket.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                           {ticket.current_quote_revision_id ? 'Save revised quote' : 'Approve quote'}
                         </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleLoadQuoteHistory(ticket.id)}>View revision history</Button>
+                        {quoteHistory[ticket.id]?.length ? (
+                          <div className="space-y-2 border-t pt-3">
+                            {quoteHistory[ticket.id].map((revision) => (
+                              <div key={revision.id} className="flex flex-wrap items-start justify-between gap-2 text-xs">
+                                <div><p className="font-medium">Revision {revision.revision} · {revision.currency} {Number(revision.amount).toLocaleString()}</p><p className="mt-0.5 text-muted-foreground">{revision.change_reason || 'No reason recorded'} · {new Date(revision.created_at).toLocaleString()}</p></div>
+                                <Badge variant="outline">{revision.status.replaceAll('_', ' ')}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     )}
                   </div>
