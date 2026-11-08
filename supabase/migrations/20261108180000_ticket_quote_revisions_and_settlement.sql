@@ -212,7 +212,10 @@ BEGIN
   WHERE order_id = p_order_id;
   UPDATE public.ticket_quote_revisions SET status = 'paid'
   WHERE id = revision_id AND status = 'awaiting_payment';
-  UPDATE public.support_tickets SET quote_status = 'paid', billing_order_id = p_order_id
+  UPDATE public.support_tickets
+  SET quote_status = 'paid',
+      billing_order_id = p_order_id,
+      status = CASE WHEN status = 'open' THEN 'in_progress' ELSE status END
   WHERE id = ticket_row.id AND current_quote_revision_id = revision_id;
 
   RETURN 'paid';
