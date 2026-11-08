@@ -24,7 +24,9 @@ type TicketRow = {
   quoted_amount: number | null;
   quote_currency: string;
   quote_status: string;
+  current_quote_revision_id: string | null;
 };
+type QuoteRevision = { id: string; ticket_id: string; revision: number; agreed_scope: string; amount: number; currency: string; status: string; change_reason: string | null; created_at: string };
 
 function statusLabel(status: string) {
   return status.replaceAll('_', ' ');
@@ -39,19 +41,32 @@ export default function SupportPage() {
   const [tickets, setTickets] = useState<TicketRow[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [payingTicketId, setPayingTicketId] = useState<string | null>(null);
+  const [quoteRevisions, setQuoteRevisions] = useState<QuoteRevision[]>([]);
 
   const loadTickets = useCallback(async () => {
     if (!user) return;
     setTicketsLoading(true);
     const { data, error } = await supabase
       .from('support_tickets')
-      .select('id,subject,details,priority,status,domain,created_at,agreed_scope,quoted_amount,quote_currency,quote_status')
+      .select('id,subject,details,priority,status,domain,created_at,agreed_scope,quoted_amount,quote_currency,quote_status,current_quote_revision_id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
     if (error) {
       toast.error('We could not load your ticket history.');
     } else {
-      setTickets((data ?? []) as TicketRow[]);
+      const rows = (data ?? []) as TicketRow[];
+      setTickets(rows);
+      if (rows.length) {
+        const { data: quoteRows, error: quoteError } = await supabase
+          .from('ticket_quote_revisions')
+          .select('id,ticket_id,revision,agreed_scope,amount,currency,status,change_reason,created_at')
+          .in('ticket_id', rows.map((ticket) => ticket.id))
+          .order('revision', { ascending: false });
+        if (!quoteError) setQuoteRevisions((quoteRows ?? []) as QuoteRevision[]);
+      } else {
+        setQuoteRevisions([]);
+      }
     }
     setTicketsLoading(false);
   }, [user]);
@@ -60,6 +75,20 @@ export default function SupportPage() {
     if (!authLoading && !user) router.replace('/portal');
     if (user) void loadTickets();
   }, [authLoading, user, router, loadTickets]);
+
+  async function payApprovedQuote(ticket: TicketRow) {
+    if (!ticket.current_quote_revision_id || ticket.quote_status !== 'awaiting_payment') return;
+    setPayingTicketId(ticket.id);
+    try {
+      const response = await fetch(`/api/billing/tickets/${ticket.id}/checkout`, { method: 'POST' });
+      const result = await response.json() as { error?: string; authorizationUrl?: string };
+      if (!response.ok || !result.authorizationUrl) throw new Error(result.error ?? 'Unable to start payment.');
+      window.location.assign(result.authorizationUrl);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to start payment.');
+      setPayingTicketId(null);
+    }
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -172,7 +201,37 @@ export default function SupportPage() {
                     </div>
                     {ticket.details && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{ticket.details}</p>}
                     {ticket.agreed_scope && <div className="mt-3 rounded-lg bg-muted/50 p-3"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Agreed work</p><p className="mt-1 text-sm">{ticket.agreed_scope}</p></div>}
-                    {ticket.quoted_amount !== null && <p className="mt-3 text-sm font-semibold">{ticket.quote_currency} {Number(ticket.quoted_amount).toLocaleString()} · {statusLabel(ticket.quote_status)}</p>}
+                    {ticket.quoted_amount !== null && (
+                      <div className="mt-3 rounded-lg border p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Latest approved quote</p>
+                            <p className="mt-1 text-lg font-semibold">{ticket.quote_currency} {Number(ticket.quoted_amount).toLocaleString()}</p>
+                            <p className="text-xs capitalize text-muted-foreground">{statusLabel(ticket.quote_status)}</p>
+                          </div>
+                          {ticket.quote_status === 'awaiting_payment' && ticket.current_quote_revision_id && (
+                            <Button size="sm" onClick={() => payApprovedQuote(ticket)} disabled={payingTicketId === ticket.id}>
+                              {payingTicketId === ticket.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                              Pay approved amount
+                            </Button>
+                          )}
+                          {ticket.quote_status === 'paid' && <Badge>Paid</Badge>}
+                        </div>
+                        {quoteRevisions.filter((quote) => quote.ticket_id === ticket.id).length > 1 && (
+                          <details className="mt-3 border-t pt-3">
+                            <summary className="cursor-pointer text-xs font-medium text-muted-foreground">Quote revision history</summary>
+                            <div className="mt-2 space-y-2">
+                              {quoteRevisions.filter((quote) => quote.ticket_id === ticket.id).map((quote) => (
+                                <div key={quote.id} className="flex flex-wrap items-start justify-between gap-2 text-xs">
+                                  <div><p className="font-medium">Revision {quote.revision} · {quote.currency} {Number(quote.amount).toLocaleString()}</p><p className="mt-0.5 text-muted-foreground">{quote.change_reason || 'Quote issued'}</p></div>
+                                  <span className="capitalize text-muted-foreground">{quote.status.replaceAll('_', ' ')}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
