@@ -51,6 +51,8 @@ export function AdminTicketsPanel() {
   const [domainModalOpen, setDomainModalOpen] = useState(false);
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [quoteDrafts, setQuoteDrafts] = useState<Record<string, { scope: string; amount: string; reason: string }>>({});
+  const [savingQuoteId, setSavingQuoteId] = useState<string | null>(null);
 
   // Domain form
   const [domainForm, setDomainForm] = useState({
@@ -92,6 +94,35 @@ export function AdminTicketsPanel() {
       setNotesDraft((prev) => ({ ...prev, [ticketId]: undefined }));
     } else {
       toast.error('Failed to save notes.');
+    }
+  }
+
+  async function handleSaveQuote(ticket: TicketRow) {
+    const draft = quoteDrafts[ticket.id] ?? {
+      scope: ticket.agreed_scope ?? '',
+      amount: ticket.quoted_amount == null ? '' : String(ticket.quoted_amount),
+      reason: '',
+    };
+    if (!draft.scope.trim() || !Number.isFinite(Number(draft.amount)) || Number(draft.amount) <= 0) {
+      toast.error('Enter the agreed work scope and a valid amount greater than zero.');
+      return;
+    }
+    setSavingQuoteId(ticket.id);
+    try {
+      const response = await fetch(`/api/admin/tickets/${ticket.id}/quote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope: draft.scope, amount: draft.amount, currency: 'NGN', reason: draft.reason }),
+      });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error ?? 'Could not save the quote.');
+      toast.success('Approved quote saved. The customer will now see this amount.');
+      setQuoteDrafts((prev) => ({ ...prev, [ticket.id]: { ...draft, reason: '' } }));
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not save the quote.');
+    } finally {
+      setSavingQuoteId(null);
     }
   }
 
@@ -217,6 +248,63 @@ export function AdminTicketsPanel() {
                       <p className="mt-2 text-sm text-foreground/80">{ticket.details}</p>
                     </div>
                   )}
+
+                  {/* Quote management */}
+                  <div className="mt-5 rounded-xl border border-border bg-background p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Customer quote</p>
+                        <p className="mt-1 text-sm text-muted-foreground">The customer can pay only the latest amount approved here.</p>
+                      </div>
+                      {ticket.quote_status && <Badge variant="outline">{ticket.quote_status.replaceAll('_', ' ')}</Badge>}
+                    </div>
+                    {ticket.quote_status === 'paid' ? (
+                      <div className="mt-3 rounded-lg bg-muted p-3 text-sm">
+                        <p className="font-semibold">{ticket.quote_currency ?? 'NGN'} {Number(ticket.quoted_amount ?? 0).toLocaleString()}</p>
+                        <p className="mt-1 text-muted-foreground">Paid quote locked. Record any additional work as a separate request.</p>
+                      </div>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        <div>
+                          <Label htmlFor={`quote-scope-${ticket.id}`}>Agreed work scope</Label>
+                          <Textarea
+                            id={`quote-scope-${ticket.id}`}
+                            value={quoteDrafts[ticket.id]?.scope ?? ticket.agreed_scope ?? ''}
+                            onChange={(event) => setQuoteDrafts((prev) => ({ ...prev, [ticket.id]: { scope: event.target.value, amount: prev[ticket.id]?.amount ?? (ticket.quoted_amount == null ? '' : String(ticket.quoted_amount)), reason: prev[ticket.id]?.reason ?? '' } }))}
+                            className="mt-1 min-h-24"
+                            placeholder="List exactly what HostSuite will deliver..."
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`quote-amount-${ticket.id}`}>Approved amount (NGN)</Label>
+                          <Input
+                            id={`quote-amount-${ticket.id}`}
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={quoteDrafts[ticket.id]?.amount ?? (ticket.quoted_amount == null ? '' : String(ticket.quoted_amount))}
+                            onChange={(event) => setQuoteDrafts((prev) => ({ ...prev, [ticket.id]: { scope: prev[ticket.id]?.scope ?? ticket.agreed_scope ?? '', amount: event.target.value, reason: prev[ticket.id]?.reason ?? '' } }))}
+                            className="mt-1"
+                            placeholder="Enter the final agreed price"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`quote-reason-${ticket.id}`}>Reason for change (optional)</Label>
+                          <Input
+                            id={`quote-reason-${ticket.id}`}
+                            value={quoteDrafts[ticket.id]?.reason ?? ''}
+                            onChange={(event) => setQuoteDrafts((prev) => ({ ...prev, [ticket.id]: { scope: prev[ticket.id]?.scope ?? ticket.agreed_scope ?? '', amount: prev[ticket.id]?.amount ?? (ticket.quoted_amount == null ? '' : String(ticket.quoted_amount)), reason: event.target.value } }))}
+                            className="mt-1"
+                            placeholder="e.g. Customer requested a revised scope"
+                          />
+                        </div>
+                        <Button size="sm" onClick={() => handleSaveQuote(ticket)} disabled={savingQuoteId === ticket.id}>
+                          {savingQuoteId === ticket.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          {ticket.current_quote_revision_id ? 'Save revised quote' : 'Approve quote'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Admin notes */}
                   <div className="mt-4">
