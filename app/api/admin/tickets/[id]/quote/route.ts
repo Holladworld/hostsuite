@@ -55,9 +55,18 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: 'Invalid ticket reference.' }, { status: 400 });
   }
   const admin = createAdminSupabaseClient();
-  const { data, error } = await admin.from('ticket_quote_revisions')
-    .select('id,revision,agreed_scope,amount,currency,status,change_reason,created_at,created_by')
-    .eq('ticket_id', ticketId).order('revision', { ascending: false });
-  if (error) return NextResponse.json({ error: 'Could not load quote history.' }, { status: 500 });
-  return NextResponse.json({ revisions: data ?? [] });
+  const [{ data, error }, { data: orders, error: ordersError }] = await Promise.all([
+    admin.from('ticket_quote_revisions')
+      .select('id,revision,agreed_scope,amount,currency,status,change_reason,created_at,created_by')
+      .eq('ticket_id', ticketId).order('revision', { ascending: false }),
+    admin.from('billing_orders')
+      .select('id,total,currency,status,provider_reference,metadata,created_at')
+      .contains('metadata', { source: 'ticket_quote', ticket_id: ticketId })
+      .order('created_at', { ascending: false }),
+  ]);
+  if (error || ordersError) return NextResponse.json({ error: 'Could not load quote history.' }, { status: 500 });
+  const reconciliationOrders = (orders ?? []).filter((order) =>
+    Boolean((order.metadata as Record<string, unknown> | null)?.needs_manual_reconciliation)
+  );
+  return NextResponse.json({ revisions: data ?? [], reconciliationOrders });
 }
