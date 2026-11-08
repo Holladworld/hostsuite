@@ -47,6 +47,7 @@ export function AdminLeadsPanel() {
   const [adding, setAdding] = useState(false);
   const [convertingLeadId, setConvertingLeadId] = useState<string | null>(null);
   const [conversionScope, setConversionScope] = useState('');
+  const [conversionEmail, setConversionEmail] = useState('');
   const [conversionAmount, setConversionAmount] = useState('');
   const [converting, setConverting] = useState(false);
 
@@ -96,13 +97,14 @@ export function AdminLeadsPanel() {
       const response = await fetch(`/api/admin/leads/${leadId}/convert`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agreedScope: conversionScope, quotedAmount: conversionAmount }),
+        body: JSON.stringify({ agreedScope: conversionScope, quotedAmount: conversionAmount, customerEmail: conversionEmail }),
       });
       const result = await response.json() as { error?: string; ticketId?: string };
       if (!response.ok) throw new Error(result.error ?? 'Could not create the customer ticket.');
       toast.success('Diagnostic converted into a customer ticket.');
       setConvertingLeadId(null);
       setConversionScope('');
+      setConversionEmail('');
       setConversionAmount('');
       await load();
     } catch (error) {
@@ -291,6 +293,10 @@ export function AdminLeadsPanel() {
                         <p className="mt-1 text-xs leading-5 text-muted-foreground">The customer must already have a HostSuite account using the email recorded on this lead. The diagnostic and WhatsApp conversation remain the original intake record.</p>
                       </div>
                       <div>
+                        <Label htmlFor={`email-${lead.id}`}>Customer HostSuite account email</Label>
+                        <Input id={`email-${lead.id}`} type="email" value={conversionEmail} onChange={(event) => setConversionEmail(event.target.value)} className="mt-1" placeholder="The email used to create their HostSuite account" />
+                      </div>
+                      <div>
                         <Label htmlFor={`scope-${lead.id}`}>Agreed work scope</Label>
                         <Textarea id={`scope-${lead.id}`} value={conversionScope} onChange={(event) => setConversionScope(event.target.value)} className="mt-1 min-h-24" placeholder="Record what HostSuite agreed to deliver..." />
                       </div>
@@ -305,7 +311,7 @@ export function AdminLeadsPanel() {
                     </div>
                   ) : (
                     <div className="mt-4">
-                      <Button size="sm" variant="outline" onClick={() => { setConvertingLeadId(lead.id); setConversionScope(lead.description ?? ''); setConversionAmount(''); }}>
+                      <Button size="sm" variant="outline" onClick={() => { setConvertingLeadId(lead.id); setConversionScope(lead.description ?? ''); setConversionEmail(lead.email ?? ''); setConversionAmount(''); }}>
                         Convert to customer ticket
                       </Button>
                     </div>
