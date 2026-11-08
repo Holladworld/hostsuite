@@ -26,14 +26,14 @@ export default function PortalLoginPage() {
 }
 
 function PortalLoginInner() {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const searchParams = useSearchParams();
+  const [mode, setMode] = useState<'signin' | 'signup'>(() => searchParams.get('mode') === 'signup' ? 'signup' : 'signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -104,7 +104,7 @@ function PortalLoginInner() {
           </div>
           <div className="flex flex-col leading-none">
             <span className="font-display text-lg font-bold tracking-tight">HostSuite</span>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Client Portal</span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{mode === 'signup' ? 'Create account' : 'Sign in'}</span>
           </div>
         </Link>
         <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
@@ -124,23 +124,23 @@ function PortalLoginInner() {
               <Lock className="h-7 w-7" />
             </div>
             <h1 className="text-center font-display text-2xl font-bold tracking-tight">
-              {mode === 'signin' ? 'Client Sign In' : 'Create Your Portal Account'}
+              {mode === 'signin' ? 'Welcome back' : 'Start with HostSuite'}
             </h1>
             <p className="mt-1.5 text-center text-sm text-muted-foreground">
               {mode === 'signin'
-                ? 'Access your hosted domains, SLA tier, and support tickets.'
-                : 'Create an account to open your HostSuite client portal.'}
+                ? 'Access your domains, websites, email and support.'
+                : 'Create your account and get the help or services your business needs.'}
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="portal-email">Corporate Email</Label>
+                <Label htmlFor="portal-email">Email address</Label>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="portal-email"
                     type="email"
-                    placeholder="you@company.com.ng"
+                    placeholder="you@company.com"
                     className="pl-9"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -200,7 +200,7 @@ function PortalLoginInner() {
 
           <div className="mt-5 flex items-center justify-center">
             <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
-              <a href={waLink('Hello HostSuite, I need help accessing my client portal.')} target="_blank" rel="noopener noreferrer" className="gap-1.5">
+              <a href={waLink('Hello HostSuite, I need help accessing my account.')} target="_blank" rel="noopener noreferrer" className="gap-1.5">
                 <MessageCircle className="h-4 w-4" /> Need help? WhatsApp us
               </a>
             </Button>

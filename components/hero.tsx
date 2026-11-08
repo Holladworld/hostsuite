@@ -1,234 +1,88 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-  ArrowRight,
-  MessageCircle,
-  ShieldCheck,
-  Lock,
-  MailCheck,
-  Activity,
-  Server,
-  Zap,
-  CheckCircle2,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { BRAND, waLink, HEALTH_METRICS, TRUST_LOGOS } from '@/lib/constants';
-import { useSiteSettings } from '@/hooks/use-content';
 import Link from 'next/link';
-
-const HERO_BG = 'https://images.pexels.com/photos/37730212/pexels-photo-37730212.jpeg?auto=compress&cs=tinysrgb&w=1920';
-
-const metricIcon: Record<string, React.ElementType> = {
-  Uptime: Activity,
-  SSL: Lock,
-  'Email Deliverability': MailCheck,
-  'Lagos Ping': Zap,
-};
+import { motion } from 'framer-motion';
+import { ArrowUpRight, Check, Mail, ShieldCheck, Wrench } from 'lucide-react';
+import { useSiteSettings } from '@/hooks/use-content';
+import { waLink } from '@/lib/constants';
 
 export function Hero() {
-  const [ping, setPing] = useState(14);
   const { settings } = useSiteSettings();
-
-  const headline = settings.hero?.headline || 'We don\'t just sell hosting. We manage your entire web infrastructure & fix your technical bottlenecks.';
-  const subheadline = settings.hero?.subheadline || 'Ghosted by your developer? Emails landing in spam? Website constantly going down? HostSuite steps in as your fractional CTO and web operations team.';
-
-  // Subtle live ping jitter for realism.
-  useEffect(() => {
-    const id = setInterval(() => {
-      setPing((p) => {
-        const next = p + (Math.random() * 4 - 2);
-        return Math.max(9, Math.min(22, Math.round(next)));
-      });
-    }, 2200);
-    return () => clearInterval(id);
-  }, []);
+  const cmsHeadline = settings.hero?.headline?.trim();
+  const cmsSubheadline = settings.hero?.subheadline?.trim();
+  const headline = !cmsHeadline || cmsHeadline === 'Build it. Launch it. Keep it running.'
+    ? <>Your website,<br /><span className="text-[#6D3AA0]">taken care of.</span></>
+    : cmsHeadline;
+  const subheadline = !cmsSubheadline || cmsSubheadline.startsWith('Your website, domain, hosting')
+    ? 'From lost access and email problems to everyday updates, we help keep your website working while you get on with business.'
+    : cmsSubheadline;
 
   return (
-    <section className="relative overflow-hidden">
-      {/* Background image with overlay */}
-      <div className="absolute inset-0" aria-hidden>
-        <img
-          src={HERO_BG}
-          alt=""
-          className="h-full w-full object-cover"
-          loading="eager"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/85 to-background/70" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-background/30" />
-      </div>
-
-      <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-14 sm:px-6 lg:px-8 lg:pb-28 lg:pt-20">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
-          {/* Left: copy + CTAs */}
-          <div>
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 rounded-full border border-secondary/30 bg-secondary/10 px-3 py-1.5 text-xs font-semibold text-secondary"
-            >
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Fractional CTO &amp; Web Operations Team
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.05 }}
-              className="mt-5 font-display text-4xl font-bold leading-[1.1] tracking-tight text-foreground text-balance sm:text-5xl lg:text-[3.4rem]"
-            >
-              {headline}
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.12 }}
-              className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg"
-            >
-              {subheadline}
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.18 }}
-              className="mt-7 flex flex-col gap-3 sm:flex-row"
-            >
-              <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                <Link href="/#diagnostic" scroll className="gap-2">
-                  Describe Your Issue
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-secondary/40 text-secondary hover:bg-secondary/10 hover:text-secondary"
-              >
-                <a
-                  href={waLink('Hello HostSuite, I need immediate assistance with my business website.')}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="gap-2"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Emergency WhatsApp Desk
-                </a>
-              </Button>
-            </motion.div>
-
-            {/* Trust logos */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="mt-10"
-            >
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Trusted by teams across Nigeria &amp; beyond
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-                {TRUST_LOGOS.map((logo) => (
-                  <span
-                    key={logo}
-                    className="font-display text-sm font-semibold text-muted-foreground/70"
-                  >
-                    {logo}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Right: Live Health Widget */}
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative"
+    <section className="relative overflow-hidden bg-white text-[#261C30]">
+      <div className="pointer-events-none absolute -right-24 -top-28 h-[420px] w-[420px] rounded-full bg-[#F1E8F8] opacity-80" aria-hidden="true" />
+      <div className="relative mx-auto grid max-w-[1440px] items-center gap-12 px-5 pb-14 pt-14 sm:px-8 sm:pb-20 sm:pt-16 lg:min-h-[590px] lg:grid-cols-[1.02fr_0.98fr] lg:gap-8 lg:px-12 lg:py-16">
+        <div className="relative z-10">
+          <motion.p initial={false} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 rounded-full border border-[#E2D5ED] bg-white px-3.5 py-2 text-[11px] font-bold tracking-[0.02em] text-[#5B3477] shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-[#8D5BB5]" /> WEBSITE SUPPORT FOR BUSINESSES
+          </motion.p>
+          <motion.h1
+            initial={false}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-7 max-w-[690px] font-display text-[clamp(3.5rem,6.5vw,6.4rem)] font-semibold leading-[0.98] tracking-[-0.065em] text-[#261C30] [text-wrap:balance]"
           >
-            <div className="glass-strong rounded-2xl border border-border p-5 shadow-xl shadow-primary/5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Server className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="font-display text-sm font-semibold text-foreground">
-                      Live Infrastructure Health
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">hostsuite.status · real-time</p>
-                  </div>
-                </div>
-                <span className="flex items-center gap-1.5 rounded-full bg-success/10 px-2 py-1 text-[10px] font-semibold text-success">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
-                  </span>
-                  LIVE
-                </span>
-              </div>
+            {headline}
+          </motion.h1>
+          <motion.p
+            initial={false}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.12 }}
+            className="mt-6 max-w-[540px] text-base leading-8 text-[#62576B] sm:text-lg"
+          >
+            {subheadline}
+          </motion.p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link href="/#diagnostic" className="inline-flex min-h-[52px] items-center justify-center gap-3 rounded-xl bg-[#4A1F6B] px-6 py-4 text-sm font-bold text-white shadow-[0_8px_20px_rgba(74,31,107,0.2)] transition-all hover:-translate-y-0.5 hover:bg-[#5D2A86]">
+              Let’s sort out your website <ArrowUpRight className="h-4 w-4" />
+            </Link>
+            <a href={waLink('Hello HostSuite, I would like to speak with someone about looking after my existing website.')} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl border border-[#D8CBE3] bg-white px-6 py-4 text-sm font-bold text-[#4A1F6B] transition-colors hover:border-[#9E7BB9] hover:bg-[#F5EFF9]">
+              Talk to a real person
+            </a>
+          </div>
+          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-semibold text-[#655A70]">
+            {['Keep the website you already have', 'No forced hosting move', 'One-off help or ongoing care'].map((item) => (
+              <p key={item} className="flex items-center gap-2"><Check className="h-4 w-4 shrink-0 text-[#6D3AA0]" />{item}</p>
+            ))}
+          </div>
+        </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                {HEALTH_METRICS.map((m) => {
-              const Icon = metricIcon[m.label] ?? Activity;
-              const isPing = m.label === 'Lagos Ping';
-              return (
-                <div
-                  key={m.label}
-                  className="rounded-xl border border-border bg-background/80 p-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <Icon className="h-4 w-4 text-secondary" />
-                    <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                  </div>
-                  <p className="mt-2 font-mono-data text-lg font-semibold text-foreground">
-                    {isPing ? `${ping}ms` : m.value}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {m.label} · {m.unit}
-                  </p>
-                </div>
-              );
-            })}
+        <motion.div
+          initial={false}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.12 }}
+          className="relative mx-auto w-full max-w-[610px] lg:ml-auto"
+        >
+          <div className="absolute -right-3 top-8 h-28 w-28 rounded-full bg-[#F7B69A] sm:-right-5 sm:h-36 sm:w-36" />
+          <div className="absolute -bottom-5 left-5 h-24 w-24 rounded-full bg-[#CBB2E1] sm:h-32 sm:w-32" />
+          <div className="relative overflow-hidden rounded-[28px] bg-[#4A1F6B] p-4 shadow-[0_28px_70px_rgba(61,31,81,0.2)] sm:p-6">
+            <div className="flex items-center justify-between rounded-t-2xl border-b border-white/15 px-2 pb-4 text-white">
+              <div className="flex items-center gap-2.5"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 text-sm font-extrabold">H</span><span className="text-sm font-bold tracking-tight">Your website, looked after.</span></div>
+              <span className="rounded-full bg-[#DDF5E7] px-3 py-1 text-[10px] font-bold text-[#276344]">In good hands</span>
+            </div>
+            <div className="grid gap-3 py-4 sm:grid-cols-[1.08fr_0.92fr]">
+              <div className="flex min-h-[250px] flex-col justify-between rounded-2xl bg-[#F5EFF9] p-5 text-[#2B1C36] sm:p-6">
+                <div className="flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.13em] text-[#80658F]">The care plan</span><ShieldCheck className="h-5 w-5 text-[#6D3AA0]" /></div>
+                <div><p className="font-display text-4xl font-semibold leading-[0.98] tracking-[-0.05em] sm:text-5xl">Less fixing.<br /><span className="text-[#75469B]">More doing.</span></p><p className="mt-3 max-w-[230px] text-xs leading-5 text-[#766A80]">Practical website support, explained in plain language.</p></div>
+                <div className="flex items-center gap-2 text-[10px] font-bold text-[#5B3477]"><span className="h-2 w-2 rounded-full bg-[#39A66B]" /> Support that stays with you</div>
               </div>
-
-              {/* Mini uptime graph */}
-              <div className="mt-4 rounded-xl border border-border bg-background/80 p-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-medium text-muted-foreground">90-day uptime</p>
-                  <p className="font-mono-data text-xs font-semibold text-success">99.99%</p>
-                </div>
-                <div className="mt-2 flex h-10 items-end gap-[3px]">
-                  {Array.from({ length: 45 }).map((_, i) => {
-                    const h = 60 + Math.sin(i * 0.6) * 18 + Math.random() * 14;
-                    return (
-                      <div
-                        key={i}
-                        className="flex-1 rounded-sm bg-success/70"
-                        style={{ height: `${Math.min(100, h)}%` }}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between rounded-xl bg-primary/5 px-3 py-2.5">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-primary" />
-                  <p className="text-xs font-medium text-foreground">All systems operational</p>
-                </div>
-                <span className="font-mono-data text-[11px] text-muted-foreground">
-                  {BRAND.parent}
-                </span>
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-1 flex-col justify-between rounded-2xl bg-[#F4A98A] p-4 text-[#3B2034]"><div className="flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.12em]">01 / Recover</span><Wrench className="h-5 w-5" /></div><p className="text-sm font-bold leading-5">Get back into the website you own.</p></div>
+                <div className="flex flex-1 flex-col justify-between rounded-2xl bg-[#E2D3EF] p-4 text-[#352343]"><div className="flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.12em]">02 / Keep it working</span><Mail className="h-5 w-5" /></div><p className="text-sm font-bold leading-5">Keep email, updates and the small things in shape.</p></div>
               </div>
             </div>
-          </motion.div>
-        </div>
+            <div className="flex items-center justify-between border-t border-white/15 px-2 pt-4 text-[10px] font-semibold text-white/70"><span>Real people. Clear next steps.</span><span>HOSTSUITE</span></div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

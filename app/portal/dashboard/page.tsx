@@ -1,5 +1,5 @@
-import { PortalDashboard } from '@/components/portal-dashboard';
+import { PortalDashboardV3 } from '@/components/portal-dashboard-v3';
 
 export default function DashboardPage() {
-  return <PortalDashboard />;
+  return <PortalDashboardV3 />;
 }

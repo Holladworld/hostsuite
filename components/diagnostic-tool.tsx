@@ -37,6 +37,7 @@ const painIconMap: Record<string, React.ElementType> = {
   GaugeCircle,
   BadgeDollarSign,
   Wrench,
+  Globe,
 };
 
 type Step = 1 | 2 | 3;
@@ -71,16 +72,19 @@ export function DiagnosticTool() {
   const estimate = useMemo(() => {
     if (selectedPoints.length === 0) return null;
     const maxTurnaround = Math.max(...selectedPoints.map((p) => p.turnaroundHours));
+    const requiresAssessment = selectedPoints.some((p) => 'requiresAssessment' in p && p.requiresAssessment);
     const totalMin = selectedPoints.reduce((s, p) => s + p.costMin, 0);
     const totalMax = selectedPoints.reduce((s, p) => s + p.costMax, 0);
     let tier = 'Starter Ops';
-    if (totalMax > 100000) tier = 'Enterprise / Fractional CTO';
+    if (requiresAssessment) tier = 'Assessment required';
+    else if (totalMax > 100000) tier = 'Enterprise / Fractional CTO';
     else if (totalMax > 40000) tier = 'Managed Growth';
     return {
       turnaround: maxTurnaround,
       costMin: totalMin,
       costMax: totalMax,
       tier,
+      requiresAssessment,
     };
   }, [selectedPoints]);
 
@@ -156,8 +160,9 @@ export function DiagnosticTool() {
 ${painTitles.map((t) => `• ${t}`).join('\n')}
 
 *Description:* ${description || '—'}
+*Assessment:* ${estimate.requiresAssessment ? "A team member needs to review the renewal details before confirming the cost." : "Initial estimate"}
 *Estimated Tier:* ${estimate.tier}
-*Est. Cost:* ${formatNairaRange(estimate.costMin, estimate.costMax)}
+*Est. Cost:* ${estimate.requiresAssessment ? "To be confirmed after review" : formatNairaRange(estimate.costMin, estimate.costMax)}
 *Est. Turnaround:* ${formatTurnaround(estimate.turnaround)}
 
 *Email:* ${email || '—'}
@@ -185,19 +190,20 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
   }
 
   return (
-    <section id="diagnostic" className="relative scroll-mt-20 py-20 lg:py-28">
-      <div className="pointer-events-none absolute inset-0 bg-dots opacity-30" aria-hidden />
-      <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            Interactive Diagnostic &amp; Instant Quote
-          </span>
-          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Tell Us Your Pain
-          </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-            Pick what is breaking your business, tell us about your setup, and get an instant estimated fix time and cost — then we continue on WhatsApp.
+    <section id="diagnostic" className="relative scroll-mt-20 bg-[#F8F5FB] py-24 lg:py-32">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.18]" aria-hidden />
+      <div className="relative mx-auto max-w-[1500px] px-5 sm:px-9 lg:px-16 xl:px-24">
+        <div className="grid gap-8 border-b border-[#E5DCEC] pb-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+          <div>
+            <span className="font-mono-data text-[10px] font-medium uppercase tracking-[0.18em] text-[#5D2A86]">
+              A straightforward first assessment
+            </span>
+            <h2 className="mt-5 max-w-[620px] font-display text-[clamp(2.7rem,5vw,5rem)] leading-[0.92] tracking-[-0.06em] text-[#281936]">
+              Start with what needs fixing.
+            </h2>
+          </div>
+          <p className="max-w-[520px] text-sm leading-7 text-[#71657B] lg:justify-self-end">
+            Choose what you need help with, share a little context and see an initial estimate where available. Renewal requests are reviewed before we confirm pricing.
           </p>
         </div>
 
@@ -213,24 +219,24 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 <div
                   className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all ${
                     step >= s.n
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border bg-background text-muted-foreground'
+                      ? 'border-[#4A1F6B] bg-[#4A1F6B] text-[#FFFFFF]'
+                      : 'border-[#E5DCEC] bg-white text-[#71657B]'
                   }`}
                 >
                   {step > s.n ? <CheckCircle2 className="h-5 w-5" /> : s.n}
                 </div>
                 <span
                   className={`text-[11px] font-medium ${
-                    step >= s.n ? 'text-foreground' : 'text-muted-foreground'
+                    step >= s.n ? 'text-[#281936]' : 'text-[#71657B]'
                   }`}
                 >
                   {s.label}
                 </span>
               </div>
               {i < 2 && (
-                <div className="mx-2 mb-5 h-0.5 flex-1 rounded-full bg-border">
+                <div className="mx-2 mb-5 h-0.5 flex-1 rounded-full bg-[#E5DCEC]">
                   <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
+                    className="h-full rounded-full bg-[#4A1F6B] transition-all duration-500"
                     style={{ width: step > s.n ? '100%' : '0%' }}
                   />
                 </div>
@@ -240,7 +246,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
         </div>
 
         {/* Card */}
-        <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-primary/5">
+        <div className="mt-8 overflow-hidden rounded-2xl border border-[#E5DCEC] bg-[#FFFFFF] shadow-xl shadow-[#4A1F6B]/5">
           <AnimatePresence mode="wait">
             {/* STEP 1 */}
             {step === 1 && !done && (
@@ -252,11 +258,11 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 transition={{ duration: 0.3 }}
                 className="p-6 sm:p-8"
               >
-                <h3 className="font-display text-xl font-semibold text-foreground">
-                  What is breaking your business right now?
+                <h3 className="font-display text-xl font-semibold text-[#281936]">
+                  What would you like help with?
                 </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Select all that apply — the more we know, the faster we fix it.
+                <p className="mt-1 text-sm text-[#71657B]">
+                  Select all that apply — whether something needs fixing or you need help with a renewal.
                 </p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   {PAIN_POINTS.map((p: PainPoint) => {
@@ -269,27 +275,27 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                         onClick={() => togglePain(p.id)}
                         className={`group relative flex items-start gap-3 rounded-xl border p-4 text-left transition-all ${
                           active
-                            ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-                            : 'border-border bg-background hover:border-primary/40 hover:bg-muted/40'
+                            ? 'border-[#4A1F6B] bg-[#4A1F6B]/5 ring-1 ring-[#4A1F6B]/30'
+                            : 'border-[#E5DCEC] bg-white hover:border-[#4A1F6B]/40 hover:bg-[#F2ECF7]/70'
                         }`}
                       >
                         <div
                           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                            active ? 'bg-primary text-primary-foreground' : 'bg-muted text-primary'
+                            active ? 'bg-[#4A1F6B] text-[#FFFFFF]' : 'bg-[#F2ECF7] text-[#5D2A86]'
                           }`}
                         >
                           <Icon className="h-5 w-5" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-semibold leading-snug text-foreground">
+                          <p className="text-sm font-semibold leading-snug text-[#281936]">
                             {p.title}
                           </p>
-                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          <p className="mt-1 text-xs leading-relaxed text-[#71657B]">
                             {p.description}
                           </p>
                         </div>
                         {active && (
-                          <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary" />
+                          <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-[#5D2A86]" />
                         )}
                       </button>
                     );
@@ -308,10 +314,10 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 transition={{ duration: 0.3 }}
                 className="p-6 sm:p-8"
               >
-                <h3 className="font-display text-xl font-semibold text-foreground">
+                <h3 className="font-display text-xl font-semibold text-[#281936]">
                   Tell us about your setup
                 </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-sm text-[#71657B]">
                   A few details so our engineers come prepared.
                 </p>
 
@@ -319,7 +325,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   <div className="space-y-2">
                     <Label htmlFor="diag-company">Company Name</Label>
                     <div className="relative">
-                      <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71657B]" />
                       <Input
                         id="diag-company"
                         placeholder="Acme Nigeria Ltd."
@@ -332,7 +338,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   <div className="space-y-2">
                     <Label htmlFor="diag-domain">Domain URL</Label>
                     <div className="relative">
-                      <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71657B]" />
                       <Input
                         id="diag-domain"
                         placeholder="company.com.ng"
@@ -355,13 +361,13 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   />
                 </div>
 
-                <div className="mt-4 rounded-lg bg-muted/60 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">You selected:</p>
+                <div className="mt-4 rounded-lg bg-[#F2ECF7] p-3">
+                  <p className="text-xs font-medium text-[#71657B]">You selected:</p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {selectedPoints.map((p) => (
                       <span
                         key={p.id}
-                        className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                        className="rounded-full bg-[#4A1F6B]/10 px-2.5 py-1 text-xs font-medium text-[#5D2A86]"
                       >
                         {p.short}
                       </span>
@@ -381,34 +387,34 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 transition={{ duration: 0.3 }}
                 className="p-6 sm:p-8"
               >
-                <h3 className="font-display text-xl font-semibold text-foreground">
+                <h3 className="font-display text-xl font-semibold text-[#281936]">
                   Estimated Fix &amp; Instant Quote
                 </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-sm text-[#71657B]">
                   Based on your selections — where should we send the full assessment?
                 </p>
 
                 {estimate && (
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-xl border border-border bg-background p-4">
-                      <Clock className="h-5 w-5 text-secondary" />
-                      <p className="mt-2 text-xs text-muted-foreground">Est. Turnaround</p>
-                      <p className="font-mono-data text-sm font-semibold text-foreground">
+                    <div className="rounded-xl border border-[#E5DCEC] bg-white p-4">
+                      <Clock className="h-5 w-5 text-[#4A1F6B]" />
+                      <p className="mt-2 text-xs text-[#71657B]">Est. Turnaround</p>
+                      <p className="font-mono-data text-sm font-semibold text-[#281936]">
                         {formatTurnaround(estimate.turnaround)}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-border bg-background p-4">
-                      <BadgeDollarSign className="h-5 w-5 text-secondary" />
-                      <p className="mt-2 text-xs text-muted-foreground">Est. Cost Range</p>
-                      <p className="font-mono-data text-sm font-semibold text-foreground">
-                        {formatNairaRange(estimate.costMin, estimate.costMax)}
+                    <div className="rounded-xl border border-[#E5DCEC] bg-white p-4">
+                      <BadgeDollarSign className="h-5 w-5 text-[#4A1F6B]" />
+                      <p className="mt-2 text-xs text-[#71657B]">{estimate.requiresAssessment ? 'Cost' : 'Est. Cost Range'}</p>
+                      <p className="font-mono-data text-sm font-semibold text-[#281936]">
+                        {estimate.requiresAssessment ? 'To be confirmed' : formatNairaRange(estimate.costMin, estimate.costMax)}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      <p className="mt-2 text-xs text-muted-foreground">Recommended Tier</p>
-                      <p className="font-display text-sm font-semibold text-primary">
-                        {estimate.tier}
+                    <div className="rounded-xl border border-[#4A1F6B]/30 bg-[#4A1F6B]/5 p-4">
+                      <Sparkles className="h-5 w-5 text-[#5D2A86]" />
+                      <p className="mt-2 text-xs text-[#71657B]">{estimate.requiresAssessment ? 'Next step' : 'Recommended Tier'}</p>
+                      <p className="font-display text-sm font-semibold text-[#5D2A86]">
+                        {estimate.requiresAssessment ? 'Review renewal details' : estimate.tier}
                       </p>
                     </div>
                   </div>
@@ -418,7 +424,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   <div className="space-y-2">
                     <Label htmlFor="diag-email">Corporate Email</Label>
                     <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71657B]" />
                       <Input
                         id="diag-email"
                         type="email"
@@ -432,7 +438,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   <div className="space-y-2">
                     <Label htmlFor="diag-wa">WhatsApp Number</Label>
                     <div className="relative">
-                      <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71657B]" />
                       <Input
                         id="diag-wa"
                         placeholder="234 803 000 0000"
@@ -444,7 +450,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-start gap-2 rounded-lg bg-secondary/5 p-3 text-xs text-secondary/90">
+                <div className="mt-4 flex items-start gap-2 rounded-lg bg-[#4A1F6B]/5 p-3 text-xs text-[#4A1F6B]/90">
                   <MessageCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   Submitting opens a WhatsApp chat with our engineers, pre-filled with your diagnostic details.
                 </div>
@@ -462,14 +468,14 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/10 text-success">
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
-                <h3 className="mt-4 font-display text-2xl font-bold text-foreground">
+                <h3 className="mt-4 font-display text-2xl font-bold text-[#281936]">
                   Your request is in
                 </h3>
-                <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                <p className="mt-2 max-w-md text-sm text-[#71657B]">
                   We have received your diagnostic details and opened a WhatsApp chat with our engineers. If the chat did not open, tap the button below.
                 </p>
                 <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                  <Button asChild className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
+                  <Button asChild className="bg-[#4A1F6B] text-[#FFFFFF] hover:bg-[#5D2A86]">
                     <a
                       href={waLink('Hello HostSuite, I just submitted a diagnostic request and would like to continue.')}
                       target="_blank"
@@ -489,7 +495,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
 
           {/* Footer controls */}
           {!done && (
-            <div className="flex items-center justify-between border-t border-border bg-muted/30 px-6 py-4 sm:px-8">
+            <div className="flex items-center justify-between border-t border-[#E5DCEC] bg-[#F2ECF7]/30 px-6 py-4 sm:px-8">
               <Button
                 variant="ghost"
                 onClick={back}
@@ -501,7 +507,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
               {step < 3 ? (
                 <Button
                   onClick={next}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="bg-[#4A1F6B] text-[#FFFFFF] hover:bg-[#4A1F6B]/90"
                 >
                   Continue <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -509,7 +515,7 @@ ${painTitles.map((t) => `• ${t}`).join('\n')}
                 <Button
                   onClick={submit}
                   disabled={submitting}
-                  className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                  className="bg-[#4A1F6B] text-[#FFFFFF] hover:bg-[#5D2A86]"
                 >
                   {submitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

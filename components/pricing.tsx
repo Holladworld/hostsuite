@@ -1,148 +1,74 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Check, Star, MessageCircle, ArrowRight } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { PRICING, waLink } from '@/lib/constants';
 import { formatNaira } from '@/lib/format';
+import { useSiteSettings } from '@/hooks/use-content';
 
 export function Pricing() {
   const [annual, setAnnual] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const { settings } = useSiteSettings();
+
+  const plans = PRICING.map((plan) => {
+    if (plan.id === 'starter_ops') return { ...plan, monthly: settings.pricing?.starter_ops_monthly ?? plan.monthly, annual: settings.pricing?.starter_ops_annual ?? plan.annual };
+    if (plan.id === 'managed_growth') return { ...plan, monthly: settings.pricing?.managed_growth_monthly ?? plan.monthly, annual: settings.pricing?.managed_growth_annual ?? plan.annual };
+    return plan;
+  });
 
   return (
-    <section id="pricing" className="relative scroll-mt-20 py-20 lg:py-28">
-      <div className="pointer-events-none absolute inset-0 bg-dots opacity-20" aria-hidden />
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary">
-            Managed Service Pricing
-          </span>
-          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Plans that scale with your operations
-          </h2>
-          <p className="mt-3 text-muted-foreground">
-            Transparent monthly or annual pricing. No setup fees. Cancel anytime — but you will not want to.
-          </p>
-
-          {/* Toggle */}
-          <div className="mt-7 inline-flex items-center gap-3 rounded-full border border-border bg-card p-1.5">
-            <button
-              onClick={() => setAnnual(false)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-                !annual ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setAnnual(true)}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
-                annual ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Annual
-              <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                annual ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-success/15 text-success'
-              }`}>
-                SAVE 20%
-              </span>
-            </button>
+    <section id="pricing" className="scroll-mt-20 bg-[#FFFFFF] py-24 sm:py-28 lg:py-32">
+      <div className="mx-auto max-w-[1500px] px-5 sm:px-9 lg:px-16 xl:px-24">
+        <div className="grid gap-8 border-b border-[#E5DCEC] pb-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
+          <div>
+            <p className="font-mono-data text-[10px] uppercase tracking-[0.2em] text-[#93634D]">Website care &amp; support</p>
+            <h2 className="mt-6 max-w-[650px] font-display text-[clamp(3rem,5.4vw,5.8rem)] leading-[0.9] tracking-[-0.06em] text-[#281936]">The right level of care. <em className="font-normal text-[#6D3AA0]">Nothing extra.</em></h2>
+          </div>
+          <div className="flex flex-col items-start gap-5 lg:items-end">
+            <p className="max-w-[490px] text-sm leading-7 text-[#71657B] lg:text-right">Choose the support that suits your business today. Need a one-off fix, a steady pair of hands or full website care? Start with what you need—not a bigger package.</p>
+            <div className="inline-flex border-b border-[#E5DCEC]">
+              <button type="button" onClick={() => setAnnual(false)} aria-pressed={!annual} className={`border-b-2 px-4 py-3 text-xs font-semibold transition ${!annual ? 'border-[#5D2A86] text-[#5D2A86]' : 'border-transparent text-[#8A7E93] hover:text-[#281936]'}`}>Monthly</button>
+              <button type="button" onClick={() => setAnnual(true)} aria-pressed={annual} className={`border-b-2 px-4 py-3 text-xs font-semibold transition ${annual ? 'border-[#5D2A86] text-[#5D2A86]' : 'border-transparent text-[#8A7E93] hover:text-[#281936]'}`}>Annual</button>
+            </div>
           </div>
         </div>
 
-        <div className="mt-12 grid items-stretch gap-6 lg:grid-cols-3">
-          {PRICING.map((plan, i) => {
+        <div className="mt-3 border-t border-[#E5DCEC]">
+          {plans.map((plan, index) => {
             const price = annual ? plan.annual : plan.monthly;
             const isCustom = price === null;
+            const annualSaving = plan.monthly !== null && plan.annual !== null && plan.monthly > 0 ? Math.round((1 - plan.annual / (plan.monthly * 12)) * 100) : 0;
             return (
-              <motion.div
-                key={plan.id}
-                initial={{ opacity: 0, y: 28 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.5, delay: i * 0.08 }}
-                className={`relative flex flex-col rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-lg ${
-                  plan.popular
-                    ? 'border-primary/40 shadow-primary/10 lg:-translate-y-2 lg:scale-[1.02]'
-                    : 'border-border hover:border-primary/20'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-md">
-                      <Star className="mr-1 h-3 w-3 fill-current" /> MOST POPULAR
-                    </Badge>
-                  </div>
-                )}
-
+              <motion.article key={plan.id} initial={false} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, delay: reduceMotion ? 0 : index * 0.05 }} className="grid gap-6 border-b border-[#E5DCEC] py-8 lg:grid-cols-[0.85fr_0.7fr_1.5fr_auto] lg:items-start lg:gap-8">
                 <div>
-                  <h3 className="font-display text-xl font-bold text-foreground">{plan.name}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{plan.tagline}</p>
+                  {plan.popular && <p className="mb-2 font-mono-data text-[9px] font-semibold uppercase tracking-[0.16em] text-[#6D3AA0]">Recommended</p>}
+                  <h3 className="font-display text-2xl leading-tight tracking-[-0.04em] text-[#281936]">{plan.name}</h3>
+                  <p className="mt-2 max-w-xs text-sm leading-6 text-[#71657B]">{plan.tagline}</p>
                 </div>
-
-                <div className="mt-5 flex items-end gap-1">
-                  {isCustom ? (
-                    <span className="font-display text-3xl font-bold text-foreground">Custom Quote</span>
-                  ) : (
-                    <>
-                      <span className="font-mono-data text-4xl font-bold text-foreground">
-                        {formatNaira(price)}
-                      </span>
-                      <span className="mb-1 text-sm text-muted-foreground">
-                        /{annual ? 'yr' : 'mo'}
-                      </span>
-                    </>
-                  )}
+                <div>
+                  {isCustom ? <p className="font-display text-2xl text-[#281936]">Custom quote</p> : <>
+                    <p className="font-mono-data text-2xl font-medium tracking-tight text-[#281936] sm:text-3xl">{formatNaira(price)}</p>
+                    <p className="mt-1 text-xs text-[#8A7E93]">per {annual ? 'year' : 'month'}</p>
+                    {annual && annualSaving > 0 && <p className="mt-2 text-xs font-semibold text-[#5D2A86]">Save {annualSaving}% against monthly billing</p>}
+                  </>}
                 </div>
-                {annual && !isCustom && plan.monthly !== null && plan.annual !== null && (
-                  <p className="mt-1 text-xs text-success">
-                    You save {formatNaira(plan.monthly * 12 - plan.annual)} vs monthly
-                  </p>
-                )}
-
-                <ul className="mt-6 flex-1 space-y-3">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm text-foreground/85">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary/10 text-secondary">
-                        <Check className="h-3 w-3" />
-                      </span>
-                      {f}
-                    </li>
-                  ))}
+                <ul className="grid gap-x-5 gap-y-2 sm:grid-cols-2">
+                  {plan.features.map((feature) => <li key={feature} className="flex items-start gap-2 text-sm leading-6 text-[#71657B]"><span className="mt-[0.55rem] h-1 w-1 shrink-0 rounded-full bg-[#6D3AA0]" />{feature}</li>)}
                 </ul>
-
-                <Button
-                  asChild
-                  className={`mt-7 w-full ${
-                    plan.popular
-                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                      : 'border border-primary/30 bg-background text-primary hover:bg-primary/5'
-                  }`}
-                  variant={plan.popular ? 'default' : 'outline'}
-                >
-                  <a
-                    href={waLink(
-                      `Hello HostSuite, I am interested in the ${plan.name} plan${isCustom ? ' and would like a custom quote' : ''}.`
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="gap-2"
-                  >
-                    {isCustom ? 'Request Custom Quote' : 'Get Started'}
-                    <ArrowRight className="h-4 w-4" />
-                  </a>
-                </Button>
-
-                <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  Free migration included
-                </p>
-              </motion.div>
+                <div className="lg:pt-1">
+                  <Button asChild className="h-11 w-full rounded-none bg-[#281936] px-5 text-white hover:bg-[#5D2A86] lg:w-auto">
+                    <a href={waLink(`Hello HostSuite, I am interested in the ${plan.name} plan${isCustom ? ' and would like a custom quote' : ''}. Please help me understand whether it covers my website management needs.`)} target="_blank" rel="noopener noreferrer" className="gap-2">{isCustom ? 'Request a quote' : 'Discuss this plan'} <ArrowUpRight className="h-4 w-4" /></a>
+                  </Button>
+                </div>
+              </motion.article>
             );
           })}
         </div>
+        <p className="mt-6 text-xs leading-6 text-[#8A7E93]">Need a one-off fix or something outside these plans? <Link href="/#diagnostic" className="font-semibold text-[#5D2A86] underline underline-offset-4">Tell us what is happening</Link> and we will help you find the right next step.</p>
       </div>
     </section>
   );

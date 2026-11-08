@@ -1,62 +1,29 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, Poppins, JetBrains_Mono } from 'next/font/google';
+import { Outfit, Manrope } from 'next/font/google';
 import { Toaster } from 'sonner';
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-poppins',
-  display: 'swap',
-});
-const jetbrains = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-jetbrains',
-  display: 'swap',
-});
+const displayText = Outfit({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'], variable: '--font-outfit', display: 'swap' });
+const interfaceText = Manrope({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'], variable: '--font-manrope', display: 'swap' });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://hostsuite.app'),
-  title: 'HostSuite — Managed Web Infrastructure & Developer Operations',
-  description:
-    'HostSuite is your fractional CTO and web operations team. We manage hosting, fix email deliverability, recover lost access, and build custom backend systems for businesses across Nigeria and globally.',
-  keywords: [
-    'managed hosting Nigeria',
-    'web infrastructure',
-    'cPanel recovery',
-    'email deliverability',
-    'fractional CTO',
-    'Vobels Limited HostSuite',
-  ],
+  title: 'HostSuite — Website management, without the technical weight.',
+  description: 'Website recovery, business email fixes and ongoing website care for businesses that already have a website. Keep what works. Get dependable support.',
+  keywords: ['website management Nigeria', 'website recovery', 'business email support', 'website maintenance', 'HostSuite'],
   openGraph: {
-    title: 'HostSuite — Managed Web Infrastructure & Developer Operations',
-    description:
-      'We do not just sell hosting. We manage your entire web infrastructure and fix your technical bottlenecks.',
+    title: 'HostSuite — Website management, without the technical weight.',
+    description: 'Keep the website you already have. Get practical help with access, email, maintenance and ongoing care.',
     type: 'website',
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable} ${jetbrains.variable}`}>
+    <html lang="en" className={`${displayText.variable} ${interfaceText.variable}`}>
       <body className="font-body antialiased">
         {children}
-        <Toaster
-          position="bottom-right"
-          richColors
-          closeButton
-          toastOptions={{ classNames: { toast: 'font-body' } }}
-        />
+        <Toaster position="bottom-right" richColors closeButton toastOptions={{ classNames: { toast: 'font-body' } }} />
       </body>
     </html>
   );
