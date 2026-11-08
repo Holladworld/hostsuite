@@ -158,6 +158,20 @@ export async function POST(request: NextRequest) {
       metadata,
     });
     if (!completed) {
+      try {
+        await recordUsage({
+          userId,
+          projectId,
+          provider: providerName,
+          model: modelName,
+          inputTokens: result.usage?.inputTokens,
+          outputTokens: result.usage?.outputTokens,
+          totalTokens: result.usage?.totalTokens,
+          status: 'failed',
+        });
+      } catch (usageError) {
+        console.error('Could not record expired AI generation usage:', usageError);
+      }
       return NextResponse.json(
         { error: 'This generation attempt expired before it could be saved. Please retry the project.' },
         { status: 409 }
