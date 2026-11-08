@@ -76,6 +76,12 @@ export type TicketRow = TicketInsert & {
   user_id: string;
   status: TicketStatus;
   admin_notes?: string | null;
+  agreed_scope?: string | null;
+  quoted_amount?: number | null;
+  quote_currency?: string;
+  quote_status?: 'not_quoted' | 'awaiting_payment' | 'paid' | 'waived' | 'declined';
+  current_quote_revision_id?: string | null;
+  billing_order_id?: string | null;
   ticket_type?: string;
   created_at: string;
   resolved_at: string | null;
