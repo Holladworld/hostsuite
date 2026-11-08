@@ -27,11 +27,22 @@ export async function POST(request: Request) {
     const verify = await fetch(`https://api.flutterwave.com/v3/transactions/${encodeURIComponent(String(payload.data.id))}/verify`, { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' });
     const result = await verify.json();
     const transaction = result?.data;
-    const { data: order } = await admin.from('billing_orders').select('id,total,currency').eq('provider', 'flutterwave').eq('provider_reference', reference).maybeSingle();
+    const { data: order } = await admin.from('billing_orders').select('id,total,currency,metadata,status').eq('provider', 'flutterwave').eq('provider_reference', reference).maybeSingle();
     if (!order) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
 
     const valid = verify.ok && result?.status === 'success' && transaction?.status === 'successful' && transaction?.tx_ref === reference && Number(transaction?.amount) === Number(order.total) && transaction?.currency === order.currency;
     if (!valid) return NextResponse.json({ error: 'Payment verification failed.' }, { status: 400 });
+
+    if (order.metadata?.source === 'ticket_quote') {
+      const { data: settlement, error: settlementError } = await admin.rpc('settle_ticket_quote_payment', { p_order_id: order.id });
+      if (settlementError) throw settlementError;
+      if (settlement === 'stale_payment' || settlement === 'order_not_payable') {
+        await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'flutterwave').eq('event_id', eventId);
+        return NextResponse.json({ received: true, reconciliation: 'required' });
+      }
+      await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'flutterwave').eq('event_id', eventId);
+      return NextResponse.json({ received: true, ticketQuote: settlement });
+    }
 
     const now = new Date().toISOString();
     const { error: orderError } = await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
