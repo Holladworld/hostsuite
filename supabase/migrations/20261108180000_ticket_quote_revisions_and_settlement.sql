@@ -178,18 +178,32 @@ BEGIN
   IF ticket_row.current_quote_revision_id IS DISTINCT FROM revision_id
     OR revision_row.status <> 'awaiting_payment'
     OR ticket_row.quote_status <> 'awaiting_payment' THEN
+    -- The gateway has already confirmed receipt. Record the money as received
+    -- while keeping the superseded quote/ticket unsettled for human reconciliation.
     UPDATE public.billing_orders
-    SET metadata = metadata || jsonb_build_object(
-      'needs_manual_reconciliation', true,
-      'reconciliation_reason', 'Payment arrived for a superseded quote revision',
-      'reconciliation_marked_at', now()
-    )
+    SET status = 'paid',
+        paid_at = COALESCE(paid_at, now()),
+        metadata = metadata || jsonb_build_object(
+          'needs_manual_reconciliation', true,
+          'reconciliation_reason', 'Payment arrived for a superseded quote revision; verify and refund or reallocate',
+          'reconciliation_marked_at', now()
+        )
     WHERE id = p_order_id;
+    UPDATE public.billing_invoices
+    SET status = 'paid', paid_at = COALESCE(paid_at, now())
+    WHERE order_id = p_order_id;
     RETURN 'stale_payment';
   END IF;
 
   IF order_row.status <> 'pending' THEN
-    RETURN CASE WHEN order_row.status = 'paid' THEN 'already_paid' ELSE 'order_not_payable' END;
+    UPDATE public.billing_orders
+    SET metadata = metadata || jsonb_build_object(
+      'needs_manual_reconciliation', true,
+      'reconciliation_reason', 'Gateway confirmed payment but the billing order was not pending',
+      'reconciliation_marked_at', now()
+    )
+    WHERE id = p_order_id;
+    RETURN 'order_not_payable';
   END IF;
 
   UPDATE public.billing_orders SET status = 'paid', paid_at = now()
