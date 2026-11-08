@@ -302,3 +302,54 @@ $$;
 REVOKE ALL ON FUNCTION public.create_ticket_quote_order(uuid,uuid,uuid,text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_ticket_quote_order(uuid,uuid,uuid,text) TO service_role;
 
+-- Browser-created tickets and public leads must not be able to forge staff-owned
+-- quote/payment state, lead conversion state, resolution state or internal notes.
+CREATE OR REPLACE FUNCTION public.protect_customer_ticket_staff_fields()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+  IF auth.uid() IS NOT NULL AND NOT public.is_admin() THEN
+    NEW.lead_id := NULL;
+    NEW.agreed_scope := NULL;
+    NEW.quoted_amount := NULL;
+    NEW.quote_currency := 'NGN';
+    NEW.quote_status := 'not_quoted';
+    NEW.billing_order_id := NULL;
+    NEW.admin_notes := NULL;
+    NEW.current_quote_revision_id := NULL;
+    NEW.status := 'open';
+    NEW.resolved_at := NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS protect_customer_ticket_staff_fields ON public.support_tickets;
+CREATE TRIGGER protect_customer_ticket_staff_fields
+  BEFORE INSERT ON public.support_tickets
+  FOR EACH ROW EXECUTE FUNCTION public.protect_customer_ticket_staff_fields();
+
+CREATE OR REPLACE FUNCTION public.protect_public_lead_conversion_fields()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+  IF auth.uid() IS NULL OR NOT public.is_admin() THEN
+    NEW.status := 'new';
+    NEW.linked_user_id := NULL;
+    NEW.converted_at := NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS protect_public_lead_conversion_fields ON public.leads;
+CREATE TRIGGER protect_public_lead_conversion_fields
+  BEFORE INSERT ON public.leads
+  FOR EACH ROW EXECUTE FUNCTION public.protect_public_lead_conversion_fields();
+
