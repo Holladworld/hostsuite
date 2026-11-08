@@ -57,46 +57,24 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     return NextResponse.json({ error: 'No HostSuite account matches this email yet. Ask the customer to create an account with this email, then convert the diagnostic.' }, { status: 409 });
   }
 
-  const painPoints = Array.isArray(lead.pain_points) ? lead.pain_points.filter((value: unknown): value is string => typeof value === 'string') : [];
-  const subject = painPoints.length ? `Diagnostic: ${painPoints.slice(0, 2).join(', ')}` : 'Diagnostic support request';
-  const details = [
-    lead.description ? `Customer description:\n${lead.description}` : '',
-    lead.estimated_cost_min != null && lead.estimated_cost_max != null
-      ? `Initial estimate: ₦${Number(lead.estimated_cost_min).toLocaleString()} – ₦${Number(lead.estimated_cost_max).toLocaleString()}`
-      : '',
-    `Agreed scope:\n${agreedScope}`,
-    lead.whatsapp ? `WhatsApp: ${lead.whatsapp}` : '',
-  ].filter(Boolean).join('\n\n');
+  const { data: ticketId, error: conversionError } = await admin.rpc('convert_diagnostic_lead_to_ticket', {
+    p_lead_id: leadId,
+    p_user_id: customer.id,
+    p_agreed_scope: agreedScope,
+    p_quoted_amount: quotedAmount,
+    p_quote_currency: quoteCurrency,
+  });
 
-  const { data: ticket, error: ticketError } = await admin.from('support_tickets').insert({
-    user_id: customer.id,
-    lead_id: leadId,
-    domain: lead.domain_url,
-    request_type: 'other',
-    subject,
-    details,
-    priority: 'normal',
-    status: 'open',
-    agreed_scope: agreedScope,
-    quoted_amount: quotedAmount,
-    quote_currency: quoteCurrency,
-    quote_status: quotedAmount === null ? 'not_quoted' : quotedAmount === 0 ? 'waived' : 'awaiting_payment',
-  }).select('id').single();
-
-  if (ticketError || !ticket) {
-    return NextResponse.json({ error: 'Could not create the customer ticket.' }, { status: 500 });
+  if (conversionError || !ticketId) {
+    const message = conversionError?.message ?? '';
+    if (message.includes('LEAD_ALREADY_CONVERTED')) {
+      return NextResponse.json({ error: 'This diagnostic has already been converted.' }, { status: 409 });
+    }
+    if (message.includes('LEAD_NOT_FOUND')) {
+      return NextResponse.json({ error: 'Diagnostic not found.' }, { status: 404 });
+    }
+    return NextResponse.json({ error: 'Could not convert this diagnostic into a customer ticket.' }, { status: 500 });
   }
 
-  const { error: updateError } = await admin.from('leads').update({
-    linked_user_id: customer.id,
-    converted_at: new Date().toISOString(),
-    status: 'won',
-  }).eq('id', leadId);
-
-  if (updateError) {
-    await admin.from('support_tickets').delete().eq('id', ticket.id);
-    return NextResponse.json({ error: 'Ticket creation could not be completed. No ticket was retained; please retry.' }, { status: 500 });
-  }
-
-  return NextResponse.json({ success: true, ticketId: ticket.id, customerId: customer.id });
+  return NextResponse.json({ success: true, ticketId, customerId: customer.id });
 }
