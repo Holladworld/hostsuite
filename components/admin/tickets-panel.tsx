@@ -14,6 +14,7 @@ import {
   Server,
 } from 'lucide-react';
 import { useAdminTickets, useAdminClients } from '@/hooks/use-admin';
+import { supabase } from '@/lib/supabase-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,9 +112,11 @@ export function AdminTicketsPanel() {
     }
     setSavingQuoteId(ticket.id);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Your admin session has expired. Sign in again.');
       const response = await fetch(`/api/admin/tickets/${ticket.id}/quote`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ scope: draft.scope, amount: draft.amount, currency: 'NGN', reason: draft.reason }),
       });
       const result = await response.json() as { error?: string };
@@ -130,7 +133,12 @@ export function AdminTicketsPanel() {
 
   async function handleLoadQuoteHistory(ticketId: string) {
     try {
-      const response = await fetch(`/api/admin/tickets/${ticketId}/quote`, { cache: 'no-store' });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Your admin session has expired. Sign in again.');
+      const response = await fetch(`/api/admin/tickets/${ticketId}/quote`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       const result = await response.json() as {
         error?: string;
         revisions?: Array<{ id: string; revision: number; agreed_scope: string; amount: number; currency: string; status: string; change_reason: string | null; created_at: string; created_by_email?: string | null }>;
