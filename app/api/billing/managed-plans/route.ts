@@ -151,6 +151,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ authorizationUrl: payment.authorizationUrl, reference, orderId: order.id, invoiceNumber });
     } catch (providerError) {
       await admin.from('billing_orders').update({ status: 'failed' }).eq('id', order.id);
+      await admin.from('billing_invoices').update({ status: 'void' }).eq('order_id', order.id);
       if (providerError instanceof Error && providerError.message === 'PAYMENT_PROVIDER_NOT_CONFIGURED') {
         return NextResponse.json({ error: 'Online payment is temporarily unavailable. Please try again later.' }, { status: 503 });
       }
