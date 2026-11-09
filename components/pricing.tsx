@@ -61,7 +61,11 @@ export function Pricing() {
                 </ul>
                 <div className="lg:pt-1">
                   <Button asChild className="h-11 w-full rounded-none bg-[#281936] px-5 text-white hover:bg-[#5D2A86] lg:w-auto">
-                    <a href={waLink(`Hello HostSuite, I am interested in the ${plan.name} plan${isCustom ? ' and would like a custom quote' : ''}. Please help me understand whether it covers my website management needs.`)} target="_blank" rel="noopener noreferrer" className="gap-2">{isCustom ? 'Request a quote' : 'Discuss this plan'} <ArrowUpRight className="h-4 w-4" /></a>
+                    {isCustom ? (
+                      <a href={waLink(`Hello HostSuite, I am interested in the ${plan.name} plan and would like a custom quote. Please help me discuss the scope and pricing.`)} target="_blank" rel="noopener noreferrer" className="gap-2">Request a quote <ArrowUpRight className="h-4 w-4" /></a>
+                    ) : (
+                      <Link href={`/portal/managed-plan?plan=${plan.id}&interval=${annual ? 'yearly' : 'monthly'}`} className="gap-2">Choose this plan <ArrowUpRight className="h-4 w-4" /></Link>
+                    )}
                   </Button>
                 </div>
               </motion.article>

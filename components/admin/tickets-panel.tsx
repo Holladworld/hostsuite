@@ -14,6 +14,7 @@ import {
   Server,
 } from 'lucide-react';
 import { useAdminTickets, useAdminClients } from '@/hooks/use-admin';
+import { supabase } from '@/lib/supabase-client';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,13 +45,17 @@ const priorityConfig: Record<string, string> = {
 };
 
 export function AdminTicketsPanel() {
-  const { tickets, loading, updateTicket } = useAdminTickets();
+  const { tickets, loading, load, updateTicket } = useAdminTickets();
   const { clients, addClientDomain, createTicketOnBehalf } = useAdminClients();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState<Record<string, string | undefined>>({});
   const [domainModalOpen, setDomainModalOpen] = useState(false);
   const [ticketModalOpen, setTicketModalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [quoteDrafts, setQuoteDrafts] = useState<Record<string, { scope: string; amount: string; reason: string }>>({});
+  const [savingQuoteId, setSavingQuoteId] = useState<string | null>(null);
+  const [quoteHistory, setQuoteHistory] = useState<Record<string, Array<{ id: string; revision: number; agreed_scope: string; amount: number; currency: string; status: string; change_reason: string | null; created_at: string; created_by_email?: string | null }>>>({});
+  const [quoteReconciliation, setQuoteReconciliation] = useState<Record<string, Array<{ id: string; total: number; currency: string; status: string; provider_reference: string | null; metadata: { reconciliation_reason?: string } | null }>>>({});
 
   // Domain form
   const [domainForm, setDomainForm] = useState({
@@ -92,6 +97,58 @@ export function AdminTicketsPanel() {
       setNotesDraft((prev) => ({ ...prev, [ticketId]: undefined }));
     } else {
       toast.error('Failed to save notes.');
+    }
+  }
+
+  async function handleSaveQuote(ticket: TicketRow) {
+    const draft = quoteDrafts[ticket.id] ?? {
+      scope: ticket.agreed_scope ?? '',
+      amount: ticket.quoted_amount == null ? '' : String(ticket.quoted_amount),
+      reason: '',
+    };
+    if (!draft.scope.trim() || !Number.isFinite(Number(draft.amount)) || Number(draft.amount) <= 0) {
+      toast.error('Enter the agreed work scope and a valid amount greater than zero.');
+      return;
+    }
+    setSavingQuoteId(ticket.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Your admin session has expired. Sign in again.');
+      const response = await fetch(`/api/admin/tickets/${ticket.id}/quote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ scope: draft.scope, amount: draft.amount, currency: 'NGN', reason: draft.reason }),
+      });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error ?? 'Could not save the quote.');
+      toast.success('Approved quote saved. The customer will now see this amount.');
+      setQuoteDrafts((prev) => ({ ...prev, [ticket.id]: { ...draft, reason: '' } }));
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not save the quote.');
+    } finally {
+      setSavingQuoteId(null);
+    }
+  }
+
+  async function handleLoadQuoteHistory(ticketId: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Your admin session has expired. Sign in again.');
+      const response = await fetch(`/api/admin/tickets/${ticketId}/quote`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const result = await response.json() as {
+        error?: string;
+        revisions?: Array<{ id: string; revision: number; agreed_scope: string; amount: number; currency: string; status: string; change_reason: string | null; created_at: string; created_by_email?: string | null }>;
+        reconciliationOrders?: Array<{ id: string; total: number; currency: string; status: string; provider_reference: string | null; metadata: { reconciliation_reason?: string } | null }>;
+      };
+      if (!response.ok) throw new Error(result.error ?? 'Could not load quote history.');
+      setQuoteHistory((prev) => ({ ...prev, [ticketId]: result.revisions ?? [] }));
+      setQuoteReconciliation((prev) => ({ ...prev, [ticketId]: result.reconciliationOrders ?? [] }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not load quote history.');
     }
   }
 
@@ -217,6 +274,83 @@ export function AdminTicketsPanel() {
                       <p className="mt-2 text-sm text-foreground/80">{ticket.details}</p>
                     </div>
                   )}
+
+                  {/* Quote management */}
+                  <div className="mt-5 rounded-xl border border-border bg-background p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Customer quote</p>
+                        <p className="mt-1 text-sm text-muted-foreground">The customer can pay only the latest amount approved here.</p>
+                      </div>
+                      {ticket.quote_status && <Badge variant="outline">{ticket.quote_status.replaceAll('_', ' ')}</Badge>}
+                    </div>
+                    {ticket.quote_status === 'paid' ? (
+                      <div className="mt-3 rounded-lg bg-muted p-3 text-sm">
+                        <p className="font-semibold">{ticket.quote_currency ?? 'NGN'} {Number(ticket.quoted_amount ?? 0).toLocaleString()}</p>
+                        <p className="mt-1 text-muted-foreground">Paid quote locked. Record any additional work as a separate request.</p>
+                      </div>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        <div>
+                          <Label htmlFor={`quote-scope-${ticket.id}`}>Agreed work scope</Label>
+                          <Textarea
+                            id={`quote-scope-${ticket.id}`}
+                            value={quoteDrafts[ticket.id]?.scope ?? ticket.agreed_scope ?? ''}
+                            onChange={(event) => setQuoteDrafts((prev) => ({ ...prev, [ticket.id]: { scope: event.target.value, amount: prev[ticket.id]?.amount ?? (ticket.quoted_amount == null ? '' : String(ticket.quoted_amount)), reason: prev[ticket.id]?.reason ?? '' } }))}
+                            className="mt-1 min-h-24"
+                            placeholder="List exactly what HostSuite will deliver..."
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`quote-amount-${ticket.id}`}>Approved amount (NGN)</Label>
+                          <Input
+                            id={`quote-amount-${ticket.id}`}
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={quoteDrafts[ticket.id]?.amount ?? (ticket.quoted_amount == null ? '' : String(ticket.quoted_amount))}
+                            onChange={(event) => setQuoteDrafts((prev) => ({ ...prev, [ticket.id]: { scope: prev[ticket.id]?.scope ?? ticket.agreed_scope ?? '', amount: event.target.value, reason: prev[ticket.id]?.reason ?? '' } }))}
+                            className="mt-1"
+                            placeholder="Enter the final agreed price"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`quote-reason-${ticket.id}`}>Reason for change (optional)</Label>
+                          <Input
+                            id={`quote-reason-${ticket.id}`}
+                            value={quoteDrafts[ticket.id]?.reason ?? ''}
+                            onChange={(event) => setQuoteDrafts((prev) => ({ ...prev, [ticket.id]: { scope: prev[ticket.id]?.scope ?? ticket.agreed_scope ?? '', amount: prev[ticket.id]?.amount ?? (ticket.quoted_amount == null ? '' : String(ticket.quoted_amount)), reason: event.target.value } }))}
+                            className="mt-1"
+                            placeholder="e.g. Customer requested a revised scope"
+                          />
+                        </div>
+                        <Button size="sm" onClick={() => handleSaveQuote(ticket)} disabled={savingQuoteId === ticket.id}>
+                          {savingQuoteId === ticket.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          {ticket.current_quote_revision_id ? 'Save revised quote' : 'Approve quote'}
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => handleLoadQuoteHistory(ticket.id)}>View revision history</Button>
+                        {quoteHistory[ticket.id]?.length ? (
+                          <div className="space-y-2 border-t pt-3">
+                            {quoteHistory[ticket.id].map((revision) => (
+                              <div key={revision.id} className="flex flex-wrap items-start justify-between gap-2 text-xs">
+                                <div><p className="font-medium">Revision {revision.revision} · {revision.currency} {Number(revision.amount).toLocaleString()}</p><p className="mt-0.5 text-muted-foreground">{revision.agreed_scope}</p><p className="mt-0.5 text-muted-foreground">{revision.change_reason || 'No reason recorded'} · {revision.created_by_email || 'Admin'} · {new Date(revision.created_at).toLocaleString()}</p></div>
+                                <Badge variant="outline">{revision.status.replaceAll('_', ' ')}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                        {quoteReconciliation[ticket.id]?.length ? (
+                          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                            <p className="text-sm font-semibold text-destructive">Payment requires manual reconciliation</p>
+                            <p className="mt-1 text-xs text-muted-foreground">A payment was reported for a quote revision that is no longer current. It was not applied to the ticket. Verify the gateway transaction and arrange a refund or correction before proceeding.</p>
+                            {quoteReconciliation[ticket.id].map((order) => (
+                              <p key={order.id} className="mt-2 text-xs">{order.provider_reference || order.id} · {order.currency} {Number(order.total).toLocaleString()} · {order.status}</p>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Admin notes */}
                   <div className="mt-4">

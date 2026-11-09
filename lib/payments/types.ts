@@ -8,6 +8,8 @@ export type PaymentInitializeInput = {
   callbackUrl?: string;
   orderId: string;
   userId: string;
+  /** Provider plan code/ID. When present, the first charge enrolls the customer in native recurring billing. */
+  recurringPlanId?: string;
 };
 
 export type PaymentInitializeResult = {

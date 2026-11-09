@@ -5,6 +5,7 @@ import type { DomainContact, ProviderResult } from '@/lib/providers/types';
 type ServiceInstance = {
   id: string;
   user_id: string;
+  order_id: string;
   order_item_id: string;
   product_id: string | null;
   service_type: string;
@@ -68,10 +69,16 @@ async function provisionOne(instance: ServiceInstance): Promise<ProvisionOutcome
     const contact = contactConfig(config);
     const ns1 = process.env.WHOGOHOST_DEFAULT_NS1?.trim();
     const ns2 = process.env.WHOGOHOST_DEFAULT_NS2?.trim();
-    if (!domain || !contact || !ns1 || !ns2) {
+    if (!domain || !contact || (provider.name !== 'mock' && (!ns1 || !ns2))) {
       return { ok: false, status: 'provisioning_failed', code: 'INVALID_CONFIGURATION', message: 'Domain registration requires the requested domain, complete registrant details, and two configured provider nameservers.' };
     }
-    const result = await provider.registerDomain({ domain, regperiod: 1, nameservers: [ns1, ns2], contacts: { registrant: contact, admin: contact, tech: contact, billing: contact } });
+    // Availability can change between checkout and fulfilment. Recheck at the registrar boundary.
+    const availability = await provider.searchDomain(domain);
+    if (!availability.ok) return failure(availability);
+    if (!availability.data.available) {
+      return { ok: false, status: 'provisioning_failed', code: 'DOMAIN_NO_LONGER_AVAILABLE', message: 'The domain is no longer available. HostSuite must contact the customer about alternatives or a refund.' };
+    }
+    const result = await provider.registerDomain({ domain, regperiod: 1, nameservers: [ns1 ?? 'ns1.example.invalid', ns2 ?? 'ns2.example.invalid'], contacts: { registrant: contact, admin: contact, tech: contact, billing: contact } });
     if (!result.ok) return failure(result);
     return { ok: true, status: 'active', providerResourceId: result.data.externalId };
   }
@@ -112,13 +119,50 @@ export async function provisionServiceInstance(serviceInstanceId: string): Promi
   const admin = createAdminSupabaseClient();
   const { data: instance, error: fetchError } = await admin
     .from('service_instances')
-    .select('id,user_id,order_item_id,product_id,service_type,service_name,status,provider,configuration,provider_resource_id')
+    .select('id,user_id,order_id,order_item_id,product_id,service_type,service_name,status,provider,configuration,provider_resource_id')
     .eq('id', serviceInstanceId)
     .maybeSingle();
   if (fetchError) throw fetchError;
   if (!instance) return { ok: false, status: 'provisioning_failed', code: 'NOT_FOUND', message: 'Service instance not found.' };
-  if (instance.status === 'active') return { ok: true, status: 'active', providerResourceId: instance.provider_resource_id ?? undefined };
-  if (instance.status !== 'paid' && instance.status !== 'provisioning_failed') return { ok: false, status: 'provisioning_failed', code: 'INVALID_STATE', message: `Service is ${instance.status} and cannot be provisioned.` };
+  if (instance.status !== 'active' && instance.status !== 'paid' && instance.status !== 'provisioning_failed') return { ok: false, status: 'provisioning_failed', code: 'INVALID_STATE', message: `Service is ${instance.status} and cannot be provisioned.` };
+
+  // Defence in depth: never trust the service-instance status by itself.
+  // Reconfirm its immutable order and order-item relationship before contacting a supplier.
+  const { data: order, error: orderError } = await admin.from('billing_orders')
+    .select('id,user_id,status,total,currency,provider,provider_reference')
+    .eq('id', instance.order_id).maybeSingle();
+  if (orderError) throw orderError;
+  if (!order || order.status !== 'paid' || order.user_id !== instance.user_id) {
+    return { ok: false, status: 'provisioning_failed', code: 'UNPAID_OR_MISMATCHED_ORDER', message: 'The service is not linked to a verified paid order.' };
+  }
+
+  const { data: orderItem, error: itemError } = await admin.from('billing_order_items')
+    .select('id,order_id,product_id,product_name,quantity,unit_price,total')
+    .eq('id', instance.order_item_id).maybeSingle();
+  if (itemError) throw itemError;
+  if (!orderItem || orderItem.order_id !== order.id || orderItem.product_id !== instance.product_id
+    || Number(orderItem.quantity) !== 1
+    || Number(orderItem.total) !== Number(orderItem.unit_price)) {
+    return { ok: false, status: 'provisioning_failed', code: 'ORDER_ITEM_MISMATCH', message: 'The service does not match a valid single-quantity order item.' };
+  }
+
+  const { data: orderItems, error: orderItemsError } = await admin.from('billing_order_items')
+    .select('total').eq('order_id', order.id);
+  if (orderItemsError) throw orderItemsError;
+  const itemTotal = (orderItems ?? []).reduce((sum, item) => sum + Number(item.total), 0);
+  if (Math.round(itemTotal * 100) !== Math.round(Number(order.total) * 100)) {
+    return { ok: false, status: 'provisioning_failed', code: 'ORDER_TOTAL_MISMATCH', message: 'The paid order total does not match its item snapshot.' };
+  }
+
+  const { data: product, error: productError } = await admin.from('billing_products')
+    .select('id,product_type').eq('id', instance.product_id).maybeSingle();
+  if (productError) throw productError;
+  if (!product || product.product_type !== instance.service_type) {
+    return { ok: false, status: 'provisioning_failed', code: 'PRODUCT_TYPE_MISMATCH', message: 'The service type does not match its catalogue product.' };
+  }
+  if (instance.status === 'active') {
+    return { ok: true, status: 'active', providerResourceId: instance.provider_resource_id ?? undefined };
+  }
 
   const { data: attemptNo, error: beginError } = await admin.rpc('begin_service_provisioning', { p_service_instance_id: serviceInstanceId });
   if (beginError) throw beginError;
