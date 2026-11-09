@@ -104,7 +104,7 @@ export async function POST(request: Request) {
         await markManagedPlanRenewalFailed({
           provider: 'flutterwave',
           customerEmail,
-          amount: Number(transaction?.amount ?? data.amount),
+          amount: Number.isFinite(Number(transaction?.amount ?? data.amount)) && Number(transaction?.amount ?? data.amount) > 0 ? Number(transaction?.amount ?? data.amount) : null,
           reason: transaction?.processor_response ?? transaction?.status ?? 'Flutterwave could not collect the recurring payment.',
         });
       }
