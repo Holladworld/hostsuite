@@ -5,6 +5,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { createRecurringPaymentPlan, getPaymentProvider } from '@/lib/payments/providers';
 import { getManagedPlan, type ManagedPlanInterval, type ManagedPlanKey } from '@/lib/billing/managed-plans';
 import { getCanonicalAppUrl } from '@/lib/billing/checkout-validation';
+import { initializeOrderPaymentSession } from '@/lib/billing/checkout-service';
 
 const planSchema = z.object({
   planKey: z.enum(['starter_ops', 'managed_growth']),
@@ -126,22 +127,19 @@ export async function POST(request: Request) {
     }
 
     try {
-      const payment = await provider.initialize({
-        email: user.email,
+      const authorizationUrl = await initializeOrderPaymentSession({
+        admin,
+        provider,
+        user,
+        orderId: order.order_id,
+        reference: order.provider_reference,
         amount: plan.amount,
         currency: plan.currency,
-        reference,
         callbackUrl,
-        orderId: order.order_id,
-        userId: user.id,
         recurringPlanId: recurringPlanId ?? undefined,
       });
-      const { error: sessionSaveError } = await admin.from('billing_orders').update({ payment_authorization_url: payment.authorizationUrl }).eq('id', order.order_id).eq('status', 'pending');
-      if (sessionSaveError) console.error('Could not persist managed-plan payment authorization URL', sessionSaveError);
-      return NextResponse.json({ authorizationUrl: payment.authorizationUrl, reference: order.provider_reference, orderId: order.order_id, invoiceNumber });
+      return NextResponse.json({ authorizationUrl, reference: order.provider_reference, orderId: order.order_id, invoiceNumber });
     } catch (providerError) {
-      await admin.from('billing_orders').update({ status: 'failed' }).eq('id', order.order_id).eq('status', 'pending');
-      await admin.from('billing_invoices').update({ status: 'void' }).eq('order_id', order.order_id).eq('status', 'open');
       if (providerError instanceof Error && providerError.message === 'PAYMENT_PROVIDER_NOT_CONFIGURED') {
         return NextResponse.json({ error: 'Online payment is temporarily unavailable. Please try again later.' }, { status: 503 });
       }
