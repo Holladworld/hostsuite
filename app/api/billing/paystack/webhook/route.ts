@@ -66,9 +66,6 @@ export async function POST(request: Request) {
     const { error: invoiceUpdateError } = await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
     if (invoiceUpdateError) throw invoiceUpdateError;
 
-    const { error: entitlementError } = await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
-    if (entitlementError) throw entitlementError;
-
     const managedPlan = await activateManagedPlanSubscription({
       id: order.id,
       user_id: order.user_id,
@@ -77,6 +74,8 @@ export async function POST(request: Request) {
     });
 
     if (!managedPlan) {
+      const { error: entitlementError } = await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
+      if (entitlementError) throw entitlementError;
       const { error: serviceInstanceError } = await admin.rpc('create_service_instances_for_order', { p_order_id: order.id });
       if (serviceInstanceError) throw serviceInstanceError;
 
