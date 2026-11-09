@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS billing_subscription_provider_credentials (
   provider_subscription_token text,
   provider_plan_id text,
   provider_customer_email text,
+  provider_next_billing_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
