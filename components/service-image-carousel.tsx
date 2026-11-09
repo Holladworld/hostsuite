@@ -158,7 +158,7 @@ export function ServiceImageCarousel() {
                     onClick={() => setActive(index)}
                     aria-label={`Show ${item.eyebrow.toLowerCase()} slide`}
                     aria-current={index === active ? 'true' : undefined}
-                    className={`h-1 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B] sm:h-2 ${index === active ? 'w-5 bg-white sm:w-6' : 'w-1 bg-white/55 hover:bg-white/90 sm:w-1.5'}`}
+                    className={`h-1 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B] sm:h-1 ${index === active ? 'w-5 bg-white sm:w-6' : 'w-1 bg-white/55 hover:bg-white/90 sm:w-1.5'}`}
                   />
                 ))}
               </div>
