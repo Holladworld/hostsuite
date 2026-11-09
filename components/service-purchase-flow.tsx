@@ -112,7 +112,7 @@ export function ServicePurchaseFlow({ service, managementMode = 'self' }: Props)
       if (!checkoutIdempotency.current || checkoutIdempotency.current.fingerprint !== fingerprint) {
         checkoutIdempotency.current = { fingerprint, key: crypto.randomUUID() };
       }
-      const response = await fetch('/api/billing/paystack/initialize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...checkoutInput, idempotencyKey: checkoutIdempotency.current.key }) });
+      const response = await fetch('/api/billing/initialize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...checkoutInput, idempotencyKey: checkoutIdempotency.current.key }) });
       const result = await response.json() as { authorizationUrl?: string; error?: string; orderId?: string };
       if (!response.ok || !result.authorizationUrl) {
         if (response.status === 502) checkoutIdempotency.current = null;
