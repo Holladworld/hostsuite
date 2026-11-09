@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getVerifiedUser } from '@/lib/supabase-auth';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
-import { getCanonicalAppUrl, getCheckoutProviderBlock, validateCheckoutItemConfiguration } from '@/lib/billing/checkout-validation';
+import { getCanonicalAppUrl, getCheckoutProviderBlock, validateCheckoutItemConfiguration, verifyDomainAvailability } from '@/lib/billing/checkout-validation';
 
 const bodySchema = z.object({
   productIds: z.array(z.string().uuid()).min(1).max(20).refine((ids) => new Set(ids).size === ids.length),
@@ -42,6 +42,10 @@ export async function POST(request: Request) {
     for (const product of products) {
       const validated = validateCheckoutItemConfiguration(product.product_type, quantities[product.id] ?? 1, metadataByProduct[product.id] ?? {});
       if (!validated.ok) return NextResponse.json({ error: validated.error }, { status: 400 });
+      if (product.product_type === 'domain') {
+        const availability = await verifyDomainAvailability(String(validated.metadata.domain));
+        if (!availability.ok) return NextResponse.json({ error: availability.error }, { status: 409 });
+      }
       const providerBlock = getCheckoutProviderBlock(product.product_type);
       if (providerBlock) return NextResponse.json({ error: providerBlock }, { status: 409 });
       if (product.billing_mode !== 'one_time') return NextResponse.json({ error: 'This billing type is not available through one-time checkout.' }, { status: 400 });
