@@ -96,7 +96,7 @@ export function ServiceImageCarousel() {
   return (
     <section
       aria-label="Explore HostSuite services"
-      className="bg-white px-4 py-8 sm:px-8 sm:py-10 lg:px-12"
+      className="bg-white px-4 py-4 sm:px-8 sm:py-5 lg:px-12"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
@@ -116,7 +116,7 @@ export function ServiceImageCarousel() {
     >
       <div className="mx-auto max-w-[1440px]">
         <div
-          className="relative isolate flex min-h-[250px] overflow-hidden rounded-[20px] bg-[#321747] text-white shadow-[0_22px_60px_rgba(49,23,71,0.16)] sm:min-h-[390px] lg:min-h-[430px]"
+          className="relative isolate flex min-h-[180px] overflow-hidden rounded-[16px] bg-[#321747] text-white shadow-[0_14px_38px_rgba(49,23,71,0.14)] sm:min-h-[220px] lg:min-h-[240px]"
           role="group"
           aria-roledescription="slide"
           aria-label={`${active + 1} of ${slides.length}: ${slide.eyebrow}`}
@@ -132,25 +132,25 @@ export function ServiceImageCarousel() {
           />
           <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(35,17,51,0.94)_0%,rgba(49,23,71,0.82)_42%,rgba(35,17,51,0.48)_100%)] sm:bg-[linear-gradient(90deg,rgba(35,17,51,0.96)_0%,rgba(49,23,71,0.86)_48%,rgba(35,17,51,0.32)_100%)]" aria-hidden="true" />
 
-          <div className="flex w-full flex-col justify-between gap-4 p-5 sm:gap-10 sm:p-9 lg:p-12">
+          <div className="flex w-full flex-col justify-between gap-3 p-4 sm:gap-5 sm:p-6 lg:p-7">
             <div className="max-w-[680px]">
-              <p className="text-[10px] font-extrabold tracking-[0.2em] text-[#E6C9F7] sm:text-xs">{slide.eyebrow}</p>
-              <h2 className="mt-3 max-w-[650px] font-display text-[clamp(1.8rem,5vw,4.5rem)] sm:mt-5 sm:text-[clamp(2.2rem,5vw,4.5rem)] font-semibold leading-[0.98] tracking-[-0.055em] text-white [text-wrap:balance]">
+              <p className="text-[9px] font-extrabold tracking-[0.18em] text-[#E6C9F7] sm:text-[10px]">{slide.eyebrow}</p>
+              <h2 className="mt-2 max-w-[650px] font-display text-[clamp(1.35rem,3.3vw,2.7rem)] font-semibold leading-[0.98] tracking-[-0.055em] text-white [text-wrap:balance]">
                 {slide.title}
               </h2>
-              <p className="mt-3 max-w-[520px] text-xs leading-5 text-white/90 sm:mt-5 sm:text-base sm:leading-8">
+              <p className="mt-2 max-w-[520px] text-[11px] leading-[1.45] text-white/90 sm:text-xs sm:leading-5">
                 {slide.description}
               </p>
               <Link
                 href={slide.href}
-                className="mt-4 inline-flex min-h-10 items-center gap-3 rounded-xl bg-white px-4 py-2.5 text-xs sm:mt-7 sm:min-h-12 sm:px-5 sm:py-3.5 sm:text-sm font-extrabold text-[#4A1F6B] shadow-lg transition hover:-translate-y-0.5 hover:bg-[#F5EAFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B]"
+                className="mt-3 inline-flex min-h-8 items-center gap-2 rounded-lg bg-white px-3 py-2 text-[10px] sm:min-h-9 sm:px-3.5 sm:text-[11px] font-extrabold text-[#4A1F6B] shadow-lg transition hover:-translate-y-0.5 hover:bg-[#F5EAFB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B]"
               >
                 {slide.action}<ArrowUpRight className="h-4 w-4" />
               </Link>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2" aria-label="Choose a service slide">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5" aria-label="Choose a service slide">
                 {slides.map((item, index) => (
                   <button
                     key={item.id}
@@ -158,23 +158,23 @@ export function ServiceImageCarousel() {
                     onClick={() => setActive(index)}
                     aria-label={`Show ${item.eyebrow.toLowerCase()} slide`}
                     aria-current={index === active ? 'true' : undefined}
-                    className={`h-1.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B] sm:h-2 ${index === active ? 'w-6 bg-white sm:w-8' : 'w-1.5 bg-white/55 hover:bg-white/90 sm:w-2'}`}
+                    className={`h-1 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4A1F6B] sm:h-1 ${index === active ? 'w-5 bg-white sm:w-6' : 'w-1 bg-white/55 hover:bg-white/90 sm:w-1.5'}`}
                   />
                 ))}
               </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="mr-2 hidden text-[10px] font-semibold tracking-[0.12em] text-white/70 sm:inline">{String(active + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}</span>
-                <button type="button" onClick={previous} aria-label="Previous service" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-9 sm:w-9"><ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></button>
-                <button type="button" onClick={next} aria-label="Next service" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-9 sm:w-9"><ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></button>
-                <button type="button" onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Resume automatic slides' : 'Pause automatic slides'} className="flex h-8 w-8 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-9 sm:w-9">
-                  {paused ? <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Pause className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+              <div className="flex items-center gap-1">
+                <span className="mr-1.5 hidden text-[9px] font-semibold tracking-[0.12em] text-white/70 sm:inline">{String(active + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}</span>
+                <button type="button" onClick={previous} aria-label="Previous service" className="flex h-7 w-7 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-7 sm:w-7"><ArrowLeft className="h-3 w-3" /></button>
+                <button type="button" onClick={next} aria-label="Next service" className="flex h-7 w-7 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-7 sm:w-7"><ArrowRight className="h-3 w-3" /></button>
+                <button type="button" onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Resume automatic slides' : 'Pause automatic slides'} className="flex h-7 w-7 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:h-7 sm:w-7">
+                  {paused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
                 </button>
               </div>
             </div>
           </div>
         </div>
-        <p className="mt-2 text-right text-[10px] text-[#82778A]">Photography via Unsplash</p>
+        <p className="mt-1.5 text-right text-[9px] text-[#82778A]">Photography via Unsplash</p>
       </div>
     </section>
   );
