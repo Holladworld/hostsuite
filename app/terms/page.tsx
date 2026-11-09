@@ -40,7 +40,7 @@ export default function TermsPage() {
         {
           heading: 'Fees, Billing & Credit Offset',
           body: [
-            'Pricing is published on our pricing page and confirmed at the start of each engagement. Monthly managed-care plans are billed in advance and renew monthly; annual managed-care plans are billed in advance and renew annually. Automatic renewal is on by default and continues until you turn it off. If you opt out of automatic renewal during checkout, you purchase only the selected paid service period and HostSuite will not charge you again automatically.',
+            'Pricing is published on our pricing page and confirmed at the start of each engagement. Monthly managed-care plans are billed in advance and renew monthly; annual managed-care plans are billed in advance and renew annually. Any annual-plan discount is the amount shown on the pricing page at checkout. Automatic renewal is on by default and continues until you turn it off. If you opt out of automatic renewal during checkout, you purchase only the selected paid service period and HostSuite will not charge you again automatically.',
             'Credit Offset Program: If you switch to HostSuite mid-term with another hosting provider, we will match your remaining prepaid months at no charge, subject to verification of your existing contract. This applies to hosting fees only and does not cover domain registration or third-party SaaS subscriptions.',
             'Custom development work is billed per the agreed statement of work. A deposit of 50% is typically required before commencement, with the balance due on delivery.',
           ],
