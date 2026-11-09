@@ -13,6 +13,7 @@ type ProviderSubscriptionDetails = {
   token?: string | null;
   customerEmail?: string | null;
   planId?: string | number | null;
+  nextBillingAt?: string | null;
 };
 
 function addPeriod(start: Date, interval: 'monthly' | 'yearly') {
@@ -38,12 +39,34 @@ export async function activateManagedPlanSubscription(
   const interval = order.metadata.interval === 'yearly' ? 'yearly' : order.metadata.interval === 'monthly' ? 'monthly' : null;
   if (!productId || !planName || !interval) throw new Error('Managed plan order metadata is incomplete.');
 
-  const startsAt = order.paid_at ? new Date(order.paid_at) : new Date();
-  const endsAt = addPeriod(startsAt, interval);
   const metadata = order.metadata;
   const autoRenew = metadata.auto_renew === true;
   const provider = order.provider ?? (metadata.provider === 'paystack' || metadata.provider === 'flutterwave' ? metadata.provider : null);
   const admin = createAdminSupabaseClient();
+  let existingCredentials: {
+    provider_subscription_id: string | null;
+    provider_subscription_token: string | null;
+    provider_plan_id: string | null;
+    provider_customer_email: string | null;
+    provider_next_billing_at: string | null;
+  } | null = null;
+
+  if (autoRenew && provider) {
+    const { data, error } = await admin.from('billing_subscription_provider_credentials')
+      .select('provider_subscription_id,provider_subscription_token,provider_plan_id,provider_customer_email,provider_next_billing_at')
+      .eq('order_id', order.id)
+      .maybeSingle();
+    if (error) throw error;
+    existingCredentials = data;
+  }
+
+  const startsAt = order.paid_at ? new Date(order.paid_at) : new Date();
+  const providerNextBillingAt = providerDetails.nextBillingAt ?? existingCredentials?.provider_next_billing_at ?? null;
+  const parsedProviderNext = providerNextBillingAt ? new Date(providerNextBillingAt) : null;
+  const endsAt = autoRenew && parsedProviderNext && Number.isFinite(parsedProviderNext.getTime())
+    ? parsedProviderNext
+    : addPeriod(startsAt, interval);
+
   const { data: subscription, error } = await admin.from('billing_subscriptions').upsert({
     user_id: order.user_id,
     product_id: productId,
@@ -70,12 +93,6 @@ export async function activateManagedPlanSubscription(
   if (error) throw error;
 
   if (autoRenew && provider) {
-    const { data: existingCredentials, error: credentialsLookupError } = await admin
-      .from('billing_subscription_provider_credentials')
-      .select('provider_subscription_id,provider_subscription_token,provider_plan_id,provider_customer_email')
-      .eq('order_id', order.id)
-      .maybeSingle();
-    if (credentialsLookupError) throw credentialsLookupError;
     const { error: credentialsError } = await admin.from('billing_subscription_provider_credentials').upsert({
       order_id: order.id,
       subscription_id: subscription.id,
@@ -84,6 +101,7 @@ export async function activateManagedPlanSubscription(
       provider_subscription_token: providerDetails.token ?? existingCredentials?.provider_subscription_token ?? null,
       provider_plan_id: providerDetails.planId != null ? String(providerDetails.planId) : (typeof metadata.provider_plan_id === 'string' ? metadata.provider_plan_id : existingCredentials?.provider_plan_id ?? null),
       provider_customer_email: providerDetails.customerEmail?.toLowerCase() ?? (typeof metadata.customer_email === 'string' ? metadata.customer_email.toLowerCase() : existingCredentials?.provider_customer_email ?? null),
+      provider_next_billing_at: providerNextBillingAt,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'order_id' });
     if (credentialsError) throw credentialsError;
