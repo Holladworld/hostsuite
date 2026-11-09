@@ -67,8 +67,13 @@ function PortalLoginInner() {
         if (error) throw error;
         toast.success('Welcome back to your HostSuite portal.');
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
+        if (!data.session) {
+          toast.success('Check your email to confirm your account, then sign in to continue.');
+          setMode('signin');
+          return;
+        }
         toast.success('Account created. Welcome to HostSuite.');
       }
       setAuthenticating(true);
