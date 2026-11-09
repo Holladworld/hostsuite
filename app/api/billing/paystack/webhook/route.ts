@@ -84,6 +84,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
+    if (payload.event === 'charge.failed' && reference) {
+      const { data: failedOrder, error: failedOrderError } = await admin.from('billing_orders')
+        .select('id')
+        .eq('provider', 'paystack')
+        .eq('provider_reference', reference)
+        .maybeSingle();
+      if (failedOrderError) throw failedOrderError;
+      if (failedOrder) {
+        const { error: orderError } = await admin.from('billing_orders').update({ status: 'failed' }).eq('id', failedOrder.id);
+        if (orderError) throw orderError;
+        const { error: invoiceError } = await admin.from('billing_invoices').update({ status: 'void' }).eq('order_id', failedOrder.id);
+        if (invoiceError) throw invoiceError;
+      }
+      await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'paystack').eq('event_id', eventId);
+      return NextResponse.json({ received: true });
+    }
+
     if (payload.event === 'invoice.update') {
       const transactionReference = typeof data.transaction?.reference === 'string' ? data.transaction.reference : reference;
       const invoicePaid = data.paid === true || data.status === 'success' || data.transaction?.status === 'success';
