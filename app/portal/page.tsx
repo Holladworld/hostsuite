@@ -228,7 +228,7 @@ function PortalLoginInner() {
                   </div>
                   <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3 text-sm">
                     <input type="checkbox" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} className="mt-0.5 h-4 w-4 accent-primary" />
-                    <span><span className="font-medium">Send me product updates and helpful emails</span><span className="mt-0.5 block text-xs leading-5 text-muted-foreground">Optional. You can unsubscribe at any time. This does not affect service or billing messages.</span></span>
+                    <span><span className="font-medium">Send me product updates and helpful emails</span><span className="mt-0.5 block text-xs leading-5 text-muted-foreground">Optional. This preference is separate from essential service and billing messages.</span></span>
                   </label>
                 </>
               )}
