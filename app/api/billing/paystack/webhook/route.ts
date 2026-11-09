@@ -24,10 +24,10 @@ export async function POST(request: Request) {
   try {
     const payload = JSON.parse(rawBody) as { event?: string; data?: Record<string, any> };
     const data = payload.data ?? {};
-    const reference = typeof data.reference === 'string' ? data.reference : null;
+    const reference = typeof data.reference === 'string' ? data.reference : (typeof data.transaction?.reference === 'string' ? data.transaction.reference : null);
     const subscriptionData = data.subscription ?? data;
     const subscriptionCode = typeof subscriptionData.subscription_code === 'string' ? subscriptionData.subscription_code : null;
-    const eventId = `${payload.event ?? 'unknown'}:${reference ?? subscriptionCode ?? String(data.id ?? crypto.randomUUID())}`;
+    const eventId = `${payload.event ?? 'unknown'}:${reference ?? data.invoice_code ?? subscriptionCode ?? String(data.id ?? crypto.randomUUID())}`;
     const admin = createAdminSupabaseClient();
 
     const { data: existing } = await admin.from('billing_webhook_events').select('processed').eq('provider', 'paystack').eq('event_id', eventId).maybeSingle();
@@ -79,6 +79,34 @@ export async function POST(request: Request) {
             if (periodError) throw periodError;
           }
         }
+      }
+      await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'paystack').eq('event_id', eventId);
+      return NextResponse.json({ received: true });
+    }
+
+    if (payload.event === 'invoice.update') {
+      const transactionReference = typeof data.transaction?.reference === 'string' ? data.transaction.reference : reference;
+      const invoicePaid = data.paid === true || data.status === 'success' || data.transaction?.status === 'success';
+      if (invoicePaid && transactionReference && subscriptionCode) {
+        const invoiceVerifyResponse = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(transactionReference)}`, {
+          headers: { Authorization: `Bearer ${secret}` },
+          cache: 'no-store',
+        });
+        const invoiceVerification = await invoiceVerifyResponse.json();
+        const verifiedInvoiceTransaction = invoiceVerification?.data;
+        if (!invoiceVerifyResponse.ok || !invoiceVerification?.status || verifiedInvoiceTransaction?.status !== 'success') {
+          return NextResponse.json({ error: 'Recurring invoice payment verification failed.' }, { status: 400 });
+        }
+        const settled = await recordManagedPlanRenewal({
+          provider: 'paystack',
+          providerSubscriptionId: subscriptionCode,
+          reference: transactionReference,
+          amount: Number(verifiedInvoiceTransaction.amount) / 100,
+          currency: verifiedInvoiceTransaction.currency,
+          paidAt: typeof data.paid_at === 'string' ? data.paid_at : new Date().toISOString(),
+          nextBillingAt: typeof subscriptionData.next_payment_date === 'string' ? subscriptionData.next_payment_date : null,
+        });
+        if (!settled) return NextResponse.json({ error: 'Recurring invoice could not be matched to a HostSuite subscription.' }, { status: 409 });
       }
       await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'paystack').eq('event_id', eventId);
       return NextResponse.json({ received: true });
@@ -182,7 +210,10 @@ export async function POST(request: Request) {
       });
       if (!settled) return NextResponse.json({ error: 'Recurring subscription could not be matched to a HostSuite account.' }, { status: 409 });
     } else {
-      return NextResponse.json({ error: 'Payment order or recurring subscription not found.' }, { status: 404 });
+      // Paystack also sends invoice.update with the subscription code for renewal charges.
+      // That event is the authoritative fallback when charge.success omits subscription details.
+      await admin.from('billing_webhook_events').update({ processed: true, processed_at: now }).eq('provider', 'paystack').eq('event_id', eventId);
+      return NextResponse.json({ received: true });
     }
 
     await admin.from('billing_webhook_events').update({ processed: true, processed_at: now }).eq('provider', 'paystack').eq('event_id', eventId);
