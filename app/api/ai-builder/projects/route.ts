@@ -29,17 +29,27 @@ export async function GET(request: NextRequest) {
     const user = await getAuthenticatedUser(request);
     if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
 
+    const rawLimit = Number(request.nextUrl.searchParams.get('limit') || 20);
+    const rawOffset = Number(request.nextUrl.searchParams.get('offset') || 0);
+    const limit = Number.isSafeInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : 20;
+    const offset = Number.isSafeInteger(rawOffset) ? Math.max(rawOffset, 0) : 0;
+
     const admin = createAdminSupabaseClient();
     const { data, error } = await admin
       .from('ai_projects')
-      .select('id,name,kind,status,provider,model,metadata,created_at,updated_at')
+      .select('id,name,kind,status,provider,model,created_at,updated_at')
       .eq('user_id', user.id)
       .eq('kind', 'website')
       .neq('status', 'archived')
-      .order('updated_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    return NextResponse.json({ projects: data ?? [] });
+    const projects = data ?? [];
+    return NextResponse.json({
+      projects,
+      pagination: { limit, offset, hasMore: projects.length === limit, nextOffset: projects.length === limit ? offset + limit : null },
+    });
   } catch (error) {
     console.error('AI website projects list failed:', error);
     return NextResponse.json({ error: 'We could not load your website projects.' }, { status: 500 });
