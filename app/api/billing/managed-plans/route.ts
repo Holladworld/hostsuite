@@ -89,6 +89,8 @@ export async function POST(request: Request) {
       plan_name: plan.name,
       product_id: plan.id,
       auto_renew: parsed.data.autoRenew,
+      service_terms_accepted_at: new Date().toISOString(),
+      service_terms_version: 'hostsuite-managed-care-terms-2026-11',
       renewal_consent_at: consentAt,
       renewal_terms_version: 'managed-care-recurring-v1',
       provider: provider.name,
