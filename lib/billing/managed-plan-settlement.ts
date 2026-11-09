@@ -44,7 +44,7 @@ export async function activateManagedPlanSubscription(
   const autoRenew = metadata.auto_renew === true;
   const provider = order.provider ?? (metadata.provider === 'paystack' || metadata.provider === 'flutterwave' ? metadata.provider : null);
   const admin = createAdminSupabaseClient();
-  const { error } = await admin.from('billing_subscriptions').upsert({
+  const { data: subscription, error } = await admin.from('billing_subscriptions').upsert({
     user_id: order.user_id,
     product_id: productId,
     source_order_id: order.id,
@@ -58,17 +58,33 @@ export async function activateManagedPlanSubscription(
     current_period_end: endsAt.toISOString(),
     auto_renew: autoRenew,
     provider: autoRenew ? provider : null,
-    provider_plan_id: autoRenew && metadata.provider_plan_id != null ? String(metadata.provider_plan_id) : null,
-    provider_subscription_id: autoRenew && providerDetails.id != null ? String(providerDetails.id) : (autoRenew && typeof metadata.provider_subscription_id === 'string' ? metadata.provider_subscription_id : null),
-    provider_subscription_token: autoRenew && providerDetails.token ? providerDetails.token : (autoRenew && typeof metadata.provider_subscription_token === 'string' ? metadata.provider_subscription_token : null),
-    provider_customer_email: autoRenew ? (providerDetails.customerEmail ?? (typeof metadata.customer_email === 'string' ? metadata.customer_email : null)) : null,
     renewal_consent_at: autoRenew && typeof metadata.renewal_consent_at === 'string' ? metadata.renewal_consent_at : null,
     renewal_terms_version: autoRenew && typeof metadata.renewal_terms_version === 'string' ? metadata.renewal_terms_version : null,
     cancel_at_period_end: !autoRenew,
     last_payment_at: startsAt.toISOString(),
     failed_payment_count: 0,
     last_payment_error: null,
-  }, { onConflict: 'source_order_id' });
+  }, { onConflict: 'source_order_id' }).select('id').single();
   if (error) throw error;
+
+  if (autoRenew && provider) {
+    const { data: existingCredentials, error: credentialsLookupError } = await admin
+      .from('billing_subscription_provider_credentials')
+      .select('provider_subscription_id,provider_subscription_token,provider_plan_id,provider_customer_email')
+      .eq('order_id', order.id)
+      .maybeSingle();
+    if (credentialsLookupError) throw credentialsLookupError;
+    const { error: credentialsError } = await admin.from('billing_subscription_provider_credentials').upsert({
+      order_id: order.id,
+      subscription_id: subscription.id,
+      provider,
+      provider_subscription_id: providerDetails.id != null ? String(providerDetails.id) : existingCredentials?.provider_subscription_id ?? null,
+      provider_subscription_token: providerDetails.token ?? existingCredentials?.provider_subscription_token ?? null,
+      provider_plan_id: providerDetails.planId != null ? String(providerDetails.planId) : (typeof metadata.provider_plan_id === 'string' ? metadata.provider_plan_id : existingCredentials?.provider_plan_id ?? null),
+      provider_customer_email: providerDetails.customerEmail?.toLowerCase() ?? (typeof metadata.customer_email === 'string' ? metadata.customer_email.toLowerCase() : existingCredentials?.provider_customer_email ?? null),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'order_id' });
+    if (credentialsError) throw credentialsError;
+  }
   return true;
 }
