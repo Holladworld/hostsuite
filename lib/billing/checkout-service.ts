@@ -60,7 +60,8 @@ export async function initializeOrderPaymentSession(input: InitializeOrderPaymen
       .eq('id', input.orderId).eq('user_id', input.user.id).eq('status', 'pending');
     await input.admin.from('billing_invoices').update({ status: 'void' })
       .eq('order_id', input.orderId).eq('status', 'open');
-    throw error;
+    if (error instanceof Error && error.message === 'PAYMENT_PROVIDER_NOT_CONFIGURED') throw error;
+    throw new Error('PAYMENT_INITIALIZATION_FAILED', { cause: error });
   }
 }
 
