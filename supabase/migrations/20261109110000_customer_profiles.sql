@@ -15,6 +15,10 @@ CREATE TABLE IF NOT EXISTS public.customer_profiles (
 
 ALTER TABLE public.customer_profiles ENABLE ROW LEVEL SECURITY;
 
+REVOKE ALL ON TABLE public.customer_profiles FROM anon, PUBLIC;
+GRANT SELECT, UPDATE ON TABLE public.customer_profiles TO authenticated;
+GRANT ALL ON TABLE public.customer_profiles TO service_role;
+
 DROP POLICY IF EXISTS "customers_read_own_profile" ON public.customer_profiles;
 CREATE POLICY "customers_read_own_profile"
   ON public.customer_profiles FOR SELECT TO authenticated
@@ -83,3 +87,6 @@ ON CONFLICT (user_id) DO NOTHING;
 CREATE INDEX IF NOT EXISTS idx_customer_profiles_company_name
   ON public.customer_profiles (company_name)
   WHERE company_name IS NOT NULL;
+
+-- The trigger runs this SECURITY DEFINER function; do not expose it as an RPC.
+REVOKE ALL ON FUNCTION public.handle_new_customer_profile() FROM PUBLIC, anon, authenticated;
