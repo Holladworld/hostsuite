@@ -43,9 +43,9 @@ BEGIN
     NULLIF(trim(NEW.raw_user_meta_data ->> 'last_name'), ''),
     NULLIF(trim(NEW.raw_user_meta_data ->> 'phone'), ''),
     NULLIF(trim(NEW.raw_user_meta_data ->> 'company_name'), ''),
-    COALESCE((NEW.raw_user_meta_data ->> 'marketing_opt_in')::boolean, false),
+    (lower(COALESCE(NEW.raw_user_meta_data ->> 'marketing_opt_in', 'false')) IN ('true', '1', 'yes', 'on')),
     CASE
-      WHEN COALESCE((NEW.raw_user_meta_data ->> 'marketing_opt_in')::boolean, false)
+      WHEN (lower(COALESCE(NEW.raw_user_meta_data ->> 'marketing_opt_in', 'false')) IN ('true', '1', 'yes', 'on'))
       THEN now()
       ELSE NULL
     END
@@ -71,9 +71,9 @@ SELECT
   NULLIF(trim(u.raw_user_meta_data ->> 'last_name'), ''),
   NULLIF(trim(u.raw_user_meta_data ->> 'phone'), ''),
   NULLIF(trim(u.raw_user_meta_data ->> 'company_name'), ''),
-  COALESCE((u.raw_user_meta_data ->> 'marketing_opt_in')::boolean, false),
+  (lower(COALESCE(u.raw_user_meta_data ->> 'marketing_opt_in', 'false')) IN ('true', '1', 'yes', 'on')),
   CASE
-    WHEN COALESCE((u.raw_user_meta_data ->> 'marketing_opt_in')::boolean, false)
+    WHEN (lower(COALESCE(u.raw_user_meta_data ->> 'marketing_opt_in', 'false')) IN ('true', '1', 'yes', 'on'))
     THEN u.created_at
     ELSE NULL
   END
