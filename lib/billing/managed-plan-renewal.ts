@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 
 type ProviderName = 'paystack' | 'flutterwave';
