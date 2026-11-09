@@ -34,6 +34,8 @@ function PortalLoginInner() {
   const [authenticating, setAuthenticating] = useState(false);
   const { user, loading } = useAuth();
   const router = useRouter();
+  const requestedNext = searchParams.get('next');
+  const nextPath = requestedNext && requestedNext.startsWith('/') && !requestedNext.startsWith('//') ? requestedNext : '/portal/dashboard';
 
   useEffect(() => {
     const errorParam = searchParams.get('error');
@@ -44,9 +46,9 @@ function PortalLoginInner() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/portal/dashboard');
+      router.replace(nextPath);
     }
-  }, [loading, user, router]);
+  }, [loading, user, router, nextPath]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
