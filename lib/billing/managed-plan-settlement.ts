@@ -58,6 +58,8 @@ export async function activateManagedPlanSubscription(
     current_period_end: endsAt.toISOString(),
     auto_renew: autoRenew,
     provider: autoRenew ? provider : null,
+    service_terms_accepted_at: typeof metadata.service_terms_accepted_at === 'string' ? metadata.service_terms_accepted_at : startsAt.toISOString(),
+    service_terms_version: typeof metadata.service_terms_version === 'string' ? metadata.service_terms_version : null,
     renewal_consent_at: autoRenew && typeof metadata.renewal_consent_at === 'string' ? metadata.renewal_consent_at : null,
     renewal_terms_version: autoRenew && typeof metadata.renewal_terms_version === 'string' ? metadata.renewal_terms_version : null,
     cancel_at_period_end: !autoRenew,
