@@ -114,7 +114,7 @@ export function validateCheckoutItemConfiguration(
         serviceType: 'email',
         managementMode: config.managementMode ?? 'self',
         domain: config.domain,
-        emailAddresses: [...new Set(config.emailAddresses.map((address) => address.toLowerCase()))],
+        emailAddresses: Array.from(new Set(config.emailAddresses.map((address) => address.toLowerCase()))],
       },
     };
   }
