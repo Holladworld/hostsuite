@@ -42,5 +42,6 @@ export async function getManagedPlan(planKey: ManagedPlanKey, interval: ManagedP
     interval,
     amount,
     currency: product.currency as string,
+    metadata: (product.metadata && typeof product.metadata === 'object' ? product.metadata : {}) as Record<string, unknown>,
   };
 }
