@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/supabase-client';
 import { formatNaira } from '@/lib/format';
 
-type Plan = { id: string; name: string; interval: 'monthly' | 'yearly'; amount: number; currency: string };
+type Plan = { id: string; name: string; interval: 'monthly' | 'yearly'; amount: number; currency: string; provider: 'paystack' | 'flutterwave' };
 
 export default function ManagedPlanCheckoutPage() {
   return <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><Loader2 className="h-7 w-7 animate-spin" /></div>}><ManagedPlanCheckout /></Suspense>;
@@ -94,6 +94,7 @@ function ManagedPlanCheckout() {
           <span><span className="block text-sm font-semibold text-[#281936]">Keep my managed-care plan renewing automatically</span><span className="mt-1 block text-xs leading-5 text-[#71657B]">Selected by default. You will be charged {formatNaira(plan.amount)} every {period} until you cancel. You can switch this off at any time; cancellation will stop the next charge while your already-paid service period remains active.</span></span>
         </label>
 
+        {autoRenew && <p className="mt-3 text-xs leading-5 text-[#71657B]">{plan.provider === 'flutterwave' ? 'Flutterwave recurring subscriptions require a card payment method.' : 'Paystack recurring subscriptions support cards and eligible Nigerian direct-debit authorizations.'}</p>}
         {autoRenew && <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm leading-6 text-[#51445F]">
           <input type="checkbox" checked={recurringConsent} onChange={(event) => setRecurringConsent(event.target.checked)} className="mt-1 h-4 w-4 accent-[#6D3AA0]" />
           <span>I authorize HostSuite and its payment provider to charge my selected payment method {formatNaira(plan.amount)} every {period} for this managed-care plan until I cancel. I understand the recurring amount and billing frequency, and that I can turn off renewal from my billing dashboard.</span>
