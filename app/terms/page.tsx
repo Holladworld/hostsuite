@@ -40,7 +40,7 @@ export default function TermsPage() {
         {
           heading: 'Fees, Billing & Credit Offset',
           body: [
-            'Pricing is published on our pricing page and confirmed at the start of each engagement. Monthly plans are billed in advance; annual plans are billed once per year at a 20% discount versus monthly.',
+            'Pricing is published on our pricing page and confirmed at the start of each engagement. Monthly managed-care plans are billed in advance and renew monthly; annual managed-care plans are billed in advance and renew annually. Automatic renewal is on by default and continues until you turn it off. If you opt out of automatic renewal during checkout, you purchase only the selected paid service period and HostSuite will not charge you again automatically.',
             'Credit Offset Program: If you switch to HostSuite mid-term with another hosting provider, we will match your remaining prepaid months at no charge, subject to verification of your existing contract. This applies to hosting fees only and does not cover domain registration or third-party SaaS subscriptions.',
             'Custom development work is billed per the agreed statement of work. A deposit of 50% is typically required before commencement, with the balance due on delivery.',
           ],
@@ -48,7 +48,7 @@ export default function TermsPage() {
         {
           heading: 'Cancellation & Refunds',
           body: [
-            'You may cancel a managed service plan at any time. Cancellation takes effect at the end of the current billing period. We do not issue partial refunds for unused time within a billing period, except where required by law.',
+            'You may turn off automatic renewal at any time from your HostSuite billing dashboard. This stops the next scheduled provider charge; your managed-care service remains active through the end of the period you have already paid for. If you opted out during checkout, your service ends at the end of that single paid period unless you purchase another term. We do not issue partial refunds for unused time within a billing period, except where required by law.',
             'Annual plans may be cancelled with a pro-rata refund of unused months within the first 30 days of the annual term. After 30 days, annual plans are non-refundable but remain active for the full term.',
             'Custom development deposits are non-refundable once work has commenced.',
           ],
