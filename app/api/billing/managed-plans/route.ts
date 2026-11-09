@@ -50,6 +50,8 @@ export async function POST(request: Request) {
       plan_name: plan.name,
       product_id: plan.id,
       auto_renew: false,
+      term_amount: plan.amount,
+      currency: plan.currency,
     };
 
     const { data: order, error: orderError } = await admin.from('billing_orders').insert({
