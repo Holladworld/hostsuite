@@ -7,6 +7,16 @@ import { markManagedPlanRenewalFailed, recordManagedPlanRenewal } from '@/lib/bi
 
 export const runtime = 'nodejs';
 
+async function findFlutterwaveSubscriptionByTransaction(transactionId: string | number, secret: string) {
+  const url = new URL('https://api.flutterwave.com/v3/subscriptions');
+  url.searchParams.set('transaction_id', String(transactionId));
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' });
+  const result = await response.json();
+  if (!response.ok || result?.status !== 'success') throw new Error('FLUTTERWAVE_SUBSCRIPTION_LOOKUP_FAILED');
+  const matches = Array.isArray(result.data) ? result.data : result.data ? [result.data] : [];
+  return matches[0]?.id != null ? String(matches[0].id) : null;
+}
+
 async function findFlutterwaveSubscription(email: string, planId: string, secret: string) {
   const url = new URL('https://api.flutterwave.com/v3/subscriptions');
   url.searchParams.set('email', email);
@@ -144,28 +154,42 @@ export async function POST(request: Request) {
       }
     } else {
       if (!customerEmail) return NextResponse.json({ error: 'Recurring payment customer could not be identified.' }, { status: 409 });
-      const { data: credentials, error: credentialsError } = await admin.from('billing_subscription_provider_credentials')
-        .select('subscription_id,provider_subscription_id')
-        .eq('provider', 'flutterwave')
-        .eq('provider_customer_email', customerEmail)
-        .limit(20);
-      if (credentialsError) throw credentialsError;
-      const subscriptionIds = (credentials ?? []).map((item) => item.subscription_id).filter(Boolean);
-      if (!subscriptionIds.length) return NextResponse.json({ error: 'Recurring subscription could not be matched to a HostSuite account.' }, { status: 409 });
-
-      const { data: matches, error: matchError } = await admin.from('billing_subscriptions')
-        .select('id')
-        .in('id', subscriptionIds)
-        .eq('auto_renew', true)
-        .eq('amount', Number(transaction.amount))
-        .eq('currency', transaction.currency)
-        .limit(2);
-      if (matchError) throw matchError;
-      if (!matches || matches.length !== 1) {
+      const providerSubscriptionId = await findFlutterwaveSubscriptionByTransaction(data.id, secret);
+      let providerCredential: { subscription_id: string; provider_subscription_id: string | null } | null = null;
+      if (providerSubscriptionId) {
+        const { data: credential, error: credentialError } = await admin.from('billing_subscription_provider_credentials')
+          .select('subscription_id,provider_subscription_id')
+          .eq('provider', 'flutterwave')
+          .eq('provider_subscription_id', providerSubscriptionId)
+          .maybeSingle();
+        if (credentialError) throw credentialError;
+        providerCredential = credential;
+      }
+      if (!providerCredential && customerEmail) {
+        const { data: credentials, error: credentialsError } = await admin.from('billing_subscription_provider_credentials')
+          .select('subscription_id,provider_subscription_id')
+          .eq('provider', 'flutterwave')
+          .eq('provider_customer_email', customerEmail)
+          .limit(20);
+        if (credentialsError) throw credentialsError;
+        const subscriptionIds = (credentials ?? []).map((item) => item.subscription_id).filter(Boolean);
+        if (subscriptionIds.length) {
+          const { data: matches, error: matchError } = await admin.from('billing_subscriptions')
+            .select('id')
+            .in('id', subscriptionIds)
+            .eq('auto_renew', true)
+            .eq('amount', Number(transaction.amount))
+            .eq('currency', transaction.currency)
+            .limit(2);
+          if (matchError) throw matchError;
+          if (matches?.length === 1) {
+            providerCredential = credentials?.find((item) => item.subscription_id === matches[0].id) ?? null;
+          }
+        }
+      }
+      if (!providerCredential?.provider_subscription_id) {
         return NextResponse.json({ error: 'Recurring payment could not be matched unambiguously to a HostSuite subscription.' }, { status: 409 });
       }
-      const providerCredential = credentials?.find((item) => item.subscription_id === matches[0].id);
-      if (!providerCredential?.provider_subscription_id) return NextResponse.json({ error: 'The provider subscription reference is not available yet.' }, { status: 409 });
       const settled = await recordManagedPlanRenewal({
         provider: 'flutterwave',
         providerSubscriptionId: providerCredential.provider_subscription_id,
