@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     .maybeSingle();
 
   return NextResponse.json({
-    status: order.status,
+    status: order.status === 'paid' && !subscription ? 'processing' : order.status,
     amount: order.total,
     currency: order.currency,
     planName: order.metadata?.plan_name ?? 'Managed care',
