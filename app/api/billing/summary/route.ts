@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const [orders, invoices, subscriptions] = await Promise.all([
       admin.from('billing_orders').select('id,status,currency,total,provider,provider_reference,created_at,paid_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
       admin.from('billing_invoices').select('id,invoice_number,status,currency,total,due_at,paid_at,created_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
-      admin.from('billing_subscriptions').select('id,service_name,amount,currency,interval,status,next_billing_at,auto_renew,provider,cancel_at_period_end,current_period_end').eq('user_id', user.id).order('next_billing_at', { ascending: true }).limit(20),
+      admin.from('billing_subscriptions').select('id,service_name,amount,currency,interval,status,next_billing_at,auto_renew,provider,cancel_at_period_end,current_period_end,failed_payment_count,last_payment_error').eq('user_id', user.id).order('next_billing_at', { ascending: true }).limit(20),
     ]);
     if (orders.error) throw orders.error;
     if (invoices.error) throw invoices.error;
