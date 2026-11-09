@@ -58,7 +58,8 @@ export async function POST(request: Request) {
     const admin = createAdminSupabaseClient();
     let recurringPlanId: string | null = null;
     if (parsed.data.autoRenew) {
-      const metadataKey = provider.name === 'paystack' ? 'paystack_plan_code' : 'flutterwave_payment_plan_id';
+      const planVersion = `${plan.currency.toUpperCase().replace(/[^A-Z0-9]/g, '')}_${parsed.data.interval}_${Math.round(plan.amount * 100)}`;
+      const metadataKey = `${provider.name}_plan_${planVersion}`;
       const existingPlanId = plan.metadata[metadataKey];
       recurringPlanId = typeof existingPlanId === 'string' || typeof existingPlanId === 'number'
         ? String(existingPlanId)
@@ -92,7 +93,7 @@ export async function POST(request: Request) {
       renewal_terms_version: 'managed-care-recurring-v1',
       provider: provider.name,
       provider_plan_id: recurringPlanId,
-      customer_email: user.email,
+      customer_email: user.email.toLowerCase(),
       term_amount: plan.amount,
       currency: plan.currency,
     };
