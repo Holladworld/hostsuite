@@ -30,7 +30,6 @@ type InitializeOrderPaymentInput = {
   currency: string;
   callbackUrl: string;
   recurringPlanId?: string;
-  context: 'checkout' | 'managed_plan';
 };
 
 /**
@@ -156,7 +155,7 @@ export async function initializeStandardCheckout(
 
     const authorizationUrl = await initializeOrderPaymentSession({
       admin, provider, user, orderId: order.order_id, reference: order.provider_reference,
-      amount: Number(order.total), currency: order.currency, callbackUrl, context: 'checkout',
+      amount: Number(order.total), currency: order.currency, callbackUrl,
     });
     return NextResponse.json({
       authorizationUrl,
