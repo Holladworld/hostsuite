@@ -101,7 +101,7 @@ function ManagedPlanCheckout() {
 
         <label className="mt-4 flex cursor-pointer items-start gap-3 text-sm leading-6 text-[#51445F]">
           <input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} className="mt-1 h-4 w-4 accent-[#6D3AA0]" />
-          <span>I agree to the managed-care service terms and understand that the plan covers only the services and allowances described in the selected plan.</span>
+          <span>I agree to HostSuite’s <Link href="/terms" className="font-semibold text-[#6D3AA0] underline underline-offset-2">Terms of Service</Link> and understand that the plan covers only the services and allowances described in the selected plan.</span>
         </label>
 
         {!autoRenew && <p className="mt-3 rounded-lg bg-[#F7F3EE] p-3 text-xs leading-5 text-[#71657B]">Automatic renewal is off. You will pay for this {period} only; HostSuite will not automatically charge you again. You can purchase another term later.</p>}
