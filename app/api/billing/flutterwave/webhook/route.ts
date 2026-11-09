@@ -14,7 +14,7 @@ async function findFlutterwaveSubscriptionByTransaction(transactionId: string | 
   const result = await response.json();
   if (!response.ok || result?.status !== 'success') throw new Error('FLUTTERWAVE_SUBSCRIPTION_LOOKUP_FAILED');
   const matches = Array.isArray(result.data) ? result.data : result.data ? [result.data] : [];
-  return matches[0]?.id != null ? String(matches[0].id) : null;
+  return matches[0]?.id != null ? { id: String(matches[0].id), nextBillingAt: typeof matches[0].next_due_date === 'string' ? matches[0].next_due_date : null } : null;
 }
 
 async function findFlutterwaveSubscription(email: string, planId: string, secret: string) {
@@ -27,7 +27,7 @@ async function findFlutterwaveSubscription(email: string, planId: string, secret
   if (!response.ok || result?.status !== 'success') throw new Error('FLUTTERWAVE_SUBSCRIPTION_LOOKUP_FAILED');
   const matches = Array.isArray(result.data) ? result.data : [];
   const match = matches.find((item: any) => String(item.plan?.id ?? item.plan_id ?? '') === planId && String(item.customer?.email ?? item.email ?? '').toLowerCase() === email.toLowerCase());
-  return match?.id != null ? String(match.id) : null;
+  return match?.id != null ? { id: String(match.id), nextBillingAt: typeof match.next_due_date === 'string' ? match.next_due_date : null } : null;
 }
 
 export async function POST(request: Request) {
@@ -134,14 +134,15 @@ export async function POST(request: Request) {
       const { error: invoiceError } = await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
       if (invoiceError) throw invoiceError;
 
-      let providerSubscriptionId: string | null = null;
+      let providerSubscription: { id: string; nextBillingAt: string | null } | null = null;
       if (order.metadata?.auto_renew === true && customerEmail && typeof order.metadata.provider_plan_id === 'string') {
-        providerSubscriptionId = await findFlutterwaveSubscription(customerEmail, order.metadata.provider_plan_id, secret);
+        providerSubscription = await findFlutterwaveSubscription(customerEmail, order.metadata.provider_plan_id, secret);
       }
       const managedPlan = await activateManagedPlanSubscription({ ...order, paid_at: now }, {
-        id: providerSubscriptionId,
+        id: providerSubscription?.id ?? null,
         customerEmail,
         planId: order.metadata?.provider_plan_id,
+        nextBillingAt: providerSubscription?.nextBillingAt ?? null,
       });
       if (!managedPlan) {
         const { error: entitlementError } = await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
@@ -154,13 +155,13 @@ export async function POST(request: Request) {
       }
     } else {
       if (!customerEmail) return NextResponse.json({ error: 'Recurring payment customer could not be identified.' }, { status: 409 });
-      const providerSubscriptionId = await findFlutterwaveSubscriptionByTransaction(data.id, secret);
+      const providerSubscription = await findFlutterwaveSubscriptionByTransaction(data.id, secret);
       let providerCredential: { subscription_id: string; provider_subscription_id: string | null } | null = null;
-      if (providerSubscriptionId) {
+      if (providerSubscription?.id) {
         const { data: credential, error: credentialError } = await admin.from('billing_subscription_provider_credentials')
           .select('subscription_id,provider_subscription_id')
           .eq('provider', 'flutterwave')
-          .eq('provider_subscription_id', providerSubscriptionId)
+          .eq('provider_subscription_id', providerSubscription.id)
           .maybeSingle();
         if (credentialError) throw credentialError;
         providerCredential = credential;
@@ -197,6 +198,7 @@ export async function POST(request: Request) {
         amount: Number(transaction.amount),
         currency: transaction.currency,
         paidAt: now,
+        nextBillingAt: providerSubscription?.nextBillingAt ?? null,
       });
       if (!settled) return NextResponse.json({ error: 'Recurring subscription could not be matched to a HostSuite account.' }, { status: 409 });
     }
