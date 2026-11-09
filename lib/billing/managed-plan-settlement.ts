@@ -64,7 +64,7 @@ export async function activateManagedPlanSubscription(
     provider_customer_email: autoRenew ? (providerDetails.customerEmail ?? (typeof metadata.customer_email === 'string' ? metadata.customer_email : null)) : null,
     renewal_consent_at: autoRenew && typeof metadata.renewal_consent_at === 'string' ? metadata.renewal_consent_at : null,
     renewal_terms_version: autoRenew && typeof metadata.renewal_terms_version === 'string' ? metadata.renewal_terms_version : null,
-    cancel_at_period_end: false,
+    cancel_at_period_end: !autoRenew,
     last_payment_at: startsAt.toISOString(),
     failed_payment_count: 0,
     last_payment_error: null,
