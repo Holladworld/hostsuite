@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getHostingProvider } from '../providers';
 import { getHostingProviderStatus } from '../providers/registry';
 import type { ProviderCapability } from '../providers/types';
 
@@ -137,6 +138,15 @@ export function getCanonicalAppUrl(path: string): string {
     throw new Error('APP_BASE_URL_MUST_USE_HTTPS');
   }
   return new URL(path, base).toString();
+}
+
+/** Verify domain availability server-side before creating a payable order. */
+export async function verifyDomainAvailability(domain: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const provider = getHostingProvider();
+  const result = await provider.searchDomain(domain);
+  if (!result.ok) return { ok: false, error: result.message };
+  if (!result.data.available) return { ok: false, error: 'This domain is no longer available. Search for another domain before continuing.' };
+  return { ok: true };
 }
 
 /** Return a customer-safe reason when the configured supplier cannot fulfil this product. */
