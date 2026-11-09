@@ -5,6 +5,8 @@
 ALTER TABLE billing_subscriptions
   ADD COLUMN IF NOT EXISTS source_order_id uuid REFERENCES billing_orders(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS provider text CHECK (provider IN ('paystack','flutterwave')),
+  ADD COLUMN IF NOT EXISTS service_terms_accepted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS service_terms_version text,
   ADD COLUMN IF NOT EXISTS renewal_consent_at timestamptz,
   ADD COLUMN IF NOT EXISTS renewal_terms_version text,
   ADD COLUMN IF NOT EXISTS current_period_start timestamptz,
