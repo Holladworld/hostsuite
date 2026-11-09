@@ -100,7 +100,12 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (transaction?.status !== 'successful') {
-      if (!order && customerEmail) {
+      if (order) {
+        const { error: orderError } = await admin.from('billing_orders').update({ status: 'failed' }).eq('id', order.id);
+        if (orderError) throw orderError;
+        const { error: invoiceError } = await admin.from('billing_invoices').update({ status: 'void' }).eq('order_id', order.id);
+        if (invoiceError) throw invoiceError;
+      } else if (customerEmail) {
         await markManagedPlanRenewalFailed({
           provider: 'flutterwave',
           customerEmail,
