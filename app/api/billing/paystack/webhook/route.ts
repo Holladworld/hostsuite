@@ -41,29 +41,35 @@ export async function POST(request: Request) {
       const providerCode = subscriptionCode ?? (typeof data.subscription_code === 'string' ? data.subscription_code : null);
       const emailToken = subscriptionData.email_token ?? data.email_token;
       if (providerCode && typeof planCode === 'string' && typeof customerEmail === 'string') {
+        const normalizedEmail = customerEmail.toLowerCase();
         const { data: order, error } = await admin.from('billing_orders')
-          .select('id,status,metadata')
+          .select('id,status')
           .eq('provider', 'paystack')
           .eq('metadata->>source', 'managed_plan')
           .eq('metadata->>provider_plan_id', planCode)
-          .eq('metadata->>customer_email', customerEmail.toLowerCase())
+          .eq('metadata->>customer_email', normalizedEmail)
           .in('status', ['pending', 'paid'])
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
         if (error) throw error;
         if (order) {
-          const metadata = { ...order.metadata, provider_subscription_id: providerCode, provider_subscription_token: typeof emailToken === 'string' ? emailToken : null };
-          const { error: orderUpdateError } = await admin.from('billing_orders').update({ metadata }).eq('id', order.id);
-          if (orderUpdateError) throw orderUpdateError;
-          if (order.status === 'paid') {
-            const { error: subUpdateError } = await admin.from('billing_subscriptions').update({
-              provider_subscription_id: providerCode,
-              provider_subscription_token: typeof emailToken === 'string' ? emailToken : null,
-              provider_customer_email: customerEmail.toLowerCase(),
-            }).eq('source_order_id', order.id);
-            if (subUpdateError) throw subUpdateError;
-          }
+          const { data: linkedSubscription, error: subscriptionLookupError } = await admin.from('billing_subscriptions')
+            .select('id')
+            .eq('source_order_id', order.id)
+            .maybeSingle();
+          if (subscriptionLookupError) throw subscriptionLookupError;
+          const { error: credentialError } = await admin.from('billing_subscription_provider_credentials').upsert({
+            order_id: order.id,
+            subscription_id: linkedSubscription?.id ?? null,
+            provider: 'paystack',
+            provider_subscription_id: providerCode,
+            provider_subscription_token: typeof emailToken === 'string' ? emailToken : null,
+            provider_plan_id: planCode,
+            provider_customer_email: normalizedEmail,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'order_id' });
+          if (credentialError) throw credentialError;
         }
       }
       await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'paystack').eq('event_id', eventId);
@@ -76,36 +82,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
-    if (payload.event === 'subscription.not_renew') {
+    if (payload.event === 'subscription.not_renew' || payload.event === 'subscription.disable') {
       if (subscriptionCode) {
-        const { error } = await admin.from('billing_subscriptions').update({
-          auto_renew: false,
-          cancel_at_period_end: true,
-          cancelled_at: new Date().toISOString(),
-        }).eq('provider', 'paystack').eq('provider_subscription_id', subscriptionCode);
-        if (error) throw error;
-      }
-      await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'paystack').eq('event_id', eventId);
-      return NextResponse.json({ received: true });
-    }
-
-    if (payload.event === 'subscription.disable') {
-      if (subscriptionCode) {
-        const { data: subscription, error: lookupError } = await admin.from('billing_subscriptions')
-          .select('id,current_period_end')
+        const { data: credentials, error: credentialError } = await admin.from('billing_subscription_provider_credentials')
+          .select('subscription_id')
           .eq('provider', 'paystack')
           .eq('provider_subscription_id', subscriptionCode)
           .maybeSingle();
-        if (lookupError) throw lookupError;
-        if (subscription) {
-          const paidThrough = subscription.current_period_end && new Date(subscription.current_period_end) > new Date();
-          const { error } = await admin.from('billing_subscriptions').update({
-            auto_renew: false,
-            cancel_at_period_end: true,
-            status: paidThrough ? 'active' : 'cancelled',
-            cancelled_at: new Date().toISOString(),
-          }).eq('id', subscription.id);
-          if (error) throw error;
+        if (credentialError) throw credentialError;
+        if (credentials?.subscription_id) {
+          const { data: subscription, error: lookupError } = await admin.from('billing_subscriptions')
+            .select('id,current_period_end')
+            .eq('id', credentials.subscription_id)
+            .maybeSingle();
+          if (lookupError) throw lookupError;
+          if (subscription) {
+            const paidThrough = subscription.current_period_end && new Date(subscription.current_period_end) > new Date();
+            const disabled = payload.event === 'subscription.disable';
+            const { error } = await admin.from('billing_subscriptions').update({
+              auto_renew: false,
+              cancel_at_period_end: true,
+              status: disabled && !paidThrough ? 'cancelled' : 'active',
+              cancelled_at: new Date().toISOString(),
+            }).eq('id', subscription.id);
+            if (error) throw error;
+          }
         }
       }
       await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'paystack').eq('event_id', eventId);
@@ -145,12 +146,6 @@ export async function POST(request: Request) {
         customerEmail: typeof subscriptionData.customer?.email === 'string' ? subscriptionData.customer.email.toLowerCase() : (typeof order.metadata?.customer_email === 'string' ? order.metadata.customer_email : null),
         planId: typeof subscriptionData.plan?.plan_code === 'string' ? subscriptionData.plan.plan_code : order.metadata?.provider_plan_id,
       };
-      if (providerDetails.id || providerDetails.token) {
-        const metadata = { ...order.metadata, provider_subscription_id: providerDetails.id, provider_subscription_token: providerDetails.token };
-        const { error } = await admin.from('billing_orders').update({ metadata }).eq('id', order.id);
-        if (error) throw error;
-        order.metadata = metadata;
-      }
       const { error: orderUpdateError } = await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
       if (orderUpdateError) throw orderUpdateError;
       const { error: invoiceUpdateError } = await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
