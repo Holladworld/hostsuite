@@ -31,6 +31,7 @@ export async function GET(request: Request) {
       interval: plan.interval,
       amount: plan.amount,
       currency: plan.currency,
+      provider: getPaymentProvider().name,
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Managed plan lookup failed', error);
