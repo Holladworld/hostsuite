@@ -27,13 +27,27 @@ export async function POST(request: Request) {
     const reference = typeof data.reference === 'string' ? data.reference : (typeof data.transaction?.reference === 'string' ? data.transaction.reference : null);
     const subscriptionData = data.subscription ?? data;
     const subscriptionCode = typeof subscriptionData.subscription_code === 'string' ? subscriptionData.subscription_code : null;
-    const eventId = `${payload.event ?? 'unknown'}:${reference ?? data.invoice_code ?? subscriptionCode ?? String(data.id ?? crypto.randomUUID())}`;
+    const eventType = payload.event ?? 'unknown';
+    const stableEventKey = reference ?? data.invoice_code ?? subscriptionCode ?? (data.id != null ? String(data.id) : null);
+    if (!stableEventKey) return NextResponse.json({ error: 'Webhook event has no stable provider identifier.' }, { status: 400 });
+    const eventId = `${eventType}:${stableEventKey}`;
     const admin = createAdminSupabaseClient();
 
-    const { data: existing } = await admin.from('billing_webhook_events').select('processed').eq('provider', 'paystack').eq('event_id', eventId).maybeSingle();
-    if (existing?.processed) return NextResponse.json({ received: true });
-
-    await admin.from('billing_webhook_events').upsert({ provider: 'paystack', event_id: eventId, event_type: payload.event ?? 'unknown', signature_valid: true, payload }, { onConflict: 'provider,event_id' });
+    const { data: claimed, error: claimError } = await admin.rpc('claim_billing_webhook_event', {
+      p_provider: 'paystack',
+      p_event_id: eventId,
+      p_event_type: eventType,
+      p_payload: payload,
+    });
+    if (claimError) throw claimError;
+    if (claimed !== true) {
+      const { data: priorEvent, error: priorEventError } = await admin.from('billing_webhook_events')
+        .select('processed').eq('provider', 'paystack').eq('event_id', eventId).maybeSingle();
+      if (priorEventError) throw priorEventError;
+      if (priorEvent?.processed) return NextResponse.json({ received: true, duplicate: true });
+      // A live processing lease is not an acknowledgement. Ask the provider to retry.
+      return NextResponse.json({ error: 'Webhook event is still being processed. Please retry.' }, { status: 409 });
+    }
 
     if (payload.event === 'subscription.create') {
       const planCode = subscriptionData.plan?.plan_code ?? data.plan?.plan_code;
@@ -42,7 +56,7 @@ export async function POST(request: Request) {
       const emailToken = subscriptionData.email_token ?? data.email_token;
       if (providerCode && typeof planCode === 'string' && typeof customerEmail === 'string') {
         const normalizedEmail = customerEmail.toLowerCase();
-        const { data: order, error } = await admin.from('billing_orders')
+        const { data: orders, error } = await admin.from('billing_orders')
           .select('id,status')
           .eq('provider', 'paystack')
           .eq('metadata->>source', 'managed_plan')
@@ -50,9 +64,10 @@ export async function POST(request: Request) {
           .eq('metadata->>customer_email', normalizedEmail)
           .in('status', ['pending', 'paid'])
           .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .limit(2);
         if (error) throw error;
+        // A plan+email match is not enough to choose between multiple checkouts.
+        const order = orders?.length === 1 ? orders[0] : null;
         if (order) {
           const { data: linkedSubscription, error: subscriptionLookupError } = await admin.from('billing_subscriptions')
             .select('id')
@@ -71,12 +86,18 @@ export async function POST(request: Request) {
             updated_at: new Date().toISOString(),
           }, { onConflict: 'order_id' });
           if (credentialError) throw credentialError;
-          if (linkedSubscription?.id && typeof subscriptionData.next_payment_date === 'string') {
-            const { error: periodError } = await admin.from('billing_subscriptions').update({
-              next_billing_at: subscriptionData.next_payment_date,
-              current_period_end: subscriptionData.next_payment_date,
-            }).eq('id', linkedSubscription.id);
-            if (periodError) throw periodError;
+          if (linkedSubscription?.id) {
+            const renewalUpdate: Record<string, unknown> = {
+              renewal_setup_status: 'confirmed',
+              auto_renew: true,
+            };
+            if (typeof subscriptionData.next_payment_date === 'string') {
+              renewalUpdate.next_billing_at = subscriptionData.next_payment_date;
+              renewalUpdate.current_period_end = subscriptionData.next_payment_date;
+            }
+            const { error: renewalStatusError } = await admin.from('billing_subscriptions')
+              .update(renewalUpdate).eq('id', linkedSubscription.id);
+            if (renewalStatusError) throw renewalStatusError;
           }
         }
       }
@@ -92,9 +113,9 @@ export async function POST(request: Request) {
         .maybeSingle();
       if (failedOrderError) throw failedOrderError;
       if (failedOrder) {
-        const { error: orderError } = await admin.from('billing_orders').update({ status: 'failed' }).eq('id', failedOrder.id);
+        const { error: orderError } = await admin.from('billing_orders').update({ status: 'failed' }).eq('id', failedOrder.id).eq('status', 'pending');
         if (orderError) throw orderError;
-        const { error: invoiceError } = await admin.from('billing_invoices').update({ status: 'void' }).eq('order_id', failedOrder.id);
+        const { error: invoiceError } = await admin.from('billing_invoices').update({ status: 'void' }).eq('order_id', failedOrder.id).eq('status', 'open');
         if (invoiceError) throw invoiceError;
       }
       await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'paystack').eq('event_id', eventId);
@@ -111,7 +132,7 @@ export async function POST(request: Request) {
         });
         const invoiceVerification = await invoiceVerifyResponse.json();
         const verifiedInvoiceTransaction = invoiceVerification?.data;
-        if (!invoiceVerifyResponse.ok || !invoiceVerification?.status || verifiedInvoiceTransaction?.status !== 'success') {
+        if (!invoiceVerifyResponse.ok || !invoiceVerification?.status || verifiedInvoiceTransaction?.status !== 'success' || verifiedInvoiceTransaction?.reference !== transactionReference) {
           return NextResponse.json({ error: 'Recurring invoice payment verification failed.' }, { status: 400 });
         }
         const settled = await recordManagedPlanRenewal({
@@ -174,11 +195,13 @@ export async function POST(request: Request) {
     const verificationResponse = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' });
     const verification = await verificationResponse.json();
     const transaction = verification?.data;
-    if (!verificationResponse.ok || !verification?.status || transaction?.status !== 'success') return NextResponse.json({ error: 'Payment verification failed.' }, { status: 400 });
+    if (!verificationResponse.ok || !verification?.status || transaction?.status !== 'success' || transaction?.reference !== reference) return NextResponse.json({ error: 'Payment verification failed.' }, { status: 400 });
 
     const { data: order } = await admin.from('billing_orders').select('id,user_id,total,currency,metadata,status,paid_at,provider').eq('provider', 'paystack').eq('provider_reference', reference).maybeSingle();
     if (order && Number(transaction.amount) !== Math.round(Number(order.total) * 100)) return NextResponse.json({ error: 'Payment amount mismatch.' }, { status: 400 });
     if (order && transaction.currency !== order.currency) return NextResponse.json({ error: 'Payment currency mismatch.' }, { status: 400 });
+    if (order && transaction.metadata?.order_id && transaction.metadata.order_id !== order.id) return NextResponse.json({ error: 'Payment order reference mismatch.' }, { status: 400 });
+    if (order && transaction.metadata?.user_id && transaction.metadata.user_id !== order.user_id) return NextResponse.json({ error: 'Payment customer mismatch.' }, { status: 400 });
 
     if (order?.metadata?.source === 'ticket_quote') {
       const { data: settlement, error: settlementError } = await admin.rpc('settle_ticket_quote_payment', { p_order_id: order.id });
@@ -193,6 +216,19 @@ export async function POST(request: Request) {
 
     const now = new Date().toISOString();
     if (order) {
+      const { data: settlementState, error: settlementError } = await admin.rpc('settle_verified_billing_order', {
+        p_order_id: order.id,
+        p_provider: 'paystack',
+        p_provider_reference: reference,
+        p_amount: Number(transaction.amount) / 100,
+        p_currency: transaction.currency,
+      });
+      if (settlementError) throw settlementError;
+      if (settlementState === 'reconciliation_required') {
+        await admin.from('billing_orders').update({ metadata: { ...(order.metadata ?? {}), needs_manual_reconciliation: true, reconciliation_reason: 'Verified Paystack payment arrived for a non-payable order.', reconciliation_marked_at: now } }).eq('id', order.id);
+        await admin.from('billing_webhook_events').update({ processed: true, processed_at: now }).eq('provider', 'paystack').eq('event_id', eventId);
+        return NextResponse.json({ received: true, reconciliation: 'required' });
+      }
       const providerDetails = {
         id: subscriptionCode,
         token: typeof subscriptionData.email_token === 'string' ? subscriptionData.email_token : null,
@@ -200,11 +236,6 @@ export async function POST(request: Request) {
         planId: typeof subscriptionData.plan?.plan_code === 'string' ? subscriptionData.plan.plan_code : order.metadata?.provider_plan_id,
         nextBillingAt: typeof subscriptionData.next_payment_date === 'string' ? subscriptionData.next_payment_date : null,
       };
-      const { error: orderUpdateError } = await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
-      if (orderUpdateError) throw orderUpdateError;
-      const { error: invoiceUpdateError } = await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
-      if (invoiceUpdateError) throw invoiceUpdateError;
-
       const managedPlan = await activateManagedPlanSubscription({ ...order, paid_at: now }, providerDetails);
       if (!managedPlan) {
         const { error: entitlementError } = await admin.rpc('grant_billing_order_value', { p_order_id: order.id });

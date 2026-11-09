@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Check, Loader2, Mail, Search, Server, Globe, WandSparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { supabase, useAuth } from '@/lib/supabase-client';
+import { useAuth } from '@/lib/supabase-client';
 import { toast } from 'sonner';
 
-type Product = { id: string; name: string; description: string | null; product_type: string; billing_mode: string; currency: string; price: number; interval?: string | null; metadata?: Record<string, unknown> };
+type Product = { id: string; name: string; description: string | null; product_type: string; billing_mode: string; currency: string; price: number; interval?: string | null };
 type ServiceType = 'hosting' | 'domain' | 'email' | 'website';
 type ManagementMode = 'self' | 'hostsuite' | 'help';
 type Props = { service: ServiceType; managementMode?: ManagementMode };
@@ -33,6 +33,7 @@ export function ServicePurchaseFlow({ service, managementMode = 'self' }: Props)
   const { user, loading } = useAuth();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
+  const [catalogMessage, setCatalogMessage] = useState('');
   const [selected, setSelected] = useState<Product | null>(null);
   const [domain, setDomain] = useState('');
   const [domainMode, setDomainMode] = useState<'existing' | 'new'>('existing');
@@ -44,15 +45,22 @@ export function ServicePurchaseFlow({ service, managementMode = 'self' }: Props)
   const [contact, setContact] = useState<DomainContactState>(emptyContact);
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
+  const checkoutIdempotency = useRef<{ fingerprint: string; key: string } | null>(null);
   const info = copy[service];
   const Icon = info.icon;
 
   useEffect(() => {
     if (!user) return;
     void (async () => {
-      const { data, error } = await supabase.from('billing_products').select('id,name,description,product_type,billing_mode,currency,price,interval,metadata').eq('active', true).eq('product_type', service).order('price');
-      if (error) toast.error('We could not load the available plans.');
-      setProducts((data as Product[]) ?? []);
+      try {
+        const response = await fetch(`/api/billing/catalog?service=${encodeURIComponent(service)}`, { cache: 'no-store' });
+        const result = await response.json() as { products?: Product[]; availabilityMessage?: string | null; error?: string };
+        if (!response.ok) throw new Error(result.error ?? 'We could not load the available plans.');
+        setProducts(result.products ?? []);
+        setCatalogMessage(result.availabilityMessage ?? '');
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'We could not load the available plans.');
+      }
     })();
   }, [user, service]);
 
@@ -84,14 +92,32 @@ export function ServicePurchaseFlow({ service, managementMode = 'self' }: Props)
     setBusy(true);
     const cleanDomain = domain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
     const addresses = emailAddresses.map((v) => v.trim()).filter(Boolean);
-    const productMeta = selected.metadata ?? {};
-    const planRef = typeof productMeta.providerPlanRef === 'string' ? productMeta.providerPlanRef : typeof productMeta.planRef === 'string' ? productMeta.planRef : typeof productMeta.plan_id === 'string' ? productMeta.plan_id : undefined;
-    const metadata: Record<string, unknown> = { serviceType: service, managementMode, mode: domainMode, domain: cleanDomain || undefined, domainSource: domainMode, emailAddresses: addresses, searchQuery: service === 'domain' ? query.trim() : undefined, requestedDomain: service === 'domain' ? cleanDomain : undefined, domainContact: service === 'domain' ? contact : undefined, planRef, providerPlanRef: planRef };
+    // Provider plan references remain server-side in billing_products.metadata.
+    // Only customer-owned configuration is sent for strict server validation.
+    const metadata: Record<string, unknown> = {
+      serviceType: service,
+      managementMode,
+      mode: domainMode,
+      domain: cleanDomain || undefined,
+      domainSource: domainMode,
+      emailAddresses: addresses,
+      searchQuery: service === 'domain' ? query.trim() : undefined,
+      requestedDomain: service === 'domain' ? cleanDomain : undefined,
+      domainContact: service === 'domain' ? contact : undefined,
+    };
 
     try {
-      const response = await fetch('/api/billing/paystack/initialize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productIds: [selected.id], metadata: { [selected.id]: metadata }, callbackUrl: `${window.location.origin}/portal/billing` }) });
+      const checkoutInput = { productIds: [selected.id], metadata: { [selected.id]: metadata } };
+      const fingerprint = JSON.stringify(checkoutInput);
+      if (!checkoutIdempotency.current || checkoutIdempotency.current.fingerprint !== fingerprint) {
+        checkoutIdempotency.current = { fingerprint, key: crypto.randomUUID() };
+      }
+      const response = await fetch('/api/billing/paystack/initialize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...checkoutInput, idempotencyKey: checkoutIdempotency.current.key }) });
       const result = await response.json() as { authorizationUrl?: string; error?: string; orderId?: string };
-      if (!response.ok || !result.authorizationUrl) throw new Error(result.error ?? 'Unable to start payment.');
+      if (!response.ok || !result.authorizationUrl) {
+        if (response.status === 502) checkoutIdempotency.current = null;
+        throw new Error(result.error ?? 'Unable to start payment.');
+      }
       window.location.assign(result.authorizationUrl);
     } catch (error) { toast.error(error instanceof Error ? error.message : 'Unable to start payment.'); setBusy(false); }
   }
@@ -115,8 +141,8 @@ export function ServicePurchaseFlow({ service, managementMode = 'self' }: Props)
     <Link href="/portal/services" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Back to service centre</Link>
     <div className="mt-8 flex items-start gap-4"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Icon className="h-6 w-6" /></div><div><p className="text-sm font-medium text-primary">HostSuite {info.title.toLowerCase()}</p><h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{info.title}</h1><p className="mt-2 max-w-2xl text-muted-foreground">{info.subtitle}</p><Badge variant="outline" className="mt-3">{managementLabel}</Badge></div></div>
     <div className="mt-8 flex items-center gap-2 text-xs font-medium text-muted-foreground"><Badge variant={step >= 1 ? 'default' : 'outline'}>1 Plan</Badge><span>→</span><Badge variant={step >= 2 ? 'default' : 'outline'}>2 Configure</Badge><span>→</span><Badge variant={step >= 3 ? 'default' : 'outline'}>3 Review & pay</Badge></div>
-    {step === 1 && <section className="mt-6"><Card><CardHeader><CardTitle>Choose your plan</CardTitle><CardDescription>These prices come from the active HostSuite billing catalog. Provider plan metadata stays attached to the order item.</CardDescription></CardHeader><CardContent><div className="grid gap-4 sm:grid-cols-2">{products.map((product) => <button key={product.id} type="button" onClick={() => setSelected(product)} className={`rounded-2xl border p-5 text-left transition ${selected?.id === product.id ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'}`}><div className="flex items-start justify-between gap-4"><div><p className="font-semibold">{product.name}</p><p className="mt-1 text-sm text-muted-foreground">{product.description}</p></div>{selected?.id === product.id && <Check className="h-5 w-5 text-primary" />}</div><p className="mt-5 text-2xl font-bold">{product.currency} {Number(product.price).toLocaleString()}<span className="text-sm font-normal text-muted-foreground">{product.billing_mode === 'subscription' ? ` / ${product.interval}` : ''}</span></p></button>)}</div>{products.length === 0 && <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">No active {service} products are configured yet. Add the product in the HostSuite billing catalog before selling this service.</div>}<Button className="mt-6 gap-2" disabled={!selected} onClick={next}>Continue <ArrowRight className="h-4 w-4" /></Button></CardContent></Card></section>}
-    {step === 2 && <section className="mt-6 space-y-5"><Card><CardHeader><CardTitle>{service === 'domain' ? 'Find your domain' : 'Connect your domain'}</CardTitle><CardDescription>{service === 'domain' ? 'Availability comes from the configured WhoGoHost reseller API. We do not mark a domain available without a provider response.' : 'Use a domain you already own, or tell us the domain you want to buy.'}</CardDescription></CardHeader><CardContent>{service === 'domain' ? <><div className="flex gap-2"><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="mybusiness.com"/><Button type="button" variant="outline" onClick={() => void checkAvailability()} disabled={!query.trim()}><Search className="mr-2 h-4 w-4" /> Check</Button></div>{searched && <div className={`mt-4 rounded-xl border p-4 text-sm ${availability === true ? 'border-emerald-500/30 bg-emerald-500/5' : availability === false ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-muted/30'}`}><p className="font-medium">{availability === true ? `${domain} is available.` : availability === false ? `${domain} is not available.` : 'Availability could not be confirmed.'}</p><p className="mt-1 text-muted-foreground">{availabilityError || 'This result was returned by the configured domain provider.'}</p></div>}{suggestions.length > 0 && <div className="mt-5"><p className="text-sm font-medium">Other suggestions</p><div className="mt-2 flex flex-wrap gap-2">{suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => { setQuery(suggestion); setDomain(suggestion); setAvailability(null); setSearched(false); }} className="rounded-full border px-3 py-1.5 text-sm hover:border-primary">{suggestion}</button>)}</div><p className="mt-2 text-xs text-muted-foreground">Suggestions are generated names. Check each one before selecting it.</p></div>}</> : <><div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={() => setDomainMode('existing')} className={`rounded-xl border p-4 text-left ${domainMode === 'existing' ? 'border-primary ring-2 ring-primary/20' : ''}`}><p className="font-semibold">I already have a domain</p><p className="mt-1 text-xs text-muted-foreground">Use an existing domain with this service.</p></button><button type="button" onClick={() => setDomainMode('new')} className={`rounded-xl border p-4 text-left ${domainMode === 'new' ? 'border-primary ring-2 ring-primary/20' : ''}`}><p className="font-semibold">I need a domain</p><p className="mt-1 text-xs text-muted-foreground">I want HostSuite to register one.</p></button></div><div className="mt-4"><label className="text-sm font-medium">Domain name</label><Input className="mt-2" value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="mybusiness.com" /></div></>}</CardContent></Card>
+    {step === 1 && <section className="mt-6"><Card><CardHeader><CardTitle>Choose your plan</CardTitle><CardDescription>These prices come from the active HostSuite catalogue. Supplier plan references stay server-side.</CardDescription></CardHeader><CardContent><div className="grid gap-4 sm:grid-cols-2">{products.map((product) => <button key={product.id} type="button" onClick={() => setSelected(product)} className={`rounded-2xl border p-5 text-left transition ${selected?.id === product.id ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'}`}><div className="flex items-start justify-between gap-4"><div><p className="font-semibold">{product.name}</p><p className="mt-1 text-sm text-muted-foreground">{product.description}</p></div>{selected?.id === product.id && <Check className="h-5 w-5 text-primary" />}</div><p className="mt-5 text-2xl font-bold">{product.currency} {Number(product.price).toLocaleString()}<span className="text-sm font-normal text-muted-foreground">{product.billing_mode === 'subscription' ? ` / ${product.interval}` : ''}</span></p></button>)}</div>{products.length === 0 && <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">{catalogMessage || `No active ${service} products are configured yet. Add the product in the HostSuite billing catalogue before selling this service.`}</div>}<Button className="mt-6 gap-2" disabled={!selected} onClick={next}>Continue <ArrowRight className="h-4 w-4" /></Button></CardContent></Card></section>}
+    {step === 2 && <section className="mt-6 space-y-5"><Card><CardHeader><CardTitle>{service === 'domain' ? 'Find your domain' : 'Connect your domain'}</CardTitle><CardDescription>{service === 'domain' ? 'Availability comes from the configured WhoGoHost reseller API. We do not mark a domain available without a provider response.' : 'Connect a domain that is already registered. If you need one, register it separately first.'}</CardDescription></CardHeader><CardContent>{service === 'domain' ? <><div className="flex gap-2"><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="mybusiness.com"/><Button type="button" variant="outline" onClick={() => void checkAvailability()} disabled={!query.trim()}><Search className="mr-2 h-4 w-4" /> Check</Button></div>{searched && <div className={`mt-4 rounded-xl border p-4 text-sm ${availability === true ? 'border-emerald-500/30 bg-emerald-500/5' : availability === false ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-muted/30'}`}><p className="font-medium">{availability === true ? `${domain} is available.` : availability === false ? `${domain} is not available.` : 'Availability could not be confirmed.'}</p><p className="mt-1 text-muted-foreground">{availabilityError || 'This result was returned by the configured domain provider.'}</p></div>}{suggestions.length > 0 && <div className="mt-5"><p className="text-sm font-medium">Other suggestions</p><div className="mt-2 flex flex-wrap gap-2">{suggestions.map((suggestion) => <button key={suggestion} type="button" onClick={() => { setQuery(suggestion); setDomain(suggestion); setAvailability(null); setSearched(false); }} className="rounded-full border px-3 py-1.5 text-sm hover:border-primary">{suggestion}</button>)}</div><p className="mt-2 text-xs text-muted-foreground">Suggestions are generated names. Check each one before selecting it.</p></div>}</> : <><div className="grid gap-3 sm:grid-cols-2"><button type="button" onClick={() => setDomainMode('existing')} className={`rounded-xl border p-4 text-left ${domainMode === 'existing' ? 'border-primary ring-2 ring-primary/20' : ''}`}><p className="font-semibold">I already have a domain</p><p className="mt-1 text-xs text-muted-foreground">Use an existing domain with this service.</p></button><Link href="/domains" className="rounded-xl border p-4 text-left transition hover:border-primary/50"><p className="font-semibold">Need a domain?</p><p className="mt-1 text-xs text-muted-foreground">Register it separately, then return here to connect it.</p></Link></div><div className="mt-4"><label className="text-sm font-medium">Domain name</label><Input className="mt-2" value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="mybusiness.com" /></div></>}</CardContent></Card>
       {service === 'domain' && availability === true && <Card><CardHeader><CardTitle>Registrant details</CardTitle><CardDescription>WhoGoHost requires complete contact details for domain registration. These details are sent server-side to the reseller API after verified payment.</CardDescription></CardHeader><CardContent><div className="grid gap-3 sm:grid-cols-2">{contactInput('firstname', 'First name')}{contactInput('lastname', 'Last name')}{contactInput('email', 'Email address')}{contactInput('phonenumber', 'Phone number')}{contactInput('address1', 'Street address')}{contactInput('address2', 'Address line 2 (optional)')}{contactInput('city', 'City')}{contactInput('state', 'State')}{contactInput('zipcode', 'Postal code')}{contactInput('country', 'Country')}</div></CardContent></Card>}
       {service === 'email' && <Card><CardHeader><CardTitle>Which email addresses do you need?</CardTitle><CardDescription>For example, hello@yourbusiness.com or sales@yourbusiness.com.</CardDescription></CardHeader><CardContent><div className="space-y-2">{emailAddresses.map((address, index) => <Input key={index} value={address} onChange={(e) => setEmailAddresses((current) => current.map((item, i) => i === index ? e.target.value : item))} placeholder="hello@yourbusiness.com" />)}</div><Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => setEmailAddresses((current) => [...current, ''])}>Add another address</Button></CardContent></Card>}
       <div className="flex gap-3"><Button variant="outline" onClick={() => setStep(1)}>Back</Button><Button onClick={next} className="gap-2">Review <ArrowRight className="h-4 w-4" /></Button></div></section>}
