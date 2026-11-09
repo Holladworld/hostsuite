@@ -67,9 +67,17 @@ export async function POST(request: Request) {
             provider_subscription_token: typeof emailToken === 'string' ? emailToken : null,
             provider_plan_id: planCode,
             provider_customer_email: normalizedEmail,
+            provider_next_billing_at: typeof subscriptionData.next_payment_date === 'string' ? subscriptionData.next_payment_date : null,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'order_id' });
           if (credentialError) throw credentialError;
+          if (linkedSubscription?.id && typeof subscriptionData.next_payment_date === 'string') {
+            const { error: periodError } = await admin.from('billing_subscriptions').update({
+              next_billing_at: subscriptionData.next_payment_date,
+              current_period_end: subscriptionData.next_payment_date,
+            }).eq('id', linkedSubscription.id);
+            if (periodError) throw periodError;
+          }
         }
       }
       await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'paystack').eq('event_id', eventId);
@@ -145,6 +153,7 @@ export async function POST(request: Request) {
         token: typeof subscriptionData.email_token === 'string' ? subscriptionData.email_token : null,
         customerEmail: typeof subscriptionData.customer?.email === 'string' ? subscriptionData.customer.email.toLowerCase() : (typeof order.metadata?.customer_email === 'string' ? order.metadata.customer_email : null),
         planId: typeof subscriptionData.plan?.plan_code === 'string' ? subscriptionData.plan.plan_code : order.metadata?.provider_plan_id,
+        nextBillingAt: typeof subscriptionData.next_payment_date === 'string' ? subscriptionData.next_payment_date : null,
       };
       const { error: orderUpdateError } = await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
       if (orderUpdateError) throw orderUpdateError;
