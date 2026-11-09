@@ -42,22 +42,29 @@ export async function POST(request: Request) {
     if (eventType === 'subscription.cancelled') {
       const planId = data.plan?.id != null ? String(data.plan.id) : null;
       if (customerEmail && planId) {
-        const { data: subscription, error: lookupError } = await admin.from('billing_subscriptions')
-          .select('id,current_period_end')
+        const { data: credentials, error: lookupError } = await admin.from('billing_subscription_provider_credentials')
+          .select('subscription_id')
           .eq('provider', 'flutterwave')
           .eq('provider_customer_email', customerEmail)
           .eq('provider_plan_id', planId)
-          .maybeSingle();
+          .limit(2);
         if (lookupError) throw lookupError;
-        if (subscription) {
-          const paidThrough = subscription.current_period_end && new Date(subscription.current_period_end) > new Date();
-          const { error } = await admin.from('billing_subscriptions').update({
-            auto_renew: false,
-            cancel_at_period_end: true,
-            status: paidThrough ? 'active' : 'cancelled',
-            cancelled_at: new Date().toISOString(),
-          }).eq('id', subscription.id);
-          if (error) throw error;
+        if (credentials?.length === 1 && credentials[0].subscription_id) {
+          const { data: subscription, error: subscriptionError } = await admin.from('billing_subscriptions')
+            .select('id,current_period_end')
+            .eq('id', credentials[0].subscription_id)
+            .maybeSingle();
+          if (subscriptionError) throw subscriptionError;
+          if (subscription) {
+            const paidThrough = subscription.current_period_end && new Date(subscription.current_period_end) > new Date();
+            const { error } = await admin.from('billing_subscriptions').update({
+              auto_renew: false,
+              cancel_at_period_end: true,
+              status: paidThrough ? 'active' : 'cancelled',
+              cancelled_at: new Date().toISOString(),
+            }).eq('id', subscription.id);
+            if (error) throw error;
+          }
         }
       }
       await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'flutterwave').eq('event_id', eventId);
@@ -137,21 +144,31 @@ export async function POST(request: Request) {
       }
     } else {
       if (!customerEmail) return NextResponse.json({ error: 'Recurring payment customer could not be identified.' }, { status: 409 });
-      const { data: matches, error: matchError } = await admin.from('billing_subscriptions')
-        .select('provider_subscription_id,amount,currency')
+      const { data: credentials, error: credentialsError } = await admin.from('billing_subscription_provider_credentials')
+        .select('subscription_id,provider_subscription_id')
         .eq('provider', 'flutterwave')
         .eq('provider_customer_email', customerEmail)
+        .limit(20);
+      if (credentialsError) throw credentialsError;
+      const subscriptionIds = (credentials ?? []).map((item) => item.subscription_id).filter(Boolean);
+      if (!subscriptionIds.length) return NextResponse.json({ error: 'Recurring subscription could not be matched to a HostSuite account.' }, { status: 409 });
+
+      const { data: matches, error: matchError } = await admin.from('billing_subscriptions')
+        .select('id')
+        .in('id', subscriptionIds)
         .eq('auto_renew', true)
         .eq('amount', Number(transaction.amount))
         .eq('currency', transaction.currency)
         .limit(2);
       if (matchError) throw matchError;
-      if (!matches || matches.length !== 1 || !matches[0].provider_subscription_id) {
+      if (!matches || matches.length !== 1) {
         return NextResponse.json({ error: 'Recurring payment could not be matched unambiguously to a HostSuite subscription.' }, { status: 409 });
       }
+      const providerCredential = credentials?.find((item) => item.subscription_id === matches[0].id);
+      if (!providerCredential?.provider_subscription_id) return NextResponse.json({ error: 'The provider subscription reference is not available yet.' }, { status: 409 });
       const settled = await recordManagedPlanRenewal({
         provider: 'flutterwave',
-        providerSubscriptionId: matches[0].provider_subscription_id,
+        providerSubscriptionId: providerCredential.provider_subscription_id,
         reference,
         amount: Number(transaction.amount),
         currency: transaction.currency,
