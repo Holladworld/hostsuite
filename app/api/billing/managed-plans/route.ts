@@ -130,7 +130,7 @@ export async function POST(request: Request) {
       const authorizationUrl = await initializeOrderPaymentSession({
         admin,
         provider,
-        user,
+        user: { id: user.id, email: user.email },
         orderId: order.order_id,
         reference: order.provider_reference,
         amount: plan.amount,
