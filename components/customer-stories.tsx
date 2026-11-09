@@ -5,6 +5,7 @@ import { ArrowUpRight, Globe2, Star } from 'lucide-react';
 const stories = [
   {
     number: '01',
+    rating: 5,
     name: 'Sanjo Temitope',
     role: 'CEO, OTP Global Limited',
     website: 'otpgloballimited.com',
@@ -15,6 +16,7 @@ const stories = [
   },
   {
     number: '02',
+    rating: 5,
     name: 'Folake Oloyede',
     role: 'Founder, Beyond Books Accounting Solutions',
     website: 'beyondbooksaccounting.ca',
@@ -25,6 +27,7 @@ const stories = [
   },
   {
     number: '03',
+    rating: 5,
     name: 'Jumoke',
     role: 'WAPAC Export',
     website: 'wapac.com.ng',
@@ -137,7 +140,11 @@ export function CustomerStories() {
                     {story.number}
                   </span>
                 </div>
-                <h3 className="mt-5 font-display text-2xl font-bold leading-[1.08] tracking-[-0.04em] text-[#2B1A37] sm:text-[1.7rem]">
+                <div className="mt-4 flex items-center gap-2.5" role="img" aria-label={`${story.rating} out of 5 stars`}>
+                  <StarAccent />
+                  <span className="text-sm font-extrabold tabular-nums text-[#8A5B16]">{story.rating}.0 <span className="font-medium text-[#9A8B75]">/ 5</span></span>
+                </div>
+                <h3 className="mt-4 font-display text-2xl font-bold leading-[1.08] tracking-[-0.04em] text-[#2B1A37] sm:text-[1.7rem]">
                   {story.title}
                 </h3>
                 <p className="mt-5 text-[15px] leading-7 text-[#665B6D]">
@@ -162,7 +169,7 @@ export function CustomerStories() {
         </div>
 
         <p className="mt-6 max-w-3xl text-[11px] leading-5 text-[#817487]">
-          These are summaries of customer experiences, not verbatim quotations or verified star scores. The stars are a visual section accent, not individual customer ratings.
+          Customer experiences are presented as edited summaries, not verbatim quotations. The five-star ratings shown are the ratings supplied for this section.
         </p>
       </div>
     </section>
