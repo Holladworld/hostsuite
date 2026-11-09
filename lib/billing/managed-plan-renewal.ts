@@ -137,28 +137,31 @@ export async function markManagedPlanRenewalFailed(input: {
 }) {
   const admin = createAdminSupabaseClient();
   let query = admin.from('billing_subscription_provider_credentials')
-    .select('subscription_id')
+    .select('subscription_id,provider_subscription_id')
     .eq('provider', input.provider);
   if (input.providerSubscriptionId) query = query.eq('provider_subscription_id', input.providerSubscriptionId);
   else if (input.customerEmail) query = query.eq('provider_customer_email', input.customerEmail.toLowerCase());
   else return false;
-  const { data: credentials, error } = await query.limit(2);
+  const { data: credentials, error } = await query.limit(20);
   if (error) throw error;
-  if (!credentials || credentials.length !== 1 || !credentials[0].subscription_id) return false;
+  if (!credentials?.length) return false;
+  const subscriptionIds = credentials.map((item) => item.subscription_id).filter(Boolean);
+  if (!subscriptionIds.length) return false;
 
-  const { data: subscription, error: subscriptionError } = await admin.from('billing_subscriptions')
+  let subscriptionQuery = admin.from('billing_subscriptions')
     .select('id,amount,failed_payment_count,auto_renew')
-    .eq('id', credentials[0].subscription_id)
-    .maybeSingle();
+    .in('id', subscriptionIds)
+    .eq('auto_renew', true);
+  if (typeof input.amount === 'number') subscriptionQuery = subscriptionQuery.eq('amount', input.amount);
+  const { data: subscriptions, error: subscriptionError } = await subscriptionQuery.limit(2);
   if (subscriptionError) throw subscriptionError;
-  if (!subscription || !subscription.auto_renew) return false;
-  if (typeof input.amount === 'number' && Number(subscription.amount) !== Number(input.amount)) return false;
+  if (!subscriptions || subscriptions.length !== 1) return false;
 
   const { error: updateError } = await admin.from('billing_subscriptions').update({
     status: 'past_due',
-    failed_payment_count: Number(subscription.failed_payment_count ?? 0) + 1,
+    failed_payment_count: Number(subscriptions[0].failed_payment_count ?? 0) + 1,
     last_payment_error: (input.reason ?? 'The payment provider reported a failed renewal.').slice(0, 500),
-  }).eq('id', subscription.id);
+  }).eq('id', subscriptions[0].id);
   if (updateError) throw updateError;
   return true;
 }
