@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
     const admin = createAdminSupabaseClient();
     const { data: subscription, error: lookupError } = await admin.from('billing_subscriptions')
-      .select('id,provider,provider_subscription_id,provider_subscription_token,provider_plan_id,provider_customer_email,current_period_end,auto_renew,status')
+      .select('id,provider,current_period_end,auto_renew,status')
       .eq('id', parsed.data.subscriptionId)
       .eq('user_id', user.id)
       .maybeSingle();
@@ -24,16 +24,23 @@ export async function POST(request: Request) {
     if (!subscription) return NextResponse.json({ error: 'Subscription not found.' }, { status: 404 });
     if (!subscription.auto_renew) return NextResponse.json({ success: true, message: 'Automatic renewal is already off.' });
 
+    const { data: credentials, error: credentialsError } = await admin.from('billing_subscription_provider_credentials')
+      .select('provider_subscription_id,provider_subscription_token,provider_plan_id,provider_customer_email')
+      .eq('subscription_id', subscription.id)
+      .maybeSingle();
+    if (credentialsError) throw credentialsError;
+    if (!credentials) return NextResponse.json({ error: 'The payment provider has not finished linking this subscription. Please try again shortly or contact support.' }, { status: 409 });
+
     if (subscription.provider === 'paystack') {
       const secret = process.env.PAYSTACK_SECRET_KEY;
       if (!secret) return NextResponse.json({ error: 'Paystack is not configured.' }, { status: 503 });
-      if (!subscription.provider_subscription_id || !subscription.provider_subscription_token) {
+      if (!credentials.provider_subscription_id || !credentials.provider_subscription_token) {
         return NextResponse.json({ error: 'The payment provider has not finished linking this subscription. Please try again shortly or contact support.' }, { status: 409 });
       }
       const response = await fetch('https://api.paystack.co/subscription/disable', {
         method: 'POST',
         headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: subscription.provider_subscription_id, token: subscription.provider_subscription_token }),
+        body: JSON.stringify({ code: credentials.provider_subscription_id, token: credentials.provider_subscription_token }),
         cache: 'no-store',
       });
       const result = await response.json();
@@ -41,17 +48,17 @@ export async function POST(request: Request) {
     } else if (subscription.provider === 'flutterwave') {
       const secret = process.env.FLW_SECRET_KEY;
       if (!secret) return NextResponse.json({ error: 'Flutterwave is not configured.' }, { status: 503 });
-      let providerSubscriptionId = subscription.provider_subscription_id as string | null;
-      if (!providerSubscriptionId && subscription.provider_customer_email && subscription.provider_plan_id) {
+      let providerSubscriptionId = credentials.provider_subscription_id as string | null;
+      if (!providerSubscriptionId && credentials.provider_customer_email && credentials.provider_plan_id) {
         const url = new URL('https://api.flutterwave.com/v3/subscriptions');
-        url.searchParams.set('email', subscription.provider_customer_email);
-        url.searchParams.set('plan', subscription.provider_plan_id);
+        url.searchParams.set('email', credentials.provider_customer_email);
+        url.searchParams.set('plan', credentials.provider_plan_id);
         url.searchParams.set('status', 'active');
         const lookup = await fetch(url, { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' });
         const result = await lookup.json();
         if (!lookup.ok || result?.status !== 'success') throw new Error('FLUTTERWAVE_SUBSCRIPTION_LOOKUP_FAILED');
         const matches = Array.isArray(result.data) ? result.data : [];
-        const match = matches.find((item: any) => String(item.plan?.id ?? item.plan_id ?? '') === subscription.provider_plan_id && String(item.customer?.email ?? item.email ?? '').toLowerCase() === subscription.provider_customer_email.toLowerCase());
+        const match = matches.find((item: any) => String(item.plan?.id ?? item.plan_id ?? '') === credentials.provider_plan_id && String(item.customer?.email ?? item.email ?? '').toLowerCase() === credentials.provider_customer_email.toLowerCase());
         providerSubscriptionId = match?.id != null ? String(match.id) : null;
       }
       if (!providerSubscriptionId) {
