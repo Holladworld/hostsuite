@@ -26,10 +26,14 @@ export async function GET(request: Request) {
   }
   if (!order) return NextResponse.json({ error: 'Payment record not found.' }, { status: 404 });
 
-  const { data: subscription } = await admin.from('billing_subscriptions')
-    .select('id,status,interval,next_billing_at,auto_renew')
+  const { data: subscription, error: subscriptionError } = await admin.from('billing_subscriptions')
+    .select('id,status,interval,next_billing_at,current_period_end,auto_renew,cancel_at_period_end')
     .eq('source_order_id', order.id)
     .maybeSingle();
+  if (subscriptionError) {
+    console.error('Managed plan subscription lookup failed', subscriptionError);
+    return NextResponse.json({ error: 'Payment is confirmed, but we could not load the subscription yet.' }, { status: 500 });
+  }
 
   return NextResponse.json({
     status: order.status === 'paid' && !subscription ? 'processing' : order.status,
