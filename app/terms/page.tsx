@@ -5,7 +5,7 @@ export default function TermsPage() {
   return (
     <LegalLayout
       title="Terms of Service"
-      lastUpdated="August 2026"
+      lastUpdated="November 2026"
       sections={[
         {
           heading: 'Acceptance of Terms',
