@@ -155,7 +155,7 @@ export async function initializeStandardCheckout(
     }
 
     const authorizationUrl = await initializeOrderPaymentSession({
-      admin, provider, user, orderId: order.order_id, reference: order.provider_reference,
+      admin, provider, user: { id: user.id, email: user.email }, orderId: order.order_id, reference: order.provider_reference,
       amount: Number(order.total), currency: order.currency, callbackUrl,
     });
     return NextResponse.json({
