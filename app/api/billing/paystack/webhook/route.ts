@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'node:crypto';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { provisionServiceInstance } from '@/lib/services/provisioning';
+import { activateManagedPlanSubscription } from '@/lib/billing/managed-plan-settlement';
 
 export const runtime = 'nodejs';
 
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
     const transaction = verification?.data;
     if (!verificationResponse.ok || !verification?.status || transaction?.status !== 'success') return NextResponse.json({ error: 'Payment verification failed.' }, { status: 400 });
 
-    const { data: order } = await admin.from('billing_orders').select('id,total,currency,metadata,status').eq('provider', 'paystack').eq('provider_reference', reference).maybeSingle();
+    const { data: order } = await admin.from('billing_orders').select('id,user_id,total,currency,metadata,status,paid_at').eq('provider', 'paystack').eq('provider_reference', reference).maybeSingle();
     if (!order) return NextResponse.json({ error: 'Order not found.' }, { status: 404 });
     if (Number(transaction.amount) !== Math.round(Number(order.total) * 100) || transaction.currency !== order.currency) return NextResponse.json({ error: 'Payment amount or currency mismatch.' }, { status: 400 });
 
@@ -68,21 +69,27 @@ export async function POST(request: Request) {
     const { error: entitlementError } = await admin.rpc('grant_billing_order_value', { p_order_id: order.id });
     if (entitlementError) throw entitlementError;
 
-    const { error: serviceInstanceError } = await admin.rpc('create_service_instances_for_order', { p_order_id: order.id });
-    if (serviceInstanceError) throw serviceInstanceError;
+    const managedPlan = await activateManagedPlanSubscription({
+      id: order.id,
+      user_id: order.user_id,
+      paid_at: now,
+      metadata: order.metadata,
+    });
 
-    // Payment is already secured above. A provider outage/configuration problem must
-    // not make Paystack retry the payment event forever; each service records its own
-    // provisioning failure and can be retried by the authenticated customer.
-    const { data: instances, error: instancesError } = await admin
-      .from('service_instances')
-      .select('id')
-      .eq('order_id', order.id)
-      .eq('status', 'paid');
-    if (instancesError) throw instancesError;
+    if (!managedPlan) {
+      const { error: serviceInstanceError } = await admin.rpc('create_service_instances_for_order', { p_order_id: order.id });
+      if (serviceInstanceError) throw serviceInstanceError;
 
-    for (const instance of instances ?? []) {
-      await provisionServiceInstance(instance.id);
+      // Provider provisioning is attempted only for purchased resources that
+      // have a supported provider lifecycle. Managed-care plans are customer
+      // subscriptions, not provider-provisioned hosting resources.
+      const { data: instances, error: instancesError } = await admin
+        .from('service_instances')
+        .select('id')
+        .eq('order_id', order.id)
+        .eq('status', 'paid');
+      if (instancesError) throw instancesError;
+      for (const instance of instances ?? []) await provisionServiceInstance(instance.id);
     }
 
     await admin.from('billing_webhook_events').update({ processed: true, processed_at: now }).eq('provider', 'paystack').eq('event_id', eventId);
