@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getVerifiedUser } from '@/lib/supabase-auth';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
-import { getPaymentProvider } from '@/lib/payments/providers';
+import { createRecurringPaymentPlan, getPaymentProvider } from '@/lib/payments/providers';
 import { getManagedPlan, type ManagedPlanInterval, type ManagedPlanKey } from '@/lib/billing/managed-plans';
 
 const planSchema = z.object({
   planKey: z.enum(['starter_ops', 'managed_growth']),
   interval: z.enum(['monthly', 'yearly']),
+});
+
+const checkoutSchema = planSchema.extend({
+  autoRenew: z.boolean(),
+  termsAccepted: z.literal(true),
+  recurringConsent: z.boolean(),
 });
 
 export async function GET(request: Request) {
@@ -19,7 +25,13 @@ export async function GET(request: Request) {
   try {
     const plan = await getManagedPlan(parsed.data.planKey as ManagedPlanKey, parsed.data.interval as ManagedPlanInterval);
     if (!plan) return NextResponse.json({ error: 'This plan is not available for online checkout yet.' }, { status: 404 });
-    return NextResponse.json(plan, { headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({
+      id: plan.id,
+      name: plan.name,
+      interval: plan.interval,
+      amount: plan.amount,
+      currency: plan.currency,
+    }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Managed plan lookup failed', error);
     return NextResponse.json({ error: 'We could not load this plan right now.' }, { status: 500 });
@@ -32,8 +44,11 @@ export async function POST(request: Request) {
     const user = authenticated?.user;
     if (!user?.email) return NextResponse.json({ error: 'Please sign in before checkout.' }, { status: 401 });
 
-    const parsed = planSchema.safeParse(await request.json());
-    if (!parsed.success) return NextResponse.json({ error: 'Choose a valid managed-care plan and billing period.' }, { status: 400 });
+    const parsed = checkoutSchema.safeParse(await request.json());
+    if (!parsed.success) return NextResponse.json({ error: 'Confirm the plan terms and billing choice before continuing.' }, { status: 400 });
+    if (parsed.data.autoRenew && !parsed.data.recurringConsent) {
+      return NextResponse.json({ error: 'Please confirm authorization for recurring payments, or turn automatic renewal off.' }, { status: 400 });
+    }
 
     const plan = await getManagedPlan(parsed.data.planKey as ManagedPlanKey, parsed.data.interval as ManagedPlanInterval);
     if (!plan) return NextResponse.json({ error: 'This plan is not available for online checkout yet.' }, { status: 404 });
@@ -41,15 +56,43 @@ export async function POST(request: Request) {
     if (!provider.isConfigured()) return NextResponse.json({ error: 'Online payment is temporarily unavailable. Please try again later.' }, { status: 503 });
 
     const admin = createAdminSupabaseClient();
+    let recurringPlanId: string | null = null;
+    if (parsed.data.autoRenew) {
+      const metadataKey = provider.name === 'paystack' ? 'paystack_plan_code' : 'flutterwave_payment_plan_id';
+      const existingPlanId = plan.metadata[metadataKey];
+      recurringPlanId = typeof existingPlanId === 'string' || typeof existingPlanId === 'number'
+        ? String(existingPlanId)
+        : null;
+      if (!recurringPlanId) {
+        recurringPlanId = await createRecurringPaymentPlan({
+          provider: provider.name,
+          name: plan.name,
+          amount: plan.amount,
+          currency: plan.currency,
+          interval: parsed.data.interval,
+        });
+        const { error: metadataError } = await admin.from('billing_products')
+          .update({ metadata: { ...plan.metadata, [metadataKey]: recurringPlanId } })
+          .eq('id', plan.id);
+        if (metadataError) throw metadataError;
+      }
+    }
+
     const reference = `HS-${provider.name.toUpperCase()}-${Date.now()}-${crypto.randomUUID().replaceAll('-', '').slice(0, 10)}`;
     const invoiceNumber = `HS-${new Date().getUTCFullYear()}-${crypto.randomUUID().replaceAll('-', '').slice(0, 10).toUpperCase()}`;
+    const consentAt = parsed.data.autoRenew ? new Date().toISOString() : null;
     const metadata = {
       source: 'managed_plan',
       plan_key: parsed.data.planKey,
       interval: parsed.data.interval,
       plan_name: plan.name,
       product_id: plan.id,
-      auto_renew: false,
+      auto_renew: parsed.data.autoRenew,
+      renewal_consent_at: consentAt,
+      renewal_terms_version: 'managed-care-recurring-v1',
+      provider: provider.name,
+      provider_plan_id: recurringPlanId,
+      customer_email: user.email,
       term_amount: plan.amount,
       currency: plan.currency,
     };
@@ -99,12 +142,16 @@ export async function POST(request: Request) {
         callbackUrl,
         orderId: order.id,
         userId: user.id,
+        recurringPlanId: recurringPlanId ?? undefined,
       });
       return NextResponse.json({ authorizationUrl: payment.authorizationUrl, reference, orderId: order.id, invoiceNumber });
     } catch (providerError) {
       await admin.from('billing_orders').update({ status: 'failed' }).eq('id', order.id);
       if (providerError instanceof Error && providerError.message === 'PAYMENT_PROVIDER_NOT_CONFIGURED') {
         return NextResponse.json({ error: 'Online payment is temporarily unavailable. Please try again later.' }, { status: 503 });
+      }
+      if (providerError instanceof Error && providerError.message === 'RECURRING_PLAN_CREATION_FAILED') {
+        return NextResponse.json({ error: 'We could not prepare automatic renewal with the payment provider. No payment has been taken.' }, { status: 502 });
       }
       return NextResponse.json({ error: 'We could not start your payment. Please try again.' }, { status: 502 });
     }
