@@ -22,8 +22,16 @@ export async function activateManagedPlanSubscription(order: PaidManagedPlanOrde
 
   const startsAt = order.paid_at ? new Date(order.paid_at) : new Date();
   const nextBillingAt = new Date(startsAt);
+  const originalDay = startsAt.getUTCDate();
+  nextBillingAt.setUTCDate(1);
   if (interval === 'monthly') nextBillingAt.setUTCMonth(nextBillingAt.getUTCMonth() + 1);
   else nextBillingAt.setUTCFullYear(nextBillingAt.getUTCFullYear() + 1);
+  const lastDayOfTargetMonth = new Date(Date.UTC(
+    nextBillingAt.getUTCFullYear(),
+    nextBillingAt.getUTCMonth() + 1,
+    0,
+  )).getUTCDate();
+  nextBillingAt.setUTCDate(Math.min(originalDay, lastDayOfTargetMonth));
 
   const admin = createAdminSupabaseClient();
   const { error } = await admin.from('billing_subscriptions').upsert({
