@@ -6,8 +6,7 @@ ALTER TABLE billing_subscriptions
   ADD COLUMN IF NOT EXISTS source_order_id uuid REFERENCES billing_orders(id) ON DELETE SET NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_billing_subscriptions_source_order
-  ON billing_subscriptions(source_order_id)
-  WHERE source_order_id IS NOT NULL;
+  ON billing_subscriptions(source_order_id);
 
 INSERT INTO billing_products (name, slug, description, product_type, billing_mode, currency, price, interval, active, metadata)
 VALUES
