@@ -48,19 +48,8 @@ export async function POST(request: Request) {
     } else if (subscription.provider === 'flutterwave') {
       const secret = process.env.FLW_SECRET_KEY;
       if (!secret) return NextResponse.json({ error: 'Flutterwave is not configured.' }, { status: 503 });
-      let providerSubscriptionId = credentials.provider_subscription_id as string | null;
-      if (!providerSubscriptionId && credentials.provider_customer_email && credentials.provider_plan_id) {
-        const url = new URL('https://api.flutterwave.com/v3/subscriptions');
-        url.searchParams.set('email', credentials.provider_customer_email);
-        url.searchParams.set('plan', credentials.provider_plan_id);
-        url.searchParams.set('status', 'active');
-        const lookup = await fetch(url, { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' });
-        const result = await lookup.json();
-        if (!lookup.ok || result?.status !== 'success') throw new Error('FLUTTERWAVE_SUBSCRIPTION_LOOKUP_FAILED');
-        const matches = Array.isArray(result.data) ? result.data : [];
-        const match = matches.find((item: any) => String(item.plan?.id ?? item.plan_id ?? '') === credentials.provider_plan_id && String(item.customer?.email ?? item.email ?? '').toLowerCase() === credentials.provider_customer_email.toLowerCase());
-        providerSubscriptionId = match?.id != null ? String(match.id) : null;
-      }
+      const providerSubscriptionId = credentials.provider_subscription_id as string | null;
+      // Never cancel a mandate inferred only from matching customer email and plan.
       if (!providerSubscriptionId) {
         return NextResponse.json({ error: 'The payment provider has not finished linking this subscription. Please try again shortly or contact support.' }, { status: 409 });
       }

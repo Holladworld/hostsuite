@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
@@ -26,6 +26,7 @@ function ManagedPlanCheckout() {
   const [autoRenew, setAutoRenew] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [recurringConsent, setRecurringConsent] = useState(false);
+  const checkoutIdempotency = useRef<{ fingerprint: string; key: string } | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -54,14 +55,21 @@ function ManagedPlanCheckout() {
     if (!termsAccepted) { setError('Please accept the managed-care terms before continuing.'); return; }
     if (autoRenew && !recurringConsent) { setError('Please authorize recurring payments, or turn automatic renewal off.'); return; }
     setBusy(true); setError('');
+    const fingerprint = JSON.stringify({ planKey, interval, autoRenew, termsAccepted, recurringConsent });
+    if (!checkoutIdempotency.current || checkoutIdempotency.current.fingerprint !== fingerprint) {
+      checkoutIdempotency.current = { fingerprint, key: crypto.randomUUID() };
+    }
     try {
       const response = await fetch('/api/billing/managed-plans', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ planKey, interval, autoRenew, termsAccepted, recurringConsent }),
+        body: JSON.stringify({ planKey, interval, autoRenew, termsAccepted, recurringConsent, idempotencyKey: checkoutIdempotency.current.key }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error ?? 'We could not start checkout.');
+      if (!response.ok) {
+        if (response.status === 502) checkoutIdempotency.current = null;
+        throw new Error(result.error ?? 'We could not start checkout.');
+      }
       window.location.assign(result.authorizationUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'We could not start checkout. Please try again.');

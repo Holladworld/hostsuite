@@ -4,6 +4,7 @@ import { getVerifiedUser } from '@/lib/supabase-auth';
 import { createAdminSupabaseClient } from '@/lib/supabase-admin';
 import { createRecurringPaymentPlan, getPaymentProvider } from '@/lib/payments/providers';
 import { getManagedPlan, type ManagedPlanInterval, type ManagedPlanKey } from '@/lib/billing/managed-plans';
+import { getCanonicalAppUrl } from '@/lib/billing/checkout-validation';
 
 const planSchema = z.object({
   planKey: z.enum(['starter_ops', 'managed_growth']),
@@ -14,6 +15,7 @@ const checkoutSchema = planSchema.extend({
   autoRenew: z.boolean(),
   termsAccepted: z.literal(true),
   recurringConsent: z.boolean(),
+  idempotencyKey: z.string().uuid().optional(),
 });
 
 export async function GET(request: Request) {
@@ -56,6 +58,7 @@ export async function POST(request: Request) {
     const provider = getPaymentProvider();
     if (!provider.isConfigured()) return NextResponse.json({ error: 'Online payment is temporarily unavailable. Please try again later.' }, { status: 503 });
 
+    const callbackUrl = getCanonicalAppUrl('/portal/managed-plan/complete');
     const admin = createAdminSupabaseClient();
     let recurringPlanId: string | null = null;
     if (parsed.data.autoRenew) {
@@ -81,7 +84,6 @@ export async function POST(request: Request) {
     }
 
     const reference = `HS-${provider.name.toUpperCase()}-${Date.now()}-${crypto.randomUUID().replaceAll('-', '').slice(0, 10)}`;
-    const invoiceNumber = `HS-${new Date().getUTCFullYear()}-${crypto.randomUUID().replaceAll('-', '').slice(0, 10).toUpperCase()}`;
     const consentAt = parsed.data.autoRenew ? new Date().toISOString() : null;
     const metadata = {
       source: 'managed_plan',
@@ -101,42 +103,28 @@ export async function POST(request: Request) {
       currency: plan.currency,
     };
 
-    const { data: order, error: orderError } = await admin.from('billing_orders').insert({
-      user_id: user.id,
-      status: 'pending',
-      currency: plan.currency,
-      subtotal: plan.amount,
-      total: plan.amount,
-      provider: provider.name,
-      provider_reference: reference,
-      idempotency_key: crypto.randomUUID(),
-      metadata,
-    }).select('id').single();
+    const { data: createdOrder, error: orderError } = await admin.rpc('create_managed_plan_checkout_order', {
+      p_user_id: user.id,
+      p_provider: provider.name,
+      p_provider_reference: reference,
+      p_idempotency_key: parsed.data.idempotencyKey ?? crypto.randomUUID(),
+      p_product_id: plan.id,
+      p_amount: plan.amount,
+      p_currency: plan.currency,
+      p_metadata: metadata,
+    });
     if (orderError) throw orderError;
+    const order = Array.isArray(createdOrder) ? createdOrder[0] : createdOrder;
+    if (!order?.order_id || !order?.invoice_number) throw new Error('MANAGED_PLAN_ORDER_CREATION_FAILED');
+    const invoiceNumber = order.invoice_number;
+    if (order.reused) {
+      const { data: existingSession, error: sessionError } = await admin.from('billing_orders')
+        .select('payment_authorization_url').eq('id', order.order_id).eq('user_id', user.id).maybeSingle();
+      if (sessionError) throw sessionError;
+      if (!existingSession?.payment_authorization_url) return NextResponse.json({ error: 'This checkout is already being prepared. Please wait a moment and try again.' }, { status: 409 });
+      return NextResponse.json({ authorizationUrl: existingSession.payment_authorization_url, reference: order.provider_reference, orderId: order.order_id, invoiceNumber });
+    }
 
-    const { error: itemError } = await admin.from('billing_order_items').insert({
-      order_id: order.id,
-      product_id: plan.id,
-      product_name: plan.name,
-      quantity: 1,
-      unit_price: plan.amount,
-      total: plan.amount,
-      metadata,
-    });
-    if (itemError) throw itemError;
-
-    const { error: invoiceError } = await admin.from('billing_invoices').insert({
-      user_id: user.id,
-      order_id: order.id,
-      invoice_number: invoiceNumber,
-      status: 'open',
-      currency: plan.currency,
-      subtotal: plan.amount,
-      total: plan.amount,
-    });
-    if (invoiceError) throw invoiceError;
-
-    const callbackUrl = new URL('/portal/managed-plan/complete', request.url).toString();
     try {
       const payment = await provider.initialize({
         email: user.email,
@@ -144,14 +132,16 @@ export async function POST(request: Request) {
         currency: plan.currency,
         reference,
         callbackUrl,
-        orderId: order.id,
+        orderId: order.order_id,
         userId: user.id,
         recurringPlanId: recurringPlanId ?? undefined,
       });
-      return NextResponse.json({ authorizationUrl: payment.authorizationUrl, reference, orderId: order.id, invoiceNumber });
+      const { error: sessionSaveError } = await admin.from('billing_orders').update({ payment_authorization_url: payment.authorizationUrl }).eq('id', order.order_id).eq('status', 'pending');
+      if (sessionSaveError) console.error('Could not persist managed-plan payment authorization URL', sessionSaveError);
+      return NextResponse.json({ authorizationUrl: payment.authorizationUrl, reference: order.provider_reference, orderId: order.order_id, invoiceNumber });
     } catch (providerError) {
-      await admin.from('billing_orders').update({ status: 'failed' }).eq('id', order.id);
-      await admin.from('billing_invoices').update({ status: 'void' }).eq('order_id', order.id);
+      await admin.from('billing_orders').update({ status: 'failed' }).eq('id', order.order_id).eq('status', 'pending');
+      await admin.from('billing_invoices').update({ status: 'void' }).eq('order_id', order.order_id).eq('status', 'open');
       if (providerError instanceof Error && providerError.message === 'PAYMENT_PROVIDER_NOT_CONFIGURED') {
         return NextResponse.json({ error: 'Online payment is temporarily unavailable. Please try again later.' }, { status: 503 });
       }
@@ -162,6 +152,7 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     console.error('Managed plan checkout failed', error);
+    if (error instanceof Error && error.message.startsWith('APP_BASE_URL')) return NextResponse.json({ error: 'Checkout is temporarily unavailable while the payment return address is configured.' }, { status: 503 });
     return NextResponse.json({ error: 'We could not start checkout. Please try again.' }, { status: 500 });
   }
 }

@@ -33,7 +33,7 @@ export async function recordManagedPlanRenewal(input: {
   if (!credentials?.subscription_id) return false;
 
   const { data: subscription, error: subscriptionError } = await admin.from('billing_subscriptions')
-    .select('id,user_id,product_id,service_name,amount,currency,interval,status,auto_renew,current_period_end')
+    .select('id,user_id,product_id,service_name,amount,currency,interval,status,auto_renew,cancel_at_period_end,current_period_end')
     .eq('id', credentials.subscription_id)
     .maybeSingle();
   if (subscriptionError) throw subscriptionError;
@@ -110,9 +110,27 @@ export async function recordManagedPlanRenewal(input: {
     if (error) throw error;
   }
 
+  // A provider may report a charge after a customer has cancelled or disabled renewal.
+  // Record the verified money above, but never silently reactivate or extend that subscription.
+  if (!subscription.auto_renew || subscription.status === 'cancelled' || subscription.status === 'paused' || subscription.cancel_at_period_end) {
+    const { error: reconcileError } = await admin.from('billing_orders').update({
+      metadata: {
+        source: 'managed_plan_renewal',
+        subscription_id: subscription.id,
+        provider_subscription_id: input.providerSubscriptionId,
+        needs_manual_reconciliation: true,
+        reconciliation_reason: 'Verified recurring charge arrived after HostSuite renewal was disabled or cancelled.',
+        reconciliation_marked_at: paidAt,
+      },
+    }).eq('id', orderId);
+    if (reconcileError) throw reconcileError;
+    return true;
+  }
+
   const periodEnd = input.nextBillingAt
     ? new Date(input.nextBillingAt)
     : addPeriod(new Date(paidAt), subscription.interval as 'monthly' | 'yearly');
+  if (!Number.isFinite(periodEnd.getTime())) throw new Error('Invalid provider renewal date.');
   const { error: updateError } = await admin.from('billing_subscriptions').update({
     status: 'active',
     amount: input.amount,
@@ -131,7 +149,6 @@ export async function recordManagedPlanRenewal(input: {
 export async function markManagedPlanRenewalFailed(input: {
   provider: ProviderName;
   providerSubscriptionId?: string | null;
-  customerEmail?: string | null;
   amount?: number | null;
   reason?: string | null;
 }) {
@@ -139,9 +156,8 @@ export async function markManagedPlanRenewalFailed(input: {
   let query = admin.from('billing_subscription_provider_credentials')
     .select('subscription_id,provider_subscription_id')
     .eq('provider', input.provider);
-  if (input.providerSubscriptionId) query = query.eq('provider_subscription_id', input.providerSubscriptionId);
-  else if (input.customerEmail) query = query.eq('provider_customer_email', input.customerEmail.toLowerCase());
-  else return false;
+  if (!input.providerSubscriptionId) return false;
+  query = query.eq('provider_subscription_id', input.providerSubscriptionId);
   const { data: credentials, error } = await query.limit(20);
   if (error) throw error;
   if (!credentials?.length) return false;

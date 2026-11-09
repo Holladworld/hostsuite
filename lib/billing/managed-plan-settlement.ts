@@ -60,6 +60,8 @@ export async function activateManagedPlanSubscription(
     existingCredentials = data;
   }
 
+  const hasProviderMandate = Boolean(providerDetails.id ?? existingCredentials?.provider_subscription_id);
+  const renewalSetupStatus = !autoRenew ? 'not_required' : hasProviderMandate ? 'confirmed' : 'pending';
   const startsAt = order.paid_at ? new Date(order.paid_at) : new Date();
   const providerNextBillingAt = providerDetails.nextBillingAt ?? existingCredentials?.provider_next_billing_at ?? null;
   const parsedProviderNext = providerNextBillingAt ? new Date(providerNextBillingAt) : null;
@@ -80,6 +82,7 @@ export async function activateManagedPlanSubscription(
     current_period_start: startsAt.toISOString(),
     current_period_end: endsAt.toISOString(),
     auto_renew: autoRenew,
+    renewal_setup_status: renewalSetupStatus,
     provider: autoRenew ? provider : null,
     service_terms_accepted_at: typeof metadata.service_terms_accepted_at === 'string' ? metadata.service_terms_accepted_at : startsAt.toISOString(),
     service_terms_version: typeof metadata.service_terms_version === 'string' ? metadata.service_terms_version : null,

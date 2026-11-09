@@ -14,27 +14,20 @@ async function findFlutterwaveSubscriptionByTransaction(transactionId: string | 
   const result = await response.json();
   if (!response.ok || result?.status !== 'success') throw new Error('FLUTTERWAVE_SUBSCRIPTION_LOOKUP_FAILED');
   const matches = Array.isArray(result.data) ? result.data : result.data ? [result.data] : [];
-  return matches[0]?.id != null ? { id: String(matches[0].id), nextBillingAt: typeof matches[0].next_due_date === 'string' ? matches[0].next_due_date : null } : null;
+  if (matches.length !== 1 || matches[0]?.id == null) return null;
+  return { id: String(matches[0].id), nextBillingAt: typeof matches[0].next_due_date === 'string' ? matches[0].next_due_date : null };
 }
 
-async function findFlutterwaveSubscription(email: string, planId: string, secret: string) {
-  const url = new URL('https://api.flutterwave.com/v3/subscriptions');
-  url.searchParams.set('email', email);
-  url.searchParams.set('plan', planId);
-  url.searchParams.set('status', 'active');
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' });
-  const result = await response.json();
-  if (!response.ok || result?.status !== 'success') throw new Error('FLUTTERWAVE_SUBSCRIPTION_LOOKUP_FAILED');
-  const matches = Array.isArray(result.data) ? result.data : [];
-  const match = matches.find((item: any) => String(item.plan?.id ?? item.plan_id ?? '') === planId && String(item.customer?.email ?? item.email ?? '').toLowerCase() === email.toLowerCase());
-  return match?.id != null ? { id: String(match.id), nextBillingAt: typeof match.next_due_date === 'string' ? match.next_due_date : null } : null;
-}
 
 export async function POST(request: Request) {
   const secretHash = process.env.FLW_SECRET_HASH;
   if (!secretHash) return NextResponse.json({ error: 'Payment provider is not configured.' }, { status: 503 });
   const signature = request.headers.get('flutterwave-signature') ?? request.headers.get('verif-hash');
-  if (!signature || signature !== secretHash) return NextResponse.json({ error: 'Invalid webhook signature.' }, { status: 401 });
+  const signatureBytes = Buffer.from(signature ?? '', 'utf8');
+  const secretBytes = Buffer.from(secretHash, 'utf8');
+  if (!signature || signatureBytes.length !== secretBytes.length || !crypto.timingSafeEqual(signatureBytes, secretBytes)) {
+    return NextResponse.json({ error: 'Invalid webhook signature.' }, { status: 401 });
+  }
 
   try {
     const payload = await request.json() as { id?: string; type?: string; event?: string; data?: Record<string, any> };
@@ -42,41 +35,69 @@ export async function POST(request: Request) {
     const reference = typeof data.tx_ref === 'string' ? data.tx_ref : null;
     const customerEmail = typeof data.customer?.email === 'string' ? data.customer.email.toLowerCase() : null;
     const eventType = payload.type ?? payload.event ?? 'unknown';
-    const eventId = String(payload.id ?? data.id ?? reference ?? `${eventType}:${customerEmail ?? crypto.randomUUID()}`);
+    const stableEventKey = payload.id ?? data.id ?? reference
+      ?? (eventType === 'subscription.cancelled' && customerEmail && data.plan?.id != null
+        ? `${customerEmail}:${String(data.plan.id)}:${String(data.status ?? 'cancelled')}`
+        : null);
+    if (stableEventKey == null) return NextResponse.json({ error: 'Webhook event has no stable provider identifier.' }, { status: 400 });
+    const eventId = `${eventType}:${String(stableEventKey)}`;
     const admin = createAdminSupabaseClient();
-    const { data: existing } = await admin.from('billing_webhook_events').select('processed').eq('provider', 'flutterwave').eq('event_id', eventId).maybeSingle();
-    if (existing?.processed) return NextResponse.json({ received: true });
-
-    await admin.from('billing_webhook_events').upsert({ provider: 'flutterwave', event_id: eventId, event_type: eventType, signature_valid: true, payload }, { onConflict: 'provider,event_id' });
+    const { data: claimed, error: claimError } = await admin.rpc('claim_billing_webhook_event', {
+      p_provider: 'flutterwave',
+      p_event_id: eventId,
+      p_event_type: eventType,
+      p_payload: payload,
+    });
+    if (claimError) throw claimError;
+    if (claimed !== true) {
+      const { data: priorEvent, error: priorEventError } = await admin.from('billing_webhook_events')
+        .select('processed').eq('provider', 'flutterwave').eq('event_id', eventId).maybeSingle();
+      if (priorEventError) throw priorEventError;
+      if (priorEvent?.processed) return NextResponse.json({ received: true, duplicate: true });
+      // A live processing lease is not an acknowledgement. Ask the provider to retry.
+      return NextResponse.json({ error: 'Webhook event is still being processed. Please retry.' }, { status: 409 });
+    }
 
     if (eventType === 'subscription.cancelled') {
-      const planId = data.plan?.id != null ? String(data.plan.id) : null;
-      if (customerEmail && planId) {
-        const { data: credentials, error: lookupError } = await admin.from('billing_subscription_provider_credentials')
+      const providerSubscriptionId = data.subscription_id != null
+        ? String(data.subscription_id)
+        : data.subscription?.id != null ? String(data.subscription.id) : null;
+      let credential: { subscription_id: string | null } | null = null;
+      if (providerSubscriptionId) {
+        const { data, error } = await admin.from('billing_subscription_provider_credentials')
+          .select('subscription_id').eq('provider', 'flutterwave')
+          .eq('provider_subscription_id', providerSubscriptionId).maybeSingle();
+        if (error) throw error;
+        credential = data;
+      } else if (customerEmail && data.plan?.id != null) {
+        // Flutterwave's documented cancellation payload omits the subscription ID.
+        // Match only when email + exact plan identifies one HostSuite mandate.
+        const { data: matches, error } = await admin.from('billing_subscription_provider_credentials')
           .select('subscription_id')
           .eq('provider', 'flutterwave')
           .eq('provider_customer_email', customerEmail)
-          .eq('provider_plan_id', planId)
+          .eq('provider_plan_id', String(data.plan.id))
           .limit(2);
-        if (lookupError) throw lookupError;
-        if (credentials?.length === 1 && credentials[0].subscription_id) {
-          const { data: subscription, error: subscriptionError } = await admin.from('billing_subscriptions')
-            .select('id,current_period_end')
-            .eq('id', credentials[0].subscription_id)
-            .maybeSingle();
-          if (subscriptionError) throw subscriptionError;
-          if (subscription) {
-            const paidThrough = subscription.current_period_end && new Date(subscription.current_period_end) > new Date();
-            const { error } = await admin.from('billing_subscriptions').update({
-              auto_renew: false,
-              cancel_at_period_end: true,
-              status: paidThrough ? 'active' : 'cancelled',
-              cancelled_at: new Date().toISOString(),
-            }).eq('id', subscription.id);
-            if (error) throw error;
-          }
+        if (error) throw error;
+        if (matches?.length === 1) credential = matches[0];
+      }
+      if (credential?.subscription_id) {
+        const { data: subscription, error: subscriptionError } = await admin.from('billing_subscriptions')
+          .select('id,current_period_end')
+          .eq('id', credential.subscription_id).maybeSingle();
+        if (subscriptionError) throw subscriptionError;
+        if (subscription) {
+          const paidThrough = subscription.current_period_end && new Date(subscription.current_period_end) > new Date();
+          const { error } = await admin.from('billing_subscriptions').update({
+            auto_renew: false,
+            cancel_at_period_end: true,
+            status: paidThrough ? 'active' : 'cancelled',
+            cancelled_at: new Date().toISOString(),
+          }).eq('id', subscription.id);
+          if (error) throw error;
         }
       }
+      // Ambiguous provider cancellation events are intentionally not mapped to a customer subscription.
       await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'flutterwave').eq('event_id', eventId);
       return NextResponse.json({ received: true });
     }
@@ -91,7 +112,11 @@ export async function POST(request: Request) {
     const verify = await fetch(`https://api.flutterwave.com/v3/transactions/${encodeURIComponent(String(data.id))}/verify`, { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' });
     const result = await verify.json();
     const transaction = result?.data;
-    if (!verify.ok || result?.status !== 'success') throw new Error('Flutterwave transaction verification failed.');
+    if (!verify.ok || result?.status !== 'success' || transaction?.tx_ref !== reference) throw new Error('Flutterwave transaction verification failed.');
+    if (transaction?.status !== 'successful' && !['failed', 'cancelled'].includes(String(transaction?.status))) {
+      await admin.from('billing_webhook_events').update({ processing_started_at: null }).eq('provider', 'flutterwave').eq('event_id', eventId).eq('processed', false);
+      return NextResponse.json({ error: 'Flutterwave transaction is not in a final state yet.' }, { status: 409 });
+    }
 
     const { data: order } = await admin.from('billing_orders')
       .select('id,user_id,total,currency,metadata,status,paid_at,provider')
@@ -101,17 +126,20 @@ export async function POST(request: Request) {
 
     if (transaction?.status !== 'successful') {
       if (order) {
-        const { error: orderError } = await admin.from('billing_orders').update({ status: 'failed' }).eq('id', order.id);
+        const { error: orderError } = await admin.from('billing_orders').update({ status: 'failed' }).eq('id', order.id).eq('status', 'pending');
         if (orderError) throw orderError;
-        const { error: invoiceError } = await admin.from('billing_invoices').update({ status: 'void' }).eq('order_id', order.id);
+        const { error: invoiceError } = await admin.from('billing_invoices').update({ status: 'void' }).eq('order_id', order.id).eq('status', 'open');
         if (invoiceError) throw invoiceError;
-      } else if (customerEmail) {
-        await markManagedPlanRenewalFailed({
-          provider: 'flutterwave',
-          customerEmail,
-          amount: Number.isFinite(Number(transaction?.amount ?? data.amount)) && Number(transaction?.amount ?? data.amount) > 0 ? Number(transaction?.amount ?? data.amount) : null,
-          reason: transaction?.processor_response ?? transaction?.status ?? 'Flutterwave could not collect the recurring payment.',
-        });
+      } else {
+        const failedSubscription = await findFlutterwaveSubscriptionByTransaction(data.id, secret);
+        if (failedSubscription?.id) {
+          await markManagedPlanRenewalFailed({
+            provider: 'flutterwave',
+            providerSubscriptionId: failedSubscription.id,
+            amount: Number.isFinite(Number(transaction?.amount ?? data.amount)) && Number(transaction?.amount ?? data.amount) > 0 ? Number(transaction?.amount ?? data.amount) : null,
+            reason: transaction?.processor_response ?? transaction?.status ?? 'Flutterwave could not collect the recurring payment.',
+          });
+        }
       }
       await admin.from('billing_webhook_events').update({ processed: true, processed_at: new Date().toISOString() }).eq('provider', 'flutterwave').eq('event_id', eventId);
       return NextResponse.json({ received: true });
@@ -120,6 +148,8 @@ export async function POST(request: Request) {
     if (order && (Number(transaction.amount) !== Number(order.total) || transaction.currency !== order.currency)) {
       return NextResponse.json({ error: 'Payment amount or currency mismatch.' }, { status: 400 });
     }
+    if (order && transaction.meta?.order_id && transaction.meta.order_id !== order.id) return NextResponse.json({ error: 'Payment order reference mismatch.' }, { status: 400 });
+    if (order && transaction.meta?.user_id && transaction.meta.user_id !== order.user_id) return NextResponse.json({ error: 'Payment customer mismatch.' }, { status: 400 });
 
     const now = new Date().toISOString();
     if (order) {
@@ -134,14 +164,24 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, ticketQuote: settlement });
       }
 
-      const { error: orderError } = await admin.from('billing_orders').update({ status: 'paid', paid_at: now }).eq('id', order.id);
-      if (orderError) throw orderError;
-      const { error: invoiceError } = await admin.from('billing_invoices').update({ status: 'paid', paid_at: now }).eq('order_id', order.id);
-      if (invoiceError) throw invoiceError;
+      const { data: settlementState, error: settlementError } = await admin.rpc('settle_verified_billing_order', {
+        p_order_id: order.id,
+        p_provider: 'flutterwave',
+        p_provider_reference: reference,
+        p_amount: Number(transaction.amount),
+        p_currency: transaction.currency,
+      });
+      if (settlementError) throw settlementError;
+      if (settlementState === 'reconciliation_required') {
+        await admin.from('billing_orders').update({ metadata: { ...(order.metadata ?? {}), needs_manual_reconciliation: true, reconciliation_reason: 'Verified Flutterwave payment arrived for a non-payable order.', reconciliation_marked_at: now } }).eq('id', order.id);
+        await admin.from('billing_webhook_events').update({ processed: true, processed_at: now }).eq('provider', 'flutterwave').eq('event_id', eventId);
+        return NextResponse.json({ received: true, reconciliation: 'required' });
+      }
 
       let providerSubscription: { id: string; nextBillingAt: string | null } | null = null;
       if (order.metadata?.auto_renew === true && customerEmail && typeof order.metadata.provider_plan_id === 'string') {
-        providerSubscription = await findFlutterwaveSubscription(customerEmail, order.metadata.provider_plan_id, secret);
+        // Resolve the mandate from this exact verified transaction, not email + plan alone.
+        providerSubscription = await findFlutterwaveSubscriptionByTransaction(data.id, secret);
       }
       const managedPlan = await activateManagedPlanSubscription({ ...order, paid_at: now }, {
         id: providerSubscription?.id ?? null,
@@ -171,28 +211,8 @@ export async function POST(request: Request) {
         if (credentialError) throw credentialError;
         providerCredential = credential;
       }
-      if (!providerCredential && customerEmail) {
-        const { data: credentials, error: credentialsError } = await admin.from('billing_subscription_provider_credentials')
-          .select('subscription_id,provider_subscription_id')
-          .eq('provider', 'flutterwave')
-          .eq('provider_customer_email', customerEmail)
-          .limit(20);
-        if (credentialsError) throw credentialsError;
-        const subscriptionIds = (credentials ?? []).map((item) => item.subscription_id).filter(Boolean);
-        if (subscriptionIds.length) {
-          const { data: matches, error: matchError } = await admin.from('billing_subscriptions')
-            .select('id')
-            .in('id', subscriptionIds)
-            .eq('auto_renew', true)
-            .eq('amount', Number(transaction.amount))
-            .eq('currency', transaction.currency)
-            .limit(2);
-          if (matchError) throw matchError;
-          if (matches?.length === 1) {
-            providerCredential = credentials?.find((item) => item.subscription_id === matches[0].id) ?? null;
-          }
-        }
-      }
+      // Never infer a recurring mandate from customer email and amount alone.
+      // If transaction-to-subscription lookup fails, leave it for manual reconciliation.
       if (!providerCredential?.provider_subscription_id) {
         return NextResponse.json({ error: 'Recurring payment could not be matched unambiguously to a HostSuite subscription.' }, { status: 409 });
       }
