@@ -31,6 +31,9 @@ export async function recordManagedPlanRenewal(input: {
     .maybeSingle();
   if (subscriptionError) throw subscriptionError;
   if (!subscription) return false;
+  if (Number(subscription.amount) !== Number(input.amount) || subscription.currency !== input.currency) {
+    throw new Error('Recurring renewal amount or currency does not match the active subscription.');
+  }
 
   const paidAt = input.paidAt ?? new Date().toISOString();
   const idempotencyKey = `managed-renewal:${input.provider}:${input.reference}`;
