@@ -24,10 +24,17 @@ export async function recordManagedPlanRenewal(input: {
   nextBillingAt?: string | null;
 }) {
   const admin = createAdminSupabaseClient();
-  const { data: subscription, error: subscriptionError } = await admin.from('billing_subscriptions')
-    .select('id,user_id,product_id,service_name,amount,currency,interval,status,auto_renew,current_period_end')
+  const { data: credentials, error: credentialsError } = await admin.from('billing_subscription_provider_credentials')
+    .select('subscription_id')
     .eq('provider', input.provider)
     .eq('provider_subscription_id', input.providerSubscriptionId)
+    .maybeSingle();
+  if (credentialsError) throw credentialsError;
+  if (!credentials?.subscription_id) return false;
+
+  const { data: subscription, error: subscriptionError } = await admin.from('billing_subscriptions')
+    .select('id,user_id,product_id,service_name,amount,currency,interval,status,auto_renew,current_period_end')
+    .eq('id', credentials.subscription_id)
     .maybeSingle();
   if (subscriptionError) throw subscriptionError;
   if (!subscription) return false;
@@ -129,22 +136,29 @@ export async function markManagedPlanRenewalFailed(input: {
   reason?: string | null;
 }) {
   const admin = createAdminSupabaseClient();
-  let query = admin.from('billing_subscriptions')
-    .select('id,failed_payment_count')
-    .eq('provider', input.provider)
-    .eq('auto_renew', true);
+  let query = admin.from('billing_subscription_provider_credentials')
+    .select('subscription_id')
+    .eq('provider', input.provider);
   if (input.providerSubscriptionId) query = query.eq('provider_subscription_id', input.providerSubscriptionId);
-  else if (input.customerEmail) query = query.eq('provider_customer_email', input.customerEmail);
+  else if (input.customerEmail) query = query.eq('provider_customer_email', input.customerEmail.toLowerCase());
   else return false;
-  if (typeof input.amount === 'number') query = query.eq('amount', input.amount);
-  const { data, error } = await query.limit(2);
+  const { data: credentials, error } = await query.limit(2);
   if (error) throw error;
-  if (!data || data.length !== 1) return false;
+  if (!credentials || credentials.length !== 1 || !credentials[0].subscription_id) return false;
+
+  const { data: subscription, error: subscriptionError } = await admin.from('billing_subscriptions')
+    .select('id,amount,failed_payment_count,auto_renew')
+    .eq('id', credentials[0].subscription_id)
+    .maybeSingle();
+  if (subscriptionError) throw subscriptionError;
+  if (!subscription || !subscription.auto_renew) return false;
+  if (typeof input.amount === 'number' && Number(subscription.amount) !== Number(input.amount)) return false;
+
   const { error: updateError } = await admin.from('billing_subscriptions').update({
     status: 'past_due',
-    failed_payment_count: Number(data[0].failed_payment_count ?? 0) + 1,
+    failed_payment_count: Number(subscription.failed_payment_count ?? 0) + 1,
     last_payment_error: (input.reason ?? 'The payment provider reported a failed renewal.').slice(0, 500),
-  }).eq('id', data[0].id);
+  }).eq('id', subscription.id);
   if (updateError) throw updateError;
   return true;
 }
