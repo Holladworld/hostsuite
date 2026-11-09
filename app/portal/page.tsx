@@ -30,6 +30,12 @@ function PortalLoginInner() {
   const [mode, setMode] = useState<'signin' | 'signup'>(() => searchParams.get('mode') === 'signup' ? 'signup' : 'signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
   const { user, loading } = useAuth();
@@ -56,8 +62,16 @@ function PortalLoginInner() {
       toast.error('Please enter your email and password.');
       return;
     }
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters.');
+    if (mode === 'signup' && (!firstName.trim() || !lastName.trim() || !phone.trim())) {
+      toast.error('Enter your first name, last name and phone number.');
+      return;
+    }
+    if (mode === 'signup' && password !== confirmPassword) {
+      toast.error('Your password confirmation does not match.');
+      return;
+    }
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters.');
       return;
     }
     setBusy(true);
@@ -67,7 +81,19 @@ function PortalLoginInner() {
         if (error) throw error;
         toast.success('Welcome back to your HostSuite portal.');
       } else {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              phone: phone.trim(),
+              company_name: companyName.trim() || null,
+              marketing_opt_in: marketingOptIn,
+            },
+          },
+        });
         if (error) throw error;
         if (!data.session) {
           toast.success('Check your email to confirm your account, then sign in to continue.');
@@ -140,6 +166,28 @@ function PortalLoginInner() {
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              {mode === 'signup' && (
+                <>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="portal-first-name">First name</Label>
+                      <Input id="portal-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="given-name" required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="portal-last-name">Last name</Label>
+                      <Input id="portal-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="family-name" required />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="portal-phone">Phone number</Label>
+                    <Input id="portal-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" placeholder="+234..." required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="portal-company">Business or company name <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                    <Input id="portal-company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} autoComplete="organization" />
+                  </div>
+                </>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="portal-email">Email address</Label>
                 <div className="relative">
@@ -173,6 +221,18 @@ function PortalLoginInner() {
                 </div>
               </div>
 
+              {mode === 'signup' && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="portal-confirm-password">Confirm password</Label>
+                    <Input id="portal-confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" required />
+                  </div>
+                  <label className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <input type="checkbox" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} className="mt-1" />
+                    <span>Send me occasional product updates and useful service information. This is optional and does not affect my purchase.</span>
+                  </label>
+                </>
+              )}
               <Button
                 type="submit"
                 disabled={busy}
@@ -190,7 +250,7 @@ function PortalLoginInner() {
 
             <div className="mt-4 flex items-center justify-center gap-4 rounded-lg bg-muted/60 px-3 py-2 text-center text-xs text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5 text-secondary" />
-              Secured by Supabase · Email &amp; password only
+              Your details are stored securely with your HostSuite account.
             </div>
 
             <p className="mt-5 text-center text-sm text-muted-foreground">
